@@ -95,12 +95,12 @@ jobs:
     
     - name: Build and test with Docker Compose
       run: |
-        docker-compose build --no-cache
-        docker-compose up -d
+        docker compose build --no-cache
+        docker compose up -d
         sleep 30
-        docker-compose ps
-        docker-compose logs
-        docker-compose down
+        docker compose ps
+        docker compose logs
+        docker compose down
 
   security-audit:
     runs-on: ubuntu-latest
