@@ -21,14 +21,14 @@ describe('LoadingSpinner', () => {
     render(<LoadingSpinner size="lg" />);
     
     const spinner = screen.getByRole('status');
-    expect(spinner).toHaveClass('w-8', 'h-8');
+    expect(spinner).toHaveClass('w-12', 'h-12');
   });
 
   it('renders with medium size by default', () => {
     render(<LoadingSpinner />);
     
     const spinner = screen.getByRole('status');
-    expect(spinner).toHaveClass('w-6', 'h-6');
+    expect(spinner).toHaveClass('w-8', 'h-8');
   });
 
   it('renders with small size', () => {

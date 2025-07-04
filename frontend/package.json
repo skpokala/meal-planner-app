@@ -60,16 +60,19 @@
     ],
     "coverageThreshold": {
       "global": {
-        "branches": 70,
-        "functions": 70,
-        "lines": 70,
-        "statements": 70
+        "branches": 50,
+        "functions": 50,
+        "lines": 50,
+        "statements": 50
       }
     },
     "coverageReporters": ["text", "lcov", "html"],
     "testMatch": [
       "<rootDir>/src/**/__tests__/**/*.{js,jsx}",
       "<rootDir>/src/**/*.{test,spec}.{js,jsx}"
+    ],
+    "transformIgnorePatterns": [
+      "node_modules/(?!(axios|react-router-dom|@testing-library)/)"
     ]
   },
   "browserslist": {

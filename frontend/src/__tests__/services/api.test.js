@@ -1,10 +1,33 @@
-import axios from 'axios';
-import api from '../../services/api';
 import { mockLocalStorage } from '../utils/testUtils';
 
 // Mock axios
-jest.mock('axios');
-const mockedAxios = axios;
+jest.mock('axios', () => ({
+  create: jest.fn(() => ({
+    defaults: {
+      headers: {
+        common: {}
+      }
+    },
+    get: jest.fn(() => Promise.resolve({ data: {} })),
+    post: jest.fn(() => Promise.resolve({ data: {} })),
+    put: jest.fn(() => Promise.resolve({ data: {} })),
+    delete: jest.fn(() => Promise.resolve({ data: {} })),
+    interceptors: {
+      request: {
+        use: jest.fn()
+      },
+      response: {
+        use: jest.fn()
+      }
+    }
+  }))
+}));
+
+// Import api after mocking axios
+import api from '../../services/api';
+
+// Get the mocked axios after importing
+const { default: axios } = require('axios');
 
 describe('API Service', () => {
   let mockLocalStorageImpl;

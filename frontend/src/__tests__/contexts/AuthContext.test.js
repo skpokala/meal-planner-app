@@ -1,11 +1,31 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../../contexts/AuthContext';
-import { mockUser, mockLocalStorage, createMockAxios } from '../utils/testUtils';
+import { mockUser, mockLocalStorage } from '../utils/testUtils';
 
-// Mock api module
-const mockApi = createMockAxios();
-jest.mock('../../services/api', () => mockApi);
+// Mock the API module
+jest.mock('../../services/api', () => ({
+  defaults: {
+    headers: {
+      common: {}
+    }
+  },
+  get: jest.fn(() => Promise.resolve({ data: {} })),
+  post: jest.fn(() => Promise.resolve({ data: {} })),
+  put: jest.fn(() => Promise.resolve({ data: {} })),
+  delete: jest.fn(() => Promise.resolve({ data: {} })),
+  interceptors: {
+    request: {
+      use: jest.fn()
+    },
+    response: {
+      use: jest.fn()
+    }
+  }
+}));
+
+// Get the mocked API
+const mockApi = require('../../services/api');
 
 // Test component to access context
 const TestComponent = () => {

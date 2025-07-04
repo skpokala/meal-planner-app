@@ -3,21 +3,43 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 import Login from '../../pages/Login';
 import { AuthProvider } from '../../contexts/AuthContext';
-import { mockUser, createMockAxios } from '../utils/testUtils';
+import { mockUser } from '../utils/testUtils';
 
-// Mock API
-const mockApi = createMockAxios();
-jest.mock('../../services/api', () => mockApi);
+// Mock the API module
+jest.mock('../../services/api', () => ({
+  defaults: {
+    headers: {
+      common: {}
+    }
+  },
+  get: jest.fn(() => Promise.resolve({ data: {} })),
+  post: jest.fn(() => Promise.resolve({ data: {} })),
+  put: jest.fn(() => Promise.resolve({ data: {} })),
+  delete: jest.fn(() => Promise.resolve({ data: {} })),
+  interceptors: {
+    request: {
+      use: jest.fn()
+    },
+    response: {
+      use: jest.fn()
+    }
+  }
+}));
+
+// Get the mocked API
+const mockApi = require('../../services/api');
 
 // Mock react-hot-toast
-const mockToast = {
-  error: jest.fn(),
-  success: jest.fn(),
-};
 jest.mock('react-hot-toast', () => ({
   __esModule: true,
-  default: mockToast,
+  default: {
+    error: jest.fn(),
+    success: jest.fn(),
+  },
 }));
+
+// Get the mocked toast
+const mockToast = require('react-hot-toast').default;
 
 describe('Login', () => {
   const mockNavigate = jest.fn();

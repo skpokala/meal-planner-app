@@ -5,13 +5,32 @@ import Dashboard from '../../pages/Dashboard';
 import { 
   mockUser, 
   mockApiResponses, 
-  renderWithProviders, 
-  createMockAxios 
+  renderWithProviders
 } from '../utils/testUtils';
 
-// Mock API
-const mockApi = createMockAxios();
-jest.mock('../../services/api', () => mockApi);
+// Mock the API module
+jest.mock('../../services/api', () => ({
+  defaults: {
+    headers: {
+      common: {}
+    }
+  },
+  get: jest.fn(() => Promise.resolve({ data: {} })),
+  post: jest.fn(() => Promise.resolve({ data: {} })),
+  put: jest.fn(() => Promise.resolve({ data: {} })),
+  delete: jest.fn(() => Promise.resolve({ data: {} })),
+  interceptors: {
+    request: {
+      use: jest.fn()
+    },
+    response: {
+      use: jest.fn()
+    }
+  }
+}));
+
+// Get the mocked API
+const mockApi = require('../../services/api');
 
 // Mock react-hot-toast
 jest.mock('react-hot-toast', () => ({
