@@ -10,20 +10,16 @@ jobs:
   frontend-tests:
     runs-on: ubuntu-latest
     
-    strategy:
-      matrix:
-        node-version: [16.x, 18.x]
-    
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
     
-    - name: Setup Node.js ${{ matrix.node-version }}
+    - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: '18.x'
         cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
+        cache-dependency-path: 'frontend/package-lock.json'
     
     - name: Install frontend dependencies
       working-directory: ./frontend
@@ -50,10 +46,6 @@ jobs:
   backend-tests:
     runs-on: ubuntu-latest
     
-    strategy:
-      matrix:
-        node-version: [16.x, 18.x]
-    
     services:
       mongodb:
         image: mongo:5.0
@@ -65,12 +57,12 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
     
-    - name: Setup Node.js ${{ matrix.node-version }}
+    - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: '18.x'
         cache: 'npm'
-        cache-dependency-path: backend/package-lock.json
+        cache-dependency-path: 'backend/package-lock.json'
     
     - name: Install backend dependencies
       working-directory: ./backend
