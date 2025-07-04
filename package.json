@@ -29,9 +29,5 @@
     "docker"
   ],
   "author": "Your Name",
-  "license": "MIT",
-  "workspaces": [
-    "frontend",
-    "backend"
-  ]
+  "license": "MIT"
 } 
