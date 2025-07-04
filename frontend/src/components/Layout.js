@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -22,6 +22,7 @@ const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [showExpandButton, setShowExpandButton] = useState(true);
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -29,6 +30,29 @@ const Layout = ({ children }) => {
     { name: 'Meal Planner', href: '/meal-planner', icon: Calendar },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
+
+  // Auto-hide expand button after 3 seconds when sidebar is collapsed
+  useEffect(() => {
+    let timer;
+    if (sidebarCollapsed) {
+      setShowExpandButton(true); // Show initially
+      timer = setTimeout(() => {
+        setShowExpandButton(false);
+      }, 3000);
+    } else {
+      setShowExpandButton(true); // Always show when expanded
+    }
+    
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [sidebarCollapsed]);
+
+  const handleMouseLeave = () => {
+    if (sidebarCollapsed) {
+      setTimeout(() => setShowExpandButton(false), 500);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -59,35 +83,57 @@ const Layout = ({ children }) => {
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between h-16 px-4 border-b border-secondary-200 flex-shrink-0">
-            <div className="flex items-center min-w-0">
-              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Calendar className="w-5 h-5 text-white" />
+          <div className={`flex items-center h-16 px-4 border-b border-secondary-200 flex-shrink-0 ${
+            sidebarCollapsed ? 'justify-center' : 'justify-between'
+          }`}>
+            {sidebarCollapsed ? (
+              // Collapsed header - show expand button with logo as background
+              <div 
+                className="relative flex items-center justify-center w-full"
+                onMouseEnter={() => setShowExpandButton(true)}
+                onMouseLeave={handleMouseLeave}
+              >
+                <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-white" />
+                </div>
+                <button
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                  className={`absolute -right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-white border border-secondary-200 rounded-full flex items-center justify-center text-secondary-500 hover:text-secondary-700 hover:bg-secondary-50 transition-all duration-300 shadow-sm ${
+                    showExpandButton ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'
+                  }`}
+                  title="Expand sidebar"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
-              {!sidebarCollapsed && (
-                <span className="ml-3 text-lg font-semibold text-secondary-900 truncate">
-                  Meal Planner
-                </span>
-              )}
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="hidden lg:block text-secondary-500 hover:text-secondary-700 flex-shrink-0"
-              >
-                {sidebarCollapsed ? (
-                  <ChevronRight className="w-5 h-5" />
-                ) : (
-                  <ChevronLeft className="w-5 h-5" />
-                )}
-              </button>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="lg:hidden text-secondary-500 hover:text-secondary-700 flex-shrink-0"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+            ) : (
+              // Expanded header - normal layout
+              <>
+                <div className="flex items-center min-w-0">
+                  <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Calendar className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="ml-3 text-lg font-semibold text-secondary-900 truncate">
+                    Meal Planner
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    className="hidden lg:block text-secondary-500 hover:text-secondary-700 flex-shrink-0"
+                    title="Collapse sidebar"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => setSidebarOpen(false)}
+                    className="lg:hidden text-secondary-500 hover:text-secondary-700 flex-shrink-0"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Navigation */}
