@@ -1,22 +1,19 @@
 FROM node:18-alpine
 
-# Install git (needed for some npm packages)
-RUN apk add --no-cache git
-
 # Create app directory
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (including dev dependencies for testing)
+# Install all dependencies (including dev for testing)
 RUN npm ci
 
 # Copy source code
 COPY . .
 
-# Create coverage directory
-RUN mkdir -p coverage
+# Expose port
+EXPOSE 5000
 
-# Default command (can be overridden in docker-compose)
+# Default command for testing
 CMD ["npm", "run", "test:ci"] 

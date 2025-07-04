@@ -7,16 +7,22 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci
 
 # Copy source code
 COPY . .
 
-# Run tests (this will fail the build if tests fail)
-RUN npm run test:ci
+# Build the production application
+RUN CI=false npm run build
+
+# Remove dev dependencies to reduce image size
+RUN npm ci --only=production && npm cache clean --force
 
 # Expose port
 EXPOSE 3000
 
-# Start the application
-CMD ["npm", "start"] 
+# Install serve for production serving
+RUN npm install -g serve
+
+# Start the application (serve the built files)
+CMD ["serve", "-s", "build", "-l", "3000"] 

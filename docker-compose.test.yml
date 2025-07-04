@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   # Test database
-  mongo-test:
+  mongo:
     image: mongo:latest
     container_name: meal-planner-mongo-test
     ports:
@@ -21,11 +21,11 @@ services:
       dockerfile: Dockerfile.test
     container_name: meal-planner-backend-test
     depends_on:
-      - mongo-test
+      - mongo
     environment:
-      - NODE_ENV=test
-      - MONGODB_URI=mongodb://mongo-test:27017/meal_planner_test
+      - MONGODB_URI=mongodb://mongo:27017/meal_planner_test
       - JWT_SECRET=test-jwt-secret-key
+      - NODE_ENV=test
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -41,7 +41,7 @@ services:
       dockerfile: Dockerfile.test
     container_name: meal-planner-frontend-test
     environment:
-      - CI=true
+      - CI=false
     volumes:
       - ./frontend:/app
       - /app/node_modules
