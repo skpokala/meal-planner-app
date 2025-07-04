@@ -6,14 +6,13 @@ const bcrypt = require('bcryptjs');
 describe('Authentication Endpoints', () => {
   describe('POST /api/auth/login', () => {
     beforeEach(async () => {
-      // Create a test user
-      const hashedPassword = await bcrypt.hash('password', 12);
+      // Create a test user (let the model handle password hashing)
       await User.create({
         username: 'admin',
         firstName: 'Admin',
         lastName: 'User',
         email: 'admin@example.com',
-        password: hashedPassword,
+        password: 'password',
         role: 'admin'
       });
     });
@@ -72,8 +71,8 @@ describe('Authentication Endpoints', () => {
       expect(response.body.errors).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            field: 'password',
-            message: 'Password is required'
+            path: 'password',
+            msg: 'Password is required'
           })
         ])
       );
@@ -81,13 +80,43 @@ describe('Authentication Endpoints', () => {
   });
 
   describe('POST /api/auth/logout', () => {
-    it('should logout successfully', async () => {
+    it('should logout successfully with valid token', async () => {
+      // First login to get a token
+      const user = await User.create({
+        username: 'logoutuser',
+        firstName: 'Logout',
+        lastName: 'User',
+        email: 'logout@example.com',
+        password: 'password',
+        role: 'admin'
+      });
+
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({
+          username: 'logoutuser',
+          password: 'password'
+        });
+
+      const authToken = loginResponse.body.token;
+
+      // Now logout with the token
       const response = await request(app)
         .post('/api/auth/logout')
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(response.body).toHaveProperty('message');
       expect(response.body.message).toBe('Logged out successfully');
+    });
+
+    it('should reject logout without token', async () => {
+      const response = await request(app)
+        .post('/api/auth/logout')
+        .expect(401);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toBe('No token provided');
     });
   });
 
@@ -97,13 +126,12 @@ describe('Authentication Endpoints', () => {
 
     beforeEach(async () => {
       // Create and login a test user
-      const hashedPassword = await bcrypt.hash('password', 12);
       const user = await User.create({
         username: 'testuser',
         firstName: 'Test',
         lastName: 'User',
         email: 'test@example.com',
-        password: hashedPassword,
+        password: 'password',
         role: 'admin'
       });
       userId = user._id;
@@ -166,13 +194,12 @@ describe('Authentication Endpoints', () => {
 
     beforeEach(async () => {
       // Create and login a test user
-      const hashedPassword = await bcrypt.hash('oldpassword', 12);
       await User.create({
         username: 'testuser',
         firstName: 'Test',
         lastName: 'User',
         email: 'test@example.com',
-        password: hashedPassword,
+        password: 'oldpassword',
         role: 'admin'
       });
 

@@ -8,8 +8,8 @@ const router = express.Router();
 
 // Login route
 router.post('/login', [
-  body('username').trim().isLength({ min: 3 }).withMessage('Username must be at least 3 characters long'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long')
+  body('username').trim().notEmpty().withMessage('Username is required'),
+  body('password').notEmpty().withMessage('Password is required')
 ], async (req, res) => {
   try {
     // Check validation errors
@@ -190,7 +190,7 @@ router.put('/change-password', authenticateToken, [
     // Verify current password
     const isCurrentPasswordValid = await user.comparePassword(currentPassword);
     if (!isCurrentPasswordValid) {
-      return res.status(401).json({
+      return res.status(400).json({
         success: false,
         message: 'Current password is incorrect'
       });

@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -9,6 +10,18 @@ const familyMemberRoutes = require('./routes/familyMembers');
 const mealRoutes = require('./routes/meals');
 
 const app = express();
+
+// Database connection (only if not in test environment)
+if (process.env.NODE_ENV !== 'test') {
+  mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/meal-planner', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  }).then(() => {
+    console.log('Connected to MongoDB');
+  }).catch((error) => {
+    console.error('MongoDB connection error:', error);
+  });
+}
 
 // Security middleware
 app.use(helmet());

@@ -6,32 +6,32 @@
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^14.4.3",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.14.2",
-    "react-scripts": "5.0.1",
     "axios": "^1.4.0",
+    "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
+    "lucide-react": "^0.263.1",
+    "react": "^18.2.0",
     "react-calendar": "^4.6.0",
+    "react-datepicker": "^4.16.0",
+    "react-dom": "^18.2.0",
     "react-hook-form": "^7.45.4",
     "react-hot-toast": "^2.4.1",
-    "lucide-react": "^0.263.1",
-    "clsx": "^2.0.0",
-    "tailwind-merge": "^1.14.0",
-    "recharts": "^2.8.0",
-    "react-select": "^5.7.4",
     "react-modal": "^3.16.1",
-    "react-datepicker": "^4.16.0"
+    "react-router-dom": "^6.14.2",
+    "react-scripts": "^0.0.0",
+    "react-select": "^5.7.4",
+    "recharts": "^2.8.0",
+    "tailwind-merge": "^1.14.0"
   },
   "devDependencies": {
-    "tailwindcss": "^3.3.3",
-    "autoprefixer": "^10.4.14",
-    "postcss": "^8.4.27",
     "@types/react": "^18.2.15",
+    "@types/react-datepicker": "^4.15.0",
     "@types/react-dom": "^18.2.7",
     "@types/react-modal": "^3.16.0",
-    "@types/react-datepicker": "^4.15.0",
-    "jest-junit": "^16.0.0"
+    "autoprefixer": "^10.4.14",
+    "jest-junit": "^16.0.0",
+    "postcss": "^8.4.27",
+    "tailwindcss": "^3.3.3"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -58,8 +58,11 @@
       "!src/**/*.spec.js",
       "!src/setupTests.js"
     ],
-
-    "coverageReporters": ["text", "lcov", "html"],
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ],
     "testMatch": [
       "<rootDir>/src/**/__tests__/**/*.{js,jsx}",
       "<rootDir>/src/**/*.{test,spec}.{js,jsx}"
@@ -81,4 +84,4 @@
     ]
   },
   "proxy": "http://backend:5000"
-} 
+}
