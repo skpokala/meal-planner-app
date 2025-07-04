@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # Test database
+  mongo-test:
+    image: mongo:latest
+    container_name: meal-planner-mongo-test
+    ports:
+      - "27019:27017"
+    environment:
+      MONGO_INITDB_DATABASE: meal_planner_test
+    volumes:
+      - mongo_test_data:/data/db
+    networks:
+      - meal-planner-test-network
+
+  # Backend tests
+  backend-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.test
+    container_name: meal-planner-backend-test
+    depends_on:
+      - mongo-test
+    environment:
+      - NODE_ENV=test
+      - MONGODB_URI=mongodb://mongo-test:27017/meal_planner_test
+      - JWT_SECRET=test-jwt-secret-key
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/coverage:/app/coverage
+    networks:
+      - meal-planner-test-network
+    command: npm run test:ci
+
+  # Frontend tests
+  frontend-test:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.test
+    container_name: meal-planner-frontend-test
+    environment:
+      - CI=true
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - ./frontend/coverage:/app/coverage
+    networks:
+      - meal-planner-test-network
+    command: npm run test:ci
+
+volumes:
+  mongo_test_data:
+
+networks:
+  meal-planner-test-network:
+    driver: bridge 

@@ -1,0 +1,126 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const winston = require('winston');
+require('dotenv').config();
+
+const authRoutes = require('./routes/auth');
+const familyMemberRoutes = require('./routes/familyMembers');
+const mealRoutes = require('./routes/meals');
+
+const app = express();
+
+// Logger configuration
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' })
+  ]
+});
+
+// Security middleware
+app.use(helmet());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.'
+});
+app.use('/api/', limiter);
+
+// CORS configuration
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}));
+
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Database connection
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/meal_planner', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => {
+  logger.info('Connected to MongoDB');
+  initializeAdmin();
+})
+.catch((error) => {
+  logger.error('MongoDB connection error:', error);
+  process.exit(1);
+});
+
+// Initialize default admin user
+async function initializeAdmin() {
+  try {
+    const User = require('./models/User');
+    const existingAdmin = await User.findOne({ username: 'admin' });
+    
+    if (!existingAdmin) {
+      const adminUser = new User({
+        username: 'admin',
+        email: 'admin@mealplanner.com',
+        password: 'password', // The User model pre-save hook will hash this
+        role: 'admin',
+        firstName: 'Admin',
+        lastName: 'User'
+      });
+      
+      await adminUser.save();
+      logger.info('Default admin user created successfully');
+    }
+  } catch (error) {
+    logger.error('Error initializing admin user:', error);
+  }
+}
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/family-members', familyMemberRoutes);
+app.use('/api/meals', mealRoutes);
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  logger.error('Unhandled error:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+  });
+});
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  logger.info(`Server running on port ${PORT}`);
+});
+
+module.exports = app; 

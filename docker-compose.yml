@@ -1,0 +1,65 @@
+services:
+  mongo:
+    image: mongo:latest
+    container_name: meal-planner-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: meal_planner
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo-data:/data/db
+      - ./backend/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - meal-planner-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: meal-planner-backend
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/meal_planner
+      - MONGODB_DATABASE=meal_planner
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - JWT_EXPIRES_IN=7d
+      - DEFAULT_ADMIN_USERNAME=admin
+      - DEFAULT_ADMIN_PASSWORD=password
+      - PORT=5000
+      - NODE_ENV=development
+    ports:
+      - "5002:5000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - meal-planner-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: meal-planner-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      - REACT_APP_API_URL=/api
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - meal-planner-network
+
+volumes:
+  mongo-data:
+
+networks:
+  meal-planner-network:
+    driver: bridge 
