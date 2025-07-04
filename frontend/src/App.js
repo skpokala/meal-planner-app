@@ -7,6 +7,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import FamilyMembers from './pages/FamilyMembers';
+import Meals from './pages/Meals';
 import MealPlanner from './pages/MealPlanner';
 import Settings from './pages/Settings';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -53,6 +54,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <FamilyMembers />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/meals"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Meals />
             </Layout>
           </ProtectedRoute>
         }

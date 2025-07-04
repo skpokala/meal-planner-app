@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChefHat,
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
@@ -27,6 +28,7 @@ const Layout = ({ children }) => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Family Members', href: '/family-members', icon: Users },
+    { name: 'Meals', href: '/meals', icon: ChefHat },
     { name: 'Meal Planner', href: '/meal-planner', icon: Calendar },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];

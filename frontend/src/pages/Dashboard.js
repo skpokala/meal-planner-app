@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Calendar, ChefHat, TrendingUp, Plus, Clock, Star } from 'lucide-react';
+import { Users, Calendar, ChefHat, Plus, Clock, Star, Settings } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
@@ -10,7 +10,6 @@ const Dashboard = () => {
     familyMembers: 0,
     totalMeals: 0,
     plannedMeals: 0,
-    cookedMeals: 0,
   });
   const [recentMeals, setRecentMeals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +28,6 @@ const Dashboard = () => {
           familyMembers: familyResponse.data.count,
           totalMeals: mealStatsResponse.data.stats.overview.totalMeals,
           plannedMeals: mealStatsResponse.data.stats.overview.plannedMeals,
-          cookedMeals: mealStatsResponse.data.stats.overview.cookedMeals,
         });
 
         setRecentMeals(mealsResponse.data.meals.slice(0, 5));
@@ -57,7 +55,7 @@ const Dashboard = () => {
       value: stats.totalMeals,
       icon: ChefHat,
       color: 'bg-success-500',
-      action: () => navigate('/meal-planner'),
+      action: () => navigate('/meals'),
     },
     {
       title: 'Planned Meals',
@@ -66,17 +64,12 @@ const Dashboard = () => {
       color: 'bg-warning-500',
       action: () => navigate('/meal-planner'),
     },
-    {
-      title: 'Cooked Meals',
-      value: stats.cookedMeals,
-      icon: TrendingUp,
-      color: 'bg-error-500',
-      action: () => navigate('/meal-planner'),
-    },
   ];
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    // Parse the date string properly to avoid timezone issues
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -109,7 +102,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         {statCards.map((card, index) => {
           const Icon = card.icon;
           return (
@@ -253,7 +246,7 @@ const Dashboard = () => {
                 onClick={() => navigate('/settings')}
                 className="flex items-center p-4 bg-warning-50 hover:bg-warning-100 rounded-card transition-colors text-left"
               >
-                <TrendingUp className="w-6 h-6 text-warning-600 mr-3" />
+                <Settings className="w-6 h-6 text-warning-600 mr-3" />
                 <div>
                   <h4 className="font-medium text-secondary-900">
                     View Settings

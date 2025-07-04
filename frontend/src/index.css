@@ -25,6 +25,13 @@
 
 /* Custom component styles */
 @layer components {
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
   .btn {
     @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-card border border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
   }
