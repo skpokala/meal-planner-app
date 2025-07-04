@@ -12,15 +12,15 @@ beforeAll(async () => {
 
   let mongoUri;
   
-  // Check if MONGODB_URI is provided (for CI environments)
-  if (process.env.MONGODB_URI) {
+  // Check if we're in CI environment with external MongoDB
+  if (process.env.CI && process.env.MONGODB_URI) {
     mongoUri = process.env.MONGODB_URI;
-    console.log('Using provided MongoDB URI for tests');
+    console.log('Using provided MongoDB URI for CI tests');
   } else {
     // Create in-memory MongoDB instance (for local development)
     mongoServer = await MongoMemoryServer.create();
     mongoUri = mongoServer.getUri();
-    console.log('Using MongoDB Memory Server for tests');
+    console.log('Using MongoDB Memory Server for local tests');
   }
 
   // Connect to the database
