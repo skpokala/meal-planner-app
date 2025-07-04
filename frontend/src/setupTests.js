@@ -19,14 +19,18 @@ const originalWarn = console.warn;
 
 beforeAll(() => {
   console.error = (...args) => {
-    if (args[0]?.includes?.('Warning: ReactDOM.render is deprecated')) {
+    if (args[0]?.includes?.('Warning: ReactDOM.render is deprecated') ||
+        args[0]?.includes?.('Warning: `ReactDOMTestUtils.act` is deprecated') ||
+        args[0]?.includes?.('ReactDOMTestUtils.act')) {
       return;
     }
     originalError.call(console, ...args);
   };
   
   console.warn = (...args) => {
-    if (args[0]?.includes?.('Warning:')) {
+    if (args[0]?.includes?.('Warning:') ||
+        args[0]?.includes?.('ReactDOMTestUtils.act') ||
+        args[0]?.includes?.('deprecated')) {
       return;
     }
     originalWarn.call(console, ...args);
