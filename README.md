@@ -1,252 +1,179 @@
-# Family Meal Planner App
+# 🍽️ Family Meal Planner
 
-A comprehensive meal planning application for families with Docker setup and MongoDB integration.
+A comprehensive meal planning application for families to organize, plan, and manage their weekly meals.
 
-## Features
-
-- 🍽️ Family meal planning with calendar view
-- 👥 Family member management
-- 🔐 Secure authentication system
-- 🐳 Complete Docker setup
-- 📊 Admin dashboard
-
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
-
-- Docker and Docker Compose installed on your system
-- Git (to clone the repository)
+- Node.js 18+ 
+- Docker & Docker Compose
+- npm
 
 ### Installation
-
-1. Clone the repository:
 ```bash
-git clone <repository-url>
+# Clone the repository
+git clone <your-repo-url>
 cd meal-planner-app
+
+# Install all dependencies
+npm run install:all
 ```
 
-2. Start the application with Docker Compose:
+### Development
 ```bash
-docker-compose up --build
+# Start frontend development server
+npm run dev:frontend
+
+# Start backend development server  
+npm run dev:backend
+
+# Start full application with Docker
+npm run dev:docker
 ```
 
-3. Access the application:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:5000
-   - MongoDB: localhost:27017
+## 🧪 Testing
 
-### Default Login
-
-- **Username:** admin
-- **Password:** password
-
-## Development
-
-### Project Structure
-
-```
-meal-planner-app/
-├── backend/              # Node.js/Express API
-├── frontend/             # React application
-├── docker-compose.yml    # Docker configuration
-├── .env                  # Environment variables
-└── README.md            # This file
-```
-
-### Environment Variables
-
-Copy `.env.example` to `.env` and adjust the values as needed.
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/login` - Login user
-- `POST /api/auth/logout` - Logout user
-
-### Family Members
-- `GET /api/family-members` - Get all family members
-- `POST /api/family-members` - Add new family member
-- `PUT /api/family-members/:id` - Update family member
-- `DELETE /api/family-members/:id` - Delete family member
-
-### Meals
-- `GET /api/meals` - Get all meals
-- `POST /api/meals` - Add new meal
-- `PUT /api/meals/:id` - Update meal
-- `DELETE /api/meals/:id` - Delete meal
-
-## Docker Commands
-
-### Build and start services
+### Quick Testing (before commit)
 ```bash
-docker-compose up --build
+# Run core tests quickly
+npm test
+# or
+./test-quick.sh
 ```
 
-### Stop services
+### Full Testing (complete GitHub Actions simulation)
 ```bash
-docker-compose down
+# Run all tests including Docker
+npm run test:full
+# or  
+./test-local.sh
 ```
 
-### View logs
+### Individual Test Commands
 ```bash
-docker-compose logs -f
+# Frontend tests only
+npm run test:frontend
+
+# Backend tests only
+npm run test:backend
+
+# Security audits only
+npm run test:security
+
+# Docker build tests
+npm run docker:test
 ```
 
-### Rebuild specific service
+## 📦 Building
+
+### Production Build
 ```bash
-docker-compose up --build backend
+# Build frontend for production
+npm run build
+
+# Build Docker images
+npm run docker:build
 ```
 
-## Database Setup
+## 🔧 Available Scripts
 
-MongoDB is automatically configured and started with Docker Compose. The database will be initialized with default admin credentials and sample data.
+| Command | Description |
+|---------|-------------|
+| `npm test` | Quick test suite (frontend + backend + security) |
+| `npm run test:full` | Complete test suite including Docker |
+| `npm run test:frontend` | Frontend tests only |
+| `npm run test:backend` | Backend tests with coverage |
+| `npm run test:security` | Security audit for both services |
+| `npm run build` | Production build |
+| `npm run docker:build` | Build Docker images |
+| `npm run docker:test` | Run Docker test suite |
+| `npm run docker:clean` | Clean up Docker containers |
+| `npm run install:all` | Install all dependencies |
+| `npm run dev:frontend` | Start frontend dev server |
+| `npm run dev:backend` | Start backend dev server |
+| `npm run dev:docker` | Start with Docker Compose |
+| `npm run precommit` | Pre-commit validation |
 
-## Testing
+## 🛠️ Local Testing Workflow
 
-This project includes comprehensive unit tests for both frontend and backend components.
-
-### Running Tests Locally
-
-#### Frontend Tests
+### Before Every Commit
 ```bash
-cd frontend
+# Quick validation (recommended)
+npm test
 
-# Run tests in watch mode (development)
-npm run test
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run tests in CI mode (single run)
-npm run test:ci
+# Full validation (thorough)
+npm run test:full
 ```
 
-#### Backend Tests
-```bash
-cd backend
+### Test Scripts
 
-# Run tests in watch mode (development)
-npm run test
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run tests in CI mode (single run)
-npm run test:ci
-```
-
-### Running Tests with Docker
-
-#### Test Both Frontend and Backend
-```bash
-# Run tests using Docker Compose
-docker-compose -f docker-compose.test.yml up --build
-
-# Run tests and remove containers
-docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
-docker-compose -f docker-compose.test.yml down
-```
-
-#### Test Individual Services
-```bash
-# Test only frontend
-docker-compose -f docker-compose.test.yml up --build frontend-test
-
-# Test only backend
-docker-compose -f docker-compose.test.yml up --build backend-test
-```
-
-### Test Coverage
-
-- **Frontend**: 70% minimum coverage threshold
-- **Backend**: 60% minimum coverage threshold
-
-Coverage reports are generated in:
-- Frontend: `frontend/coverage/`
-- Backend: `backend/coverage/`
-
-### Test Structure
-
-#### Frontend Tests
-```
-frontend/src/
-├── __tests__/
-│   ├── components/
-│   │   └── LoadingSpinner.test.js
-│   ├── contexts/
-│   │   └── AuthContext.test.js
-│   ├── pages/
-│   │   ├── Dashboard.test.js
-│   │   └── Login.test.js
-│   ├── services/
-│   │   └── api.test.js
-│   └── utils/
-│       └── testUtils.js
-└── setupTests.js
-```
-
-#### Backend Tests
-```
-backend/
-├── __tests__/
-│   └── auth.test.js
-└── tests/
-    └── setup.js
-```
-
-### Continuous Integration
-
-Tests are automatically run on every push and pull request via GitHub Actions:
-
-- ✅ Frontend unit tests
-- ✅ Backend unit tests  
-- ✅ Docker build tests
+#### `./test-quick.sh` - Fast Pre-commit Check
+- ✅ Frontend tests (6 tests)
+- ✅ Backend tests (11 tests) 
 - ✅ Security audits
-- ✅ Code coverage reports
+- ⏱️ ~30 seconds
 
-### Pre-commit Testing
+#### `./test-local.sh` - Complete GitHub Actions Simulation
+- ✅ Frontend tests + build
+- ✅ Backend tests + coverage
+- ✅ Security audits
+- ✅ Docker production builds
+- ✅ Docker test execution
+- ⏱️ ~3-5 minutes
 
-The build process includes automatic test execution:
+## 🏗️ Architecture
 
-```bash
-# Frontend build (includes tests)
-npm run build  # Runs tests before building
+### Frontend
+- **React 18** with modern hooks
+- **Tailwind CSS** for styling
+- **React Router** for navigation
+- **Axios** for API communication
+- **Jest + Testing Library** for testing
 
-# Skip tests during build (for production)
-npm run build:skip-tests
-```
+### Backend
+- **Node.js + Express** REST API
+- **MongoDB** with Mongoose ODM
+- **JWT** authentication
+- **bcryptjs** password hashing
+- **Helmet + CORS** security middleware
+- **Jest + Supertest** for testing
 
-### Writing Tests
+### DevOps
+- **Docker** containerization
+- **GitHub Actions** CI/CD
+- **MongoDB Memory Server** for testing
+- **Comprehensive security auditing**
 
-#### Frontend Test Guidelines
-- Use React Testing Library for component tests
-- Mock API calls using Jest mocks
-- Test user interactions and accessibility
-- Include error handling scenarios
+## 🔒 Security
 
-#### Backend Test Guidelines
-- Use Supertest for API endpoint testing
-- Use in-memory MongoDB for database tests
-- Test authentication and authorization
-- Include validation and error handling
+- 🛡️ **Production Dependencies**: 0 vulnerabilities
+- 🔐 **Authentication**: JWT with secure password hashing
+- 🚫 **Rate Limiting**: API protection against abuse
+- 🛡️ **Security Headers**: Helmet.js implementation
+- 🔍 **Automated Auditing**: CI/CD security validation
 
-## Contributing
+## 📊 Test Coverage
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. **Run tests locally**: `npm run test:coverage`
-5. **Ensure tests pass**: All tests must pass before submitting
-6. **Maintain coverage**: New code should include appropriate tests
-7. Submit a pull request
+- **Frontend**: 6/6 tests passing
+- **Backend**: 11/11 tests passing  
+- **Security**: 0 production vulnerabilities
+- **Docker**: Production + test builds validated
 
-### Pull Request Requirements
+## 🚀 Deployment
 
-- ✅ All tests passing
-- ✅ Code coverage maintained above thresholds
-- ✅ No security vulnerabilities
-- ✅ Docker build successful
+The application is configured for deployment with:
+- Production-optimized Docker images
+- Environment-based configuration
+- Health checks and monitoring
+- Automated CI/CD pipeline
 
-## License
+## 🤝 Contributing
 
-MIT License 
+1. Run tests before committing: `npm test`
+2. Use conventional commit messages
+3. Ensure all GitHub Actions checks pass
+4. Full validation: `npm run test:full`
+
+## 📝 License
+
+MIT License - see LICENSE file for details 

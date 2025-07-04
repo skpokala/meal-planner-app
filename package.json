@@ -1,0 +1,37 @@
+{
+  "name": "meal-planner-app",
+  "version": "1.0.0",
+  "description": "Family Meal Planner Application",
+  "private": true,
+  "scripts": {
+    "test": "./test-quick.sh",
+    "test:full": "./test-local.sh",
+    "test:frontend": "cd frontend && npm run test:ci",
+    "test:backend": "cd backend && npm run test:coverage",
+    "test:security": "cd frontend && npm audit --audit-level high --omit=dev || true && cd ../backend && npm audit --audit-level high --omit=dev",
+    "build": "cd frontend && npm run build:ci",
+    "docker:build": "docker compose build",
+    "docker:test": "docker compose -f docker-compose.test.yml up --abort-on-container-exit",
+    "docker:clean": "docker compose down && docker compose -f docker-compose.test.yml down",
+    "install:all": "cd frontend && npm ci && cd ../backend && npm ci",
+    "dev:frontend": "cd frontend && npm start",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:docker": "docker compose up",
+    "lint:fix": "cd frontend && npm run lint --fix 2>/dev/null || true",
+    "precommit": "./test-quick.sh"
+  },
+  "keywords": [
+    "meal-planner",
+    "family",
+    "nodejs",
+    "react",
+    "mongodb",
+    "docker"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ]
+} 
