@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Calendar, ChefHat, Clock, Users } from 'lucide-react';
+import { Plus, ChefHat, Clock, Users } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
 
 const MealPlanner = () => {
   const [meals, setMeals] = useState([]);
-  const [familyMembers, setFamilyMembers] = useState([]);
+  // eslint-disable-next-line no-unused-vars
+  const [familyMembers, setFamilyMembers] = useState([]); // Used for future assignment features
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
