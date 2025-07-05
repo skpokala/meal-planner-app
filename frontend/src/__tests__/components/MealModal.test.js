@@ -1,20 +1,19 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import toast from 'react-hot-toast';
-import EditMealModal from '../../components/EditMealModal';
+import MealModal from '../../components/MealModal';
 import api from '../../services/api';
 
 // Mock dependencies
 jest.mock('../../services/api');
 jest.mock('react-hot-toast');
 
-describe('EditMealModal', () => {
+describe('MealModal', () => {
   const mockMeal = {
     _id: '1',
     name: 'Spaghetti Bolognese',
     description: 'Classic Italian pasta',
     mealType: 'dinner',
-    date: '2023-12-01',
     totalTime: 45
   };
 
@@ -24,6 +23,7 @@ describe('EditMealModal', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     api.put.mockResolvedValue({ data: mockMeal });
+    api.post.mockResolvedValue({ data: { ...mockMeal, _id: '2' } });
   });
 
   const renderModal = (props = {}) => {
@@ -32,9 +32,10 @@ describe('EditMealModal', () => {
       isOpen: true,
       onClose: mockOnClose,
       onSave: mockOnSave,
+      mode: 'edit',
       ...props
     };
-    return render(<EditMealModal {...defaultProps} />);
+    return render(<MealModal {...defaultProps} />);
   };
 
   describe('Rendering', () => {
@@ -43,32 +44,49 @@ describe('EditMealModal', () => {
       expect(container).toBeEmptyDOMElement();
     });
 
-    it('renders modal with meal data when isOpen is true', () => {
-      renderModal();
+    it('renders edit modal with meal data when mode is edit', () => {
+      renderModal({ mode: 'edit' });
       
       expect(screen.getByText('Edit Meal')).toBeInTheDocument();
       expect(screen.getByDisplayValue('Spaghetti Bolognese')).toBeInTheDocument();
       expect(screen.getByDisplayValue('Classic Italian pasta')).toBeInTheDocument();
       expect(screen.getByLabelText('Meal Type').value).toBe('dinner');
-      expect(screen.getByDisplayValue('2023-12-01')).toBeInTheDocument();
       expect(screen.getByDisplayValue('45')).toBeInTheDocument();
     });
 
-    it('renders all form fields', () => {
+    it('renders add modal with empty form when mode is add', () => {
+      renderModal({ mode: 'add', meal: null });
+      
+      expect(screen.getByText('Add New Meal')).toBeInTheDocument();
+      expect(screen.getByLabelText('Meal Name *').value).toBe('');
+      expect(screen.getByLabelText('Description').value).toBe('');
+      expect(screen.getByLabelText('Meal Type').value).toBe('dinner');
+      expect(screen.getByLabelText('Total Time (minutes)').value).toBe('');
+    });
+
+    it('renders all form fields without date field', () => {
       renderModal();
       
       expect(screen.getByLabelText('Meal Name *')).toBeInTheDocument();
       expect(screen.getByLabelText('Description')).toBeInTheDocument();
       expect(screen.getByLabelText('Meal Type')).toBeInTheDocument();
-      expect(screen.getByLabelText('Date')).toBeInTheDocument();
       expect(screen.getByLabelText('Total Time (minutes)')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Date')).not.toBeInTheDocument();
     });
 
-    it('renders action buttons', () => {
-      renderModal();
+    it('renders action buttons with correct text for edit mode', () => {
+      renderModal({ mode: 'edit' });
       
       expect(screen.getByText('Cancel')).toBeInTheDocument();
       expect(screen.getByText('Update Meal')).toBeInTheDocument();
+      expect(screen.getByTitle('Close')).toBeInTheDocument();
+    });
+
+    it('renders action buttons with correct text for add mode', () => {
+      renderModal({ mode: 'add' });
+      
+      expect(screen.getByText('Cancel')).toBeInTheDocument();
+      expect(screen.getByText('Create Meal')).toBeInTheDocument();
       expect(screen.getByTitle('Close')).toBeInTheDocument();
     });
 
@@ -103,63 +121,48 @@ describe('EditMealModal', () => {
       fireEvent.change(mealTypeSelect, { target: { value: 'breakfast' } });
       expect(mealTypeSelect.value).toBe('breakfast');
       
-      const dateInput = screen.getByLabelText('Date');
-      fireEvent.change(dateInput, { target: { value: '2023-12-15' } });
-      expect(dateInput.value).toBe('2023-12-15');
-      
       const timeInput = screen.getByLabelText('Total Time (minutes)');
       fireEvent.change(timeInput, { target: { value: '60' } });
       expect(timeInput.value).toBe('60');
     });
 
-    it('populates form with meal data when modal opens', () => {
+    it('populates form with meal data in edit mode', () => {
       const meal = {
         _id: '2',
         name: 'Test Meal',
         description: 'Test Description',
         mealType: 'lunch',
-        date: '2023-12-10',
         totalTime: 30
       };
       
-      renderModal({ meal });
+      renderModal({ meal, mode: 'edit' });
       
       expect(screen.getByDisplayValue('Test Meal')).toBeInTheDocument();
       expect(screen.getByDisplayValue('Test Description')).toBeInTheDocument();
       expect(screen.getByLabelText('Meal Type').value).toBe('lunch');
-      expect(screen.getByDisplayValue('2023-12-10')).toBeInTheDocument();
       expect(screen.getByDisplayValue('30')).toBeInTheDocument();
     });
 
-    it('resets form when meal changes', () => {
-      const { rerender } = renderModal();
+    it('resets form when switching from edit to add mode', () => {
+      const { rerender } = renderModal({ mode: 'edit' });
       
-      // Change the name field
-      const nameInput = screen.getByLabelText('Meal Name *');
-      fireEvent.change(nameInput, { target: { value: 'Changed Name' } });
-      expect(nameInput.value).toBe('Changed Name');
+      // Verify edit mode data is loaded
+      expect(screen.getByDisplayValue('Spaghetti Bolognese')).toBeInTheDocument();
       
-      // Rerender with new meal
-      const newMeal = {
-        _id: '2',
-        name: 'New Meal',
-        description: 'New Description',
-        mealType: 'breakfast',
-        date: '2023-12-10',
-        totalTime: 20
-      };
-      
+      // Switch to add mode
       rerender(
-        <EditMealModal
-          meal={newMeal}
+        <MealModal
+          meal={null}
           isOpen={true}
           onClose={mockOnClose}
           onSave={mockOnSave}
+          mode="add"
         />
       );
       
-      expect(screen.getByDisplayValue('New Meal')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('New Description')).toBeInTheDocument();
+      expect(screen.getByText('Add New Meal')).toBeInTheDocument();
+      expect(screen.getByLabelText('Meal Name *').value).toBe('');
+      expect(screen.getByLabelText('Description').value).toBe('');
     });
   });
 
@@ -182,7 +185,7 @@ describe('EditMealModal', () => {
       expect(mockOnClose).toHaveBeenCalledTimes(1);
     });
 
-    it('does not close modal when clicking cancel during loading', async () => {
+    it('does not close modal when buttons are clicked during loading', async () => {
       // Create a promise that we can control
       let resolvePromise;
       const promise = new Promise(resolve => {
@@ -212,9 +215,9 @@ describe('EditMealModal', () => {
     });
   });
 
-  describe('Form Submission', () => {
-    it('submits form with updated data', async () => {
-      renderModal();
+  describe('Form Submission - Edit Mode', () => {
+    it('submits form with updated data in edit mode', async () => {
+      renderModal({ mode: 'edit' });
       
       // Update form fields
       fireEvent.change(screen.getByLabelText('Meal Name *'), { 
@@ -225,9 +228,6 @@ describe('EditMealModal', () => {
       });
       fireEvent.change(screen.getByLabelText('Meal Type'), { 
         target: { value: 'breakfast' } 
-      });
-      fireEvent.change(screen.getByLabelText('Date'), { 
-        target: { value: '2023-12-15' } 
       });
       fireEvent.change(screen.getByLabelText('Total Time (minutes)'), { 
         target: { value: '60' } 
@@ -241,17 +241,16 @@ describe('EditMealModal', () => {
           name: 'Updated Meal',
           description: 'Updated Description',
           mealType: 'breakfast',
-          date: '2023-12-15',
           totalTime: '60'
         });
       });
     });
 
-    it('calls onSave and onClose after successful submission', async () => {
+    it('calls onSave and onClose after successful edit', async () => {
       const updatedMeal = { ...mockMeal, name: 'Updated Meal' };
       api.put.mockResolvedValue({ data: updatedMeal });
       
-      renderModal();
+      renderModal({ mode: 'edit' });
       
       const submitButton = screen.getByText('Update Meal');
       fireEvent.click(submitButton);
@@ -263,7 +262,7 @@ describe('EditMealModal', () => {
       });
     });
 
-    it('shows loading state during submission', async () => {
+    it('shows loading state during edit submission', async () => {
       // Delay the API response
       let resolvePromise;
       const promise = new Promise(resolve => {
@@ -271,7 +270,7 @@ describe('EditMealModal', () => {
       });
       api.put.mockReturnValue(promise);
       
-      renderModal();
+      renderModal({ mode: 'edit' });
       
       const submitButton = screen.getByText('Update Meal');
       fireEvent.click(submitButton);
@@ -290,9 +289,93 @@ describe('EditMealModal', () => {
     });
   });
 
+  describe('Form Submission - Add Mode', () => {
+    it('submits form with new meal data in add mode', async () => {
+      renderModal({ mode: 'add', meal: null });
+      
+      // Fill form fields
+      fireEvent.change(screen.getByLabelText('Meal Name *'), { 
+        target: { value: 'New Meal' } 
+      });
+      fireEvent.change(screen.getByLabelText('Description'), { 
+        target: { value: 'New Description' } 
+      });
+      fireEvent.change(screen.getByLabelText('Meal Type'), { 
+        target: { value: 'lunch' } 
+      });
+      fireEvent.change(screen.getByLabelText('Total Time (minutes)'), { 
+        target: { value: '45' } 
+      });
+      
+      const submitButton = screen.getByText('Create Meal');
+      fireEvent.click(submitButton);
+      
+      await waitFor(() => {
+        expect(api.post).toHaveBeenCalledWith('/meals', {
+          name: 'New Meal',
+          description: 'New Description',
+          mealType: 'lunch',
+          totalTime: '45'
+        });
+      });
+    });
+
+    it('calls onSave and onClose after successful creation', async () => {
+      const newMeal = { _id: '2', name: 'New Meal', description: 'New Description', mealType: 'lunch', totalTime: 45 };
+      api.post.mockResolvedValue({ data: newMeal });
+      
+      renderModal({ mode: 'add', meal: null });
+      
+      // Fill required field
+      fireEvent.change(screen.getByLabelText('Meal Name *'), { 
+        target: { value: 'New Meal' } 
+      });
+      
+      const submitButton = screen.getByText('Create Meal');
+      fireEvent.click(submitButton);
+      
+      await waitFor(() => {
+        expect(mockOnSave).toHaveBeenCalledWith(newMeal);
+        expect(mockOnClose).toHaveBeenCalledTimes(1);
+        expect(toast.success).toHaveBeenCalledWith('Meal created successfully');
+      });
+    });
+
+    it('shows loading state during add submission', async () => {
+      // Delay the API response
+      let resolvePromise;
+      const promise = new Promise(resolve => {
+        resolvePromise = resolve;
+      });
+      api.post.mockReturnValue(promise);
+      
+      renderModal({ mode: 'add', meal: null });
+      
+      // Fill required field
+      fireEvent.change(screen.getByLabelText('Meal Name *'), { 
+        target: { value: 'New Meal' } 
+      });
+      
+      const submitButton = screen.getByText('Create Meal');
+      fireEvent.click(submitButton);
+      
+      // Check loading state
+      expect(screen.getByText('Creating...')).toBeInTheDocument();
+      expect(submitButton).toBeDisabled();
+      expect(screen.getByText('Cancel')).toBeDisabled();
+      
+      // Resolve the promise
+      resolvePromise({ data: { _id: '2', name: 'New Meal' } });
+      
+      await waitFor(() => {
+        expect(screen.queryByText('Creating...')).not.toBeInTheDocument();
+      });
+    });
+  });
+
   describe('Validation', () => {
-    it('shows error when meal name is empty', async () => {
-      renderModal();
+    it('shows error when meal name is empty in edit mode', async () => {
+      renderModal({ mode: 'edit' });
       
       // Clear the name field
       fireEvent.change(screen.getByLabelText('Meal Name *'), { 
@@ -308,29 +391,41 @@ describe('EditMealModal', () => {
       });
     });
 
+    it('shows error when meal name is empty in add mode', async () => {
+      renderModal({ mode: 'add', meal: null });
+      
+      const submitButton = screen.getByText('Create Meal');
+      fireEvent.click(submitButton);
+      
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Meal name is required');
+        expect(api.post).not.toHaveBeenCalled();
+      });
+    });
+
     it('shows error when meal name is only whitespace', async () => {
-      renderModal();
+      renderModal({ mode: 'add', meal: null });
       
       // Set name to whitespace
       fireEvent.change(screen.getByLabelText('Meal Name *'), { 
         target: { value: '   ' } 
       });
       
-      const submitButton = screen.getByText('Update Meal');
+      const submitButton = screen.getByText('Create Meal');
       fireEvent.click(submitButton);
       
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith('Meal name is required');
-        expect(api.put).not.toHaveBeenCalled();
+        expect(api.post).not.toHaveBeenCalled();
       });
     });
   });
 
   describe('Error Handling', () => {
-    it('handles API error during submission', async () => {
+    it('handles API error during edit submission', async () => {
       api.put.mockRejectedValue(new Error('API Error'));
       
-      renderModal();
+      renderModal({ mode: 'edit' });
       
       const submitButton = screen.getByText('Update Meal');
       fireEvent.click(submitButton);
@@ -342,10 +437,30 @@ describe('EditMealModal', () => {
       });
     });
 
-    it('resets loading state after error', async () => {
+    it('handles API error during add submission', async () => {
+      api.post.mockRejectedValue(new Error('API Error'));
+      
+      renderModal({ mode: 'add', meal: null });
+      
+      // Fill required field
+      fireEvent.change(screen.getByLabelText('Meal Name *'), { 
+        target: { value: 'New Meal' } 
+      });
+      
+      const submitButton = screen.getByText('Create Meal');
+      fireEvent.click(submitButton);
+      
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Failed to create meal');
+        expect(mockOnSave).not.toHaveBeenCalled();
+        expect(mockOnClose).not.toHaveBeenCalled();
+      });
+    });
+
+    it('resets loading state after edit error', async () => {
       api.put.mockRejectedValue(new Error('API Error'));
       
-      renderModal();
+      renderModal({ mode: 'edit' });
       
       const submitButton = screen.getByText('Update Meal');
       fireEvent.click(submitButton);
@@ -359,31 +474,60 @@ describe('EditMealModal', () => {
       expect(screen.queryByText('Updating...')).not.toBeInTheDocument();
       expect(submitButton).not.toBeDisabled();
     });
+
+    it('resets loading state after add error', async () => {
+      api.post.mockRejectedValue(new Error('API Error'));
+      
+      renderModal({ mode: 'add', meal: null });
+      
+      // Fill required field
+      fireEvent.change(screen.getByLabelText('Meal Name *'), { 
+        target: { value: 'New Meal' } 
+      });
+      
+      const submitButton = screen.getByText('Create Meal');
+      fireEvent.click(submitButton);
+      
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Failed to create meal');
+      });
+      
+      // Check that loading state is reset
+      expect(screen.getByText('Create Meal')).toBeInTheDocument();
+      expect(screen.queryByText('Creating...')).not.toBeInTheDocument();
+      expect(submitButton).not.toBeDisabled();
+    });
   });
 
   describe('Edge Cases', () => {
-    it('handles meal with missing optional fields', () => {
+    it('handles meal with missing optional fields in edit mode', () => {
       const mealWithMissingFields = {
         _id: '1',
         name: 'Simple Meal',
         mealType: 'dinner'
-        // description, date, totalTime are missing
+        // description, totalTime are missing
       };
       
-      renderModal({ meal: mealWithMissingFields });
+      renderModal({ meal: mealWithMissingFields, mode: 'edit' });
       
       expect(screen.getByDisplayValue('Simple Meal')).toBeInTheDocument();
       expect(screen.getByLabelText('Meal Type').value).toBe('dinner');
       expect(screen.getByLabelText('Description').value).toBe('');
-      expect(screen.getByLabelText('Date').value).toBe('');
       expect(screen.getByLabelText('Total Time (minutes)').value).toBe('');
     });
 
-    it('handles null meal gracefully', () => {
-      renderModal({ meal: null });
+    it('handles null meal gracefully in add mode', () => {
+      renderModal({ meal: null, mode: 'add' });
+      
+      expect(screen.getByText('Add New Meal')).toBeInTheDocument();
+      expect(screen.getByLabelText('Meal Name *').value).toBe('');
+    });
+
+    it('handles undefined mode gracefully (defaults to edit)', () => {
+      renderModal({ mode: undefined });
       
       expect(screen.getByText('Edit Meal')).toBeInTheDocument();
-      expect(screen.getByLabelText('Meal Name *').value).toBe('');
+      expect(screen.getByText('Update Meal')).toBeInTheDocument();
     });
   });
 }); 

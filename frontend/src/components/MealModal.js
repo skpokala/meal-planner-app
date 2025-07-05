@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Clock, Calendar as CalendarIcon } from 'lucide-react';
+import { X, Save, Clock, Plus } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
-const EditMealModal = ({ meal, isOpen, onClose, onSave }) => {
+const MealModal = ({ meal, isOpen, onClose, onSave, mode = 'edit' }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     mealType: 'dinner',
-    date: '',
     totalTime: '',
   });
   const [loading, setLoading] = useState(false);
@@ -20,17 +19,29 @@ const EditMealModal = ({ meal, isOpen, onClose, onSave }) => {
     { value: 'snack', label: 'Snack' },
   ];
 
+  const isEditMode = mode === 'edit';
+  const isAddMode = mode === 'add';
+
   useEffect(() => {
-    if (meal && isOpen) {
-      setFormData({
-        name: meal.name || '',
-        description: meal.description || '',
-        mealType: meal.mealType || 'dinner',
-        date: meal.date || '',
-        totalTime: meal.totalTime || '',
-      });
+    if (isOpen) {
+      if (isEditMode && meal) {
+        setFormData({
+          name: meal.name || '',
+          description: meal.description || '',
+          mealType: meal.mealType || 'dinner',
+          totalTime: meal.totalTime || '',
+        });
+      } else if (isAddMode) {
+        // Reset form for add mode
+        setFormData({
+          name: '',
+          description: '',
+          mealType: 'dinner',
+          totalTime: '',
+        });
+      }
     }
-  }, [meal, isOpen]);
+  }, [meal, isOpen, mode, isEditMode, isAddMode]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -49,13 +60,19 @@ const EditMealModal = ({ meal, isOpen, onClose, onSave }) => {
 
     setLoading(true);
     try {
-      const updatedMeal = await api.put(`/meals/${meal._id}`, formData);
-      toast.success('Meal updated successfully');
-      onSave(updatedMeal.data);
+      let response;
+      if (isEditMode) {
+        response = await api.put(`/meals/${meal._id}`, formData);
+        toast.success('Meal updated successfully');
+      } else {
+        response = await api.post('/meals', formData);
+        toast.success('Meal created successfully');
+      }
+      onSave(response.data);
       onClose();
     } catch (error) {
-      console.error('Error updating meal:', error);
-      toast.error('Failed to update meal');
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} meal:`, error);
+      toast.error(`Failed to ${isEditMode ? 'update' : 'create'} meal`);
     } finally {
       setLoading(false);
     }
@@ -74,7 +91,9 @@ const EditMealModal = ({ meal, isOpen, onClose, onSave }) => {
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-secondary-200">
-          <h3 className="text-lg font-semibold text-secondary-900">Edit Meal</h3>
+          <h3 className="text-lg font-semibold text-secondary-900">
+            {isEditMode ? 'Edit Meal' : 'Add New Meal'}
+          </h3>
           <button
             onClick={handleClose}
             disabled={loading}
@@ -143,25 +162,6 @@ const EditMealModal = ({ meal, isOpen, onClose, onSave }) => {
             </select>
           </div>
 
-          {/* Date */}
-          <div>
-            <label htmlFor="date" className="block text-sm font-medium text-secondary-700 mb-1">
-              Date
-            </label>
-            <div className="relative">
-              <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 w-4 h-4" />
-              <input
-                type="date"
-                id="date"
-                name="date"
-                value={formData.date}
-                onChange={handleInputChange}
-                className="input w-full pl-10"
-                disabled={loading}
-              />
-            </div>
-          </div>
-
           {/* Total Time */}
           <div>
             <label htmlFor="totalTime" className="block text-sm font-medium text-secondary-700 mb-1">
@@ -201,12 +201,16 @@ const EditMealModal = ({ meal, isOpen, onClose, onSave }) => {
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Updating...
+                  {isEditMode ? 'Updating...' : 'Creating...'}
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Update Meal
+                  {isEditMode ? (
+                    <Save className="w-4 h-4 mr-2" />
+                  ) : (
+                    <Plus className="w-4 h-4 mr-2" />
+                  )}
+                  {isEditMode ? 'Update Meal' : 'Create Meal'}
                 </>
               )}
             </button>
@@ -217,4 +221,4 @@ const EditMealModal = ({ meal, isOpen, onClose, onSave }) => {
   );
 };
 
-export default EditMealModal; 
+export default MealModal; 

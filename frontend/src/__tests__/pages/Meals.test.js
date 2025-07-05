@@ -23,7 +23,6 @@ const mockMeals = [
     name: 'Spaghetti Bolognese',
     description: 'Classic Italian pasta',
     mealType: 'dinner',
-    date: '2023-12-03',
     totalTime: 45,
     assignedTo: [{ _id: '1', firstName: 'John', lastName: 'Doe' }],
     rating: 4.5,
@@ -35,7 +34,6 @@ const mockMeals = [
     name: 'Pancakes',
     description: 'Fluffy breakfast pancakes',
     mealType: 'breakfast',
-    date: '2023-12-02',
     totalTime: 20,
     assignedTo: [],
     rating: 4.0,
@@ -47,7 +45,6 @@ const mockMeals = [
     name: 'Caesar Salad',
     description: 'Fresh lunch salad',
     mealType: 'lunch',
-    date: '2023-12-01',
     totalTime: 15,
     assignedTo: [],
     rating: null,
@@ -230,7 +227,7 @@ describe('Meals Component', () => {
         expect(screen.getByText('3 Meals')).toBeInTheDocument();
       });
       
-      const sortBySelect = screen.getByDisplayValue('Sort by Date');
+      const sortBySelect = screen.getByDisplayValue('Sort by Name');
       fireEvent.change(sortBySelect, { target: { value: 'name' } });
       
       const sortOrderSelect = screen.getByDisplayValue('Descending');
@@ -251,7 +248,7 @@ describe('Meals Component', () => {
         expect(screen.getByText('3 Meals')).toBeInTheDocument();
       });
       
-      const sortBySelect = screen.getByDisplayValue('Sort by Date');
+      const sortBySelect = screen.getByDisplayValue('Sort by Name');
       fireEvent.change(sortBySelect, { target: { value: 'rating' } });
       
       // Should sort by rating with highest first (desc)
@@ -265,7 +262,7 @@ describe('Meals Component', () => {
   });
 
   describe('Actions', () => {
-    it('navigates to meal planner when Add New Meal is clicked', async () => {
+    it('opens add modal when Add New Meal is clicked', async () => {
       renderMeals();
       
       await waitFor(() => {
@@ -275,7 +272,9 @@ describe('Meals Component', () => {
       const addButton = screen.getByText('Add New Meal');
       fireEvent.click(addButton);
       
-      expect(mockNavigate).toHaveBeenCalledWith('/meal-planner');
+      await waitFor(() => {
+        expect(screen.getByText('Create Meal')).toBeInTheDocument();
+      });
     });
 
     it('opens edit modal when edit button is clicked', async () => {
@@ -346,7 +345,6 @@ describe('Meals Component', () => {
           name: 'Updated Spaghetti', 
           description: 'Updated description',
           mealType: 'dinner',
-          date: '2023-12-01',
           totalTime: 50
         } 
       });
@@ -375,7 +373,6 @@ describe('Meals Component', () => {
           name: 'Updated Spaghetti',
           description: 'Classic Italian pasta',
           mealType: 'dinner',
-          date: '2023-12-03',
           totalTime: 45
         });
         expect(toast.success).toHaveBeenCalledWith('Meal updated successfully');
@@ -430,6 +427,120 @@ describe('Meals Component', () => {
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith('Meal name is required');
         expect(api.put).not.toHaveBeenCalled();
+      });
+    });
+
+    it('creates new meal when add form is submitted', async () => {
+      const newMeal = {
+        _id: '4',
+        name: 'New Meal',
+        description: 'New meal description',
+        mealType: 'lunch',
+        totalTime: 30
+      };
+      
+      api.post.mockResolvedValue({ data: newMeal });
+      
+      renderMeals();
+      
+      await waitFor(() => {
+        expect(screen.getByText('Add New Meal')).toBeInTheDocument();
+      });
+      
+      const addButton = screen.getByText('Add New Meal');
+      fireEvent.click(addButton);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Create Meal')).toBeInTheDocument();
+      });
+      
+      const nameInput = screen.getByLabelText('Meal Name *');
+      fireEvent.change(nameInput, { target: { value: 'New Meal' } });
+      
+      const submitButton = screen.getByText('Create Meal');
+      fireEvent.click(submitButton);
+      
+      await waitFor(() => {
+        expect(api.post).toHaveBeenCalledWith('/meals', {
+          name: 'New Meal',
+          description: '',
+          mealType: 'dinner',
+          totalTime: ''
+        });
+        expect(toast.success).toHaveBeenCalledWith('Meal created successfully');
+        expect(screen.queryByText('Create Meal')).not.toBeInTheDocument();
+      });
+    });
+
+    it('closes add modal when cancel button is clicked', async () => {
+      renderMeals();
+      
+      await waitFor(() => {
+        expect(screen.getByText('Add New Meal')).toBeInTheDocument();
+      });
+      
+      const addButton = screen.getByText('Add New Meal');
+      fireEvent.click(addButton);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Create Meal')).toBeInTheDocument();
+      });
+      
+      const cancelButton = screen.getByText('Cancel');
+      fireEvent.click(cancelButton);
+      
+      await waitFor(() => {
+        expect(screen.queryByText('Create Meal')).not.toBeInTheDocument();
+      });
+    });
+
+    it('handles API error when creating meal', async () => {
+      api.post.mockRejectedValue(new Error('Create failed'));
+      
+      renderMeals();
+      
+      await waitFor(() => {
+        expect(screen.getByText('Add New Meal')).toBeInTheDocument();
+      });
+      
+      const addButton = screen.getByText('Add New Meal');
+      fireEvent.click(addButton);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Create Meal')).toBeInTheDocument();
+      });
+      
+      const nameInput = screen.getByLabelText('Meal Name *');
+      fireEvent.change(nameInput, { target: { value: 'New Meal' } });
+      
+      const submitButton = screen.getByText('Create Meal');
+      fireEvent.click(submitButton);
+      
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Failed to create meal');
+      });
+    });
+
+    it('shows validation error when meal name is empty in add mode', async () => {
+      renderMeals();
+      
+      await waitFor(() => {
+        expect(screen.getByText('Add New Meal')).toBeInTheDocument();
+      });
+      
+      const addButton = screen.getByText('Add New Meal');
+      fireEvent.click(addButton);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Create Meal')).toBeInTheDocument();
+      });
+      
+      const submitButton = screen.getByText('Create Meal');
+      fireEvent.click(submitButton);
+      
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Meal name is required');
+        expect(api.post).not.toHaveBeenCalled();
       });
     });
 
@@ -490,7 +601,7 @@ describe('Meals Component', () => {
       });
     });
 
-    it('navigates to meal planner from empty state', async () => {
+    it('opens add modal from empty state', async () => {
       api.get.mockResolvedValue({ data: { meals: [] } });
       
       renderMeals();
@@ -502,7 +613,9 @@ describe('Meals Component', () => {
       const planButton = screen.getByText('Plan Your First Meal');
       fireEvent.click(planButton);
       
-      expect(mockNavigate).toHaveBeenCalledWith('/meal-planner');
+      await waitFor(() => {
+        expect(screen.getByText('Create Meal')).toBeInTheDocument();
+      });
     });
   });
 

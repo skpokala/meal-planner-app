@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ChefHat, Clock, Users, Search, Filter, Calendar as CalendarIcon, Star, Edit, Trash2 } from 'lucide-react';
+import { Plus, ChefHat, Clock, Users, Search, Filter, Star, Edit, Trash2 } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
-import EditMealModal from '../components/EditMealModal';
+import MealModal from '../components/MealModal';
 import toast from 'react-hot-toast';
 
 const Meals = () => {
@@ -11,10 +11,11 @@ const Meals = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMealType, setSelectedMealType] = useState('');
-  const [sortBy, setSortBy] = useState('date');
+  const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('desc');
-  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [mealModalOpen, setMealModalOpen] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState(null);
+  const [modalMode, setModalMode] = useState('edit');
   const navigate = useNavigate();
 
   const mealTypes = [
@@ -26,10 +27,10 @@ const Meals = () => {
   ];
 
   const sortOptions = [
-    { value: 'date', label: 'Date' },
     { value: 'name', label: 'Name' },
     { value: 'mealType', label: 'Meal Type' },
     { value: 'rating', label: 'Rating' },
+    { value: 'totalTime', label: 'Total Time' },
   ];
 
   useEffect(() => {
@@ -61,23 +62,36 @@ const Meals = () => {
     }
   };
 
+  const handleAddMeal = () => {
+    setSelectedMeal(null);
+    setModalMode('add');
+    setMealModalOpen(true);
+  };
+
   const handleEditMeal = (meal) => {
     setSelectedMeal(meal);
-    setEditModalOpen(true);
+    setModalMode('edit');
+    setMealModalOpen(true);
   };
 
-  const handleCloseEditModal = () => {
-    setEditModalOpen(false);
+  const handleCloseMealModal = () => {
+    setMealModalOpen(false);
     setSelectedMeal(null);
+    setModalMode('edit');
   };
 
-  const handleSaveMeal = (updatedMeal) => {
-    // Update the meal in the meals array
-    setMeals(prevMeals => 
-      prevMeals.map(meal => 
-        meal._id === updatedMeal._id ? updatedMeal : meal
-      )
-    );
+  const handleSaveMeal = (mealData) => {
+    if (modalMode === 'add') {
+      // Add new meal to the beginning of the array
+      setMeals(prevMeals => [mealData, ...prevMeals]);
+    } else {
+      // Update existing meal in the array
+      setMeals(prevMeals => 
+        prevMeals.map(meal => 
+          meal._id === mealData._id ? mealData : meal
+        )
+      );
+    }
   };
 
   const getMealTypeColor = (mealType) => {
@@ -90,14 +104,7 @@ const Meals = () => {
     return colors[mealType] || 'bg-gray-100 text-gray-800';
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
+
 
   const filteredAndSortedMeals = meals
     .filter(meal => {
@@ -110,10 +117,6 @@ const Meals = () => {
       let aValue, bValue;
       
       switch (sortBy) {
-        case 'date':
-          aValue = new Date(a.date);
-          bValue = new Date(b.date);
-          break;
         case 'name':
           aValue = a.name.toLowerCase();
           bValue = b.name.toLowerCase();
@@ -126,9 +129,13 @@ const Meals = () => {
           aValue = a.rating || 0;
           bValue = b.rating || 0;
           break;
+        case 'totalTime':
+          aValue = a.totalTime || 0;
+          bValue = b.totalTime || 0;
+          break;
         default:
-          aValue = a.date;
-          bValue = b.date;
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
       }
 
       if (sortOrder === 'asc') {
@@ -151,7 +158,7 @@ const Meals = () => {
           <p className="text-secondary-600">Browse and manage all your saved meals</p>
         </div>
         <button
-          onClick={() => navigate('/meal-planner')}
+          onClick={handleAddMeal}
           className="btn-primary"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -241,7 +248,7 @@ const Meals = () => {
                   : 'Try adjusting your search or filters'}
               </p>
               <button
-                onClick={() => navigate('/meal-planner')}
+                onClick={handleAddMeal}
                 className="btn-primary"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -268,11 +275,6 @@ const Meals = () => {
                   )}
                   
                   <div className="space-y-2 text-sm mb-4">
-                    <div className="flex items-center text-secondary-600">
-                      <CalendarIcon className="w-4 h-4 mr-2" />
-                      {formatDate(meal.date)}
-                    </div>
-                    
                     {meal.totalTime > 0 && (
                       <div className="flex items-center text-secondary-600">
                         <Clock className="w-4 h-4 mr-2" />
@@ -331,12 +333,13 @@ const Meals = () => {
         </div>
       </div>
 
-      {/* Edit Meal Modal */}
-      <EditMealModal
+      {/* Meal Modal */}
+      <MealModal
         meal={selectedMeal}
-        isOpen={editModalOpen}
-        onClose={handleCloseEditModal}
+        isOpen={mealModalOpen}
+        onClose={handleCloseMealModal}
         onSave={handleSaveMeal}
+        mode={modalMode}
       />
     </div>
   );
