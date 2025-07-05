@@ -24,7 +24,13 @@ beforeAll(() => {
         args[0]?.includes?.('ReactDOMTestUtils.act') ||
         args[0]?.includes?.('Warning: An update to') ||
         args[0]?.includes?.('inside a test was not wrapped in act') ||
-        args[0]?.includes?.('When testing, code that causes React state updates should be wrapped into act')) {
+        args[0]?.includes?.('When testing, code that causes React state updates should be wrapped into act') ||
+        args[0]?.includes?.('Error updating meal:') ||
+        args[0]?.includes?.('Error creating meal:') ||
+        args[0]?.includes?.('Error fetching dashboard data:') ||
+        args[0]?.includes?.('Error fetching meals:') ||
+        args[0]?.includes?.('Error deleting meal:') ||
+        args[0]?.includes?.('Error fetching data:')) {
       return;
     }
     originalError.call(console, ...args);
