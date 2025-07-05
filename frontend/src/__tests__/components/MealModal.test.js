@@ -61,7 +61,7 @@ describe('MealModal', () => {
       expect(screen.getByLabelText('Meal Name *').value).toBe('');
       expect(screen.getByLabelText('Description').value).toBe('');
       expect(screen.getByLabelText('Meal Type').value).toBe('dinner');
-      expect(screen.getByLabelText('Total Time (minutes)').value).toBe('');
+      expect(screen.getByLabelText('Prep Time (minutes)').value).toBe('');
     });
 
     it('renders all form fields without date field', () => {
@@ -70,7 +70,7 @@ describe('MealModal', () => {
       expect(screen.getByLabelText('Meal Name *')).toBeInTheDocument();
       expect(screen.getByLabelText('Description')).toBeInTheDocument();
       expect(screen.getByLabelText('Meal Type')).toBeInTheDocument();
-      expect(screen.getByLabelText('Total Time (minutes)')).toBeInTheDocument();
+      expect(screen.getByLabelText('Prep Time (minutes)')).toBeInTheDocument();
       expect(screen.queryByLabelText('Date')).not.toBeInTheDocument();
     });
 
@@ -121,7 +121,7 @@ describe('MealModal', () => {
       fireEvent.change(mealTypeSelect, { target: { value: 'breakfast' } });
       expect(mealTypeSelect.value).toBe('breakfast');
       
-      const timeInput = screen.getByLabelText('Total Time (minutes)');
+      const timeInput = screen.getByLabelText('Prep Time (minutes)');
       fireEvent.change(timeInput, { target: { value: '60' } });
       expect(timeInput.value).toBe('60');
     });
@@ -229,7 +229,7 @@ describe('MealModal', () => {
       fireEvent.change(screen.getByLabelText('Meal Type'), { 
         target: { value: 'breakfast' } 
       });
-      fireEvent.change(screen.getByLabelText('Total Time (minutes)'), { 
+      fireEvent.change(screen.getByLabelText('Prep Time (minutes)'), { 
         target: { value: '60' } 
       });
       
@@ -241,7 +241,9 @@ describe('MealModal', () => {
           name: 'Updated Meal',
           description: 'Updated Description',
           mealType: 'breakfast',
-          prepTime: '60'
+          recipe: {
+            prepTime: 60
+          }
         });
       });
     });
@@ -303,7 +305,7 @@ describe('MealModal', () => {
       fireEvent.change(screen.getByLabelText('Meal Type'), { 
         target: { value: 'lunch' } 
       });
-      fireEvent.change(screen.getByLabelText('Total Time (minutes)'), { 
+      fireEvent.change(screen.getByLabelText('Prep Time (minutes)'), { 
         target: { value: '45' } 
       });
       
@@ -516,7 +518,7 @@ describe('MealModal', () => {
       expect(screen.getByDisplayValue('Simple Meal')).toBeInTheDocument();
       expect(screen.getByLabelText('Meal Type').value).toBe('dinner');
       expect(screen.getByLabelText('Description').value).toBe('');
-      expect(screen.getByLabelText('Total Time (minutes)').value).toBe('');
+      expect(screen.getByLabelText('Prep Time (minutes)').value).toBe('');
     });
 
     it('handles null meal gracefully in add mode', () => {

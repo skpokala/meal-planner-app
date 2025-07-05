@@ -21,7 +21,10 @@ beforeAll(() => {
   console.error = (...args) => {
     if (args[0]?.includes?.('Warning: ReactDOM.render is deprecated') ||
         args[0]?.includes?.('Warning: `ReactDOMTestUtils.act` is deprecated') ||
-        args[0]?.includes?.('ReactDOMTestUtils.act')) {
+        args[0]?.includes?.('ReactDOMTestUtils.act') ||
+        args[0]?.includes?.('Warning: An update to') ||
+        args[0]?.includes?.('inside a test was not wrapped in act') ||
+        args[0]?.includes?.('When testing, code that causes React state updates should be wrapped into act')) {
       return;
     }
     originalError.call(console, ...args);
@@ -30,7 +33,8 @@ beforeAll(() => {
   console.warn = (...args) => {
     if (args[0]?.includes?.('Warning:') ||
         args[0]?.includes?.('ReactDOMTestUtils.act') ||
-        args[0]?.includes?.('deprecated')) {
+        args[0]?.includes?.('deprecated') ||
+        args[0]?.includes?.('inside a test was not wrapped in act')) {
       return;
     }
     originalWarn.call(console, ...args);
