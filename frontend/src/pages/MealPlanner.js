@@ -489,7 +489,7 @@ const MealPlanner = () => {
                     <select
                       onChange={(e) => handleMealSelect(date, e.target.value)}
                       value=""
-                      className={`w-full border border-secondary-300 rounded px-2 py-1 hover:border-primary-300 focus:border-primary-500 focus:outline-none ${
+                      className={`w-full border-0 border-t border-secondary-200 bg-transparent px-2 py-1 hover:bg-secondary-50 focus:bg-white focus:border-primary-300 focus:outline-none appearance-none cursor-pointer ${
                         viewMode === VIEW_MODES.DAILY ? 'text-sm' : 'text-xs'
                       }`}
                     >
