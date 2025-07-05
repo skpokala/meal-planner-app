@@ -207,10 +207,10 @@ const Dashboard = () => {
                           </span>
                         </div>
                       )}
-                      {meal.totalTime > 0 && (
+                      {meal.recipe?.prepTime > 0 && (
                         <div className="flex items-center text-sm text-secondary-600">
                           <Clock className="w-4 h-4 mr-1" />
-                          {meal.totalTime}m
+                          {meal.recipe.prepTime}m prep
                         </div>
                       )}
                     </div>
@@ -285,6 +285,7 @@ const Dashboard = () => {
           isOpen={mealModalOpen}
           onClose={() => setMealModalOpen(false)}
           onMealCreated={handleMealCreated}
+          mode="add"
         />
       )}
     </div>

@@ -23,7 +23,7 @@ const mockMeals = [
     name: 'Spaghetti Bolognese',
     description: 'Classic Italian pasta',
     mealType: 'dinner',
-    totalTime: 45,
+    recipe: { prepTime: 45 },
     assignedTo: [{ _id: '1', firstName: 'John', lastName: 'Doe' }],
     rating: 4.5,
     isPlanned: true,
@@ -34,7 +34,7 @@ const mockMeals = [
     name: 'Pancakes',
     description: 'Fluffy breakfast pancakes',
     mealType: 'breakfast',
-    totalTime: 20,
+    recipe: { prepTime: 20 },
     assignedTo: [],
     rating: 4.0,
     isPlanned: false,
@@ -45,7 +45,7 @@ const mockMeals = [
     name: 'Caesar Salad',
     description: 'Fresh lunch salad',
     mealType: 'lunch',
-    totalTime: 15,
+    recipe: { prepTime: 15 },
     assignedTo: [],
     rating: null,
     isPlanned: true,
@@ -345,7 +345,7 @@ describe('Meals Component', () => {
           name: 'Updated Spaghetti', 
           description: 'Updated description',
           mealType: 'dinner',
-          totalTime: 50
+          recipe: { prepTime: 50 }
         } 
       });
       
@@ -373,7 +373,9 @@ describe('Meals Component', () => {
           name: 'Updated Spaghetti',
           description: 'Classic Italian pasta',
           mealType: 'dinner',
-          totalTime: 45
+          recipe: {
+            prepTime: 45
+          }
         });
         expect(toast.success).toHaveBeenCalledWith('Meal updated successfully');
         expect(screen.queryByText('Edit Meal')).not.toBeInTheDocument();
@@ -436,7 +438,7 @@ describe('Meals Component', () => {
         name: 'New Meal',
         description: 'New meal description',
         mealType: 'lunch',
-        totalTime: 30
+        recipe: { prepTime: 30 }
       };
       
       api.post.mockResolvedValue({ data: newMeal });
@@ -465,7 +467,10 @@ describe('Meals Component', () => {
           name: 'New Meal',
           description: '',
           mealType: 'dinner',
-          totalTime: ''
+          recipe: {
+            prepTime: 0
+          },
+          date: new Date().toISOString().split('T')[0] // Today's date when no selectedDate
         });
         expect(toast.success).toHaveBeenCalledWith('Meal created successfully');
         expect(screen.queryByText('Create Meal')).not.toBeInTheDocument();

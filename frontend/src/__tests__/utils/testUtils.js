@@ -43,7 +43,7 @@ export const mockMeal = {
     difficulty: 'medium',
     instructions: ['Boil pasta', 'Cook sauce', 'Combine']
   },
-  totalTime: 45,
+      recipe: { prepTime: 45 },
   rating: 4.5
 };
 

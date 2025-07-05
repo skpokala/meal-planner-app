@@ -35,7 +35,7 @@ describe('MealPlanner', () => {
       name: 'Spaghetti Bolognese',
       description: 'Classic Italian pasta dish',
       mealType: 'dinner',
-      totalTime: 45,
+      recipe: { prepTime: 45 },
       rating: 4.5,
     },
     {
@@ -43,7 +43,7 @@ describe('MealPlanner', () => {
       name: 'Pancakes',
       description: 'Fluffy breakfast pancakes',
       mealType: 'breakfast',
-      totalTime: 20,
+      recipe: { prepTime: 20 },
       rating: 4.0,
     },
     {
@@ -51,7 +51,7 @@ describe('MealPlanner', () => {
       name: 'Caesar Salad',
       description: 'Fresh caesar salad',
       mealType: 'lunch',
-      totalTime: 15,
+      recipe: { prepTime: 15 },
       rating: 3.5,
     },
   ];
@@ -107,9 +107,11 @@ describe('MealPlanner', () => {
       });
       expect(screen.getByTitle('Weekly View')).toBeInTheDocument();
       expect(screen.getByTitle('Daily View')).toBeInTheDocument();
+      expect(screen.getByTitle('List View')).toBeInTheDocument();
       expect(screen.getByText('Month')).toBeInTheDocument();
       expect(screen.getByText('Week')).toBeInTheDocument();
       expect(screen.getByText('Day')).toBeInTheDocument();
+      expect(screen.getByText('List')).toBeInTheDocument();
     });
 
     test('monthly view is selected by default', async () => {
@@ -259,6 +261,48 @@ describe('MealPlanner', () => {
         expect(monthButton).toHaveClass('bg-white text-primary-600 shadow-sm');
       });
       expect(weekButton).toHaveClass('text-secondary-600 hover:text-secondary-900');
+    });
+
+    test('switches to list view when list button is clicked', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('List View')).toBeInTheDocument();
+      });
+
+      const listButton = screen.getByTitle('List View');
+      fireEvent.click(listButton);
+
+      await waitFor(() => {
+        expect(listButton).toHaveClass('bg-white text-primary-600 shadow-sm');
+      });
+      
+      // Check that navigation buttons are not present in list view
+      expect(screen.queryByTitle('Previous list')).not.toBeInTheDocument();
+      expect(screen.queryByTitle('Next list')).not.toBeInTheDocument();
+    });
+
+    test('displays list view title when in list view', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('List View')).toBeInTheDocument();
+      });
+
+      const listButton = screen.getByTitle('List View');
+      fireEvent.click(listButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('All Planned Meals')).toBeInTheDocument();
+      });
     });
   });
 
@@ -431,6 +475,207 @@ describe('MealPlanner', () => {
         // Should show meal assignments with larger text and more space
         const mealElements = screen.getAllByText('Add meal...');
         expect(mealElements.length).toBe(1); // Only one day shown
+      });
+    });
+  });
+
+  describe('List View', () => {
+    test('shows empty state when no meals are planned in list view', async () => {
+      // Mock API to return empty assignments
+      api.get.mockImplementation((url) => {
+        if (url === '/meals') {
+          return Promise.resolve({ data: { meals: mockMeals } });
+        }
+        if (url === '/meal-assignments') {
+          return Promise.resolve({ data: { assignments: [] } });
+        }
+        return Promise.reject(new Error('Unknown endpoint'));
+      });
+
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('List View')).toBeInTheDocument();
+      });
+
+      const listButton = screen.getByTitle('List View');
+      fireEvent.click(listButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('No meals planned yet')).toBeInTheDocument();
+        expect(screen.getByText('Start planning your meals by switching to calendar view and adding meals to specific dates.')).toBeInTheDocument();
+        expect(screen.getByText('Go to Calendar View')).toBeInTheDocument();
+      });
+    });
+
+    test('displays planned meals in chronological order in list view', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('List View')).toBeInTheDocument();
+      });
+
+      const listButton = screen.getByTitle('List View');
+      fireEvent.click(listButton);
+
+      await waitFor(() => {
+        // Should show the assigned meal from mockAssignments
+        expect(screen.getByText('Spaghetti Bolognese')).toBeInTheDocument();
+        expect(screen.getByText('Classic Italian pasta dish')).toBeInTheDocument();
+        expect(screen.getByText('dinner')).toBeInTheDocument();
+      });
+    });
+
+    test('allows removing meals from list view', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('List View')).toBeInTheDocument();
+      });
+
+      const listButton = screen.getByTitle('List View');
+      fireEvent.click(listButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Spaghetti Bolognese')).toBeInTheDocument();
+      });
+
+      const removeButton = screen.getByTitle('Remove meal');
+      fireEvent.click(removeButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Spaghetti Bolognese')).not.toBeInTheDocument();
+      });
+    });
+
+    test('navigating from empty list view to calendar view works', async () => {
+      // Mock API to return empty assignments
+      api.get.mockImplementation((url) => {
+        if (url === '/meals') {
+          return Promise.resolve({ data: { meals: mockMeals } });
+        }
+        if (url === '/meal-assignments') {
+          return Promise.resolve({ data: { assignments: [] } });
+        }
+        return Promise.reject(new Error('Unknown endpoint'));
+      });
+
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('List View')).toBeInTheDocument();
+      });
+
+      const listButton = screen.getByTitle('List View');
+      fireEvent.click(listButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Go to Calendar View')).toBeInTheDocument();
+      });
+
+      const goToCalendarButton = screen.getByText('Go to Calendar View');
+      fireEvent.click(goToCalendarButton);
+
+      await waitFor(() => {
+        const monthButton = screen.getByTitle('Monthly View');
+        expect(monthButton).toHaveClass('bg-white text-primary-600 shadow-sm');
+      });
+    });
+
+    test('shows day headers are hidden in list view', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('List View')).toBeInTheDocument();
+      });
+
+      const listButton = screen.getByTitle('List View');
+      fireEvent.click(listButton);
+
+      await waitFor(() => {
+        // Should NOT show day headers in list view
+        expect(screen.queryByText('Sun')).not.toBeInTheDocument();
+        expect(screen.queryByText('Mon')).not.toBeInTheDocument();
+        expect(screen.queryByText('Tue')).not.toBeInTheDocument();
+        expect(screen.queryByText('Wed')).not.toBeInTheDocument();
+        expect(screen.queryByText('Thu')).not.toBeInTheDocument();
+        expect(screen.queryByText('Fri')).not.toBeInTheDocument();
+        expect(screen.queryByText('Sat')).not.toBeInTheDocument();
+      });
+    });
+
+    test('displays meal details with proper formatting in list view', async () => {
+      const mockMealsWithDetails = [
+        {
+          _id: '1',
+          name: 'Spaghetti Bolognese',
+          description: 'Classic Italian pasta dish',
+          mealType: 'dinner',
+          recipe: { prepTime: 45 },
+          servings: 4,
+          rating: 4.5,
+        }
+      ];
+
+      const mockAssignmentsWithDetails = [
+        {
+          _id: 'assignment-1',
+          mealId: '1',
+          meal: mockMealsWithDetails[0],
+          date: '2025-07-15',
+          mealType: 'dinner',
+        }
+      ];
+
+      api.get.mockImplementation((url) => {
+        if (url === '/meals') {
+          return Promise.resolve({ data: { meals: mockMealsWithDetails } });
+        }
+        if (url === '/meal-assignments') {
+          return Promise.resolve({ data: { assignments: mockAssignmentsWithDetails } });
+        }
+        return Promise.reject(new Error('Unknown endpoint'));
+      });
+
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('List View')).toBeInTheDocument();
+      });
+
+      const listButton = screen.getByTitle('List View');
+      fireEvent.click(listButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Spaghetti Bolognese')).toBeInTheDocument();
+        expect(screen.getByText('Classic Italian pasta dish')).toBeInTheDocument();
+        expect(screen.getByText('45 mins prep')).toBeInTheDocument();
+        expect(screen.getByText('4 servings')).toBeInTheDocument();
+        expect(screen.getByText('dinner')).toBeInTheDocument();
       });
     });
   });
@@ -739,7 +984,7 @@ describe('MealPlanner', () => {
         name: 'Test Meal',
         description: 'Test description',
         mealType: 'dinner',
-        totalTime: 30,
+        recipe: { prepTime: 30 },
       };
 
       api.post.mockResolvedValue({ data: newMeal });
@@ -782,7 +1027,10 @@ describe('MealPlanner', () => {
           name: 'Test Meal',
           description: 'Test description',
           mealType: 'dinner',
-          totalTime: '',
+          recipe: {
+            prepTime: 0
+          },
+          date: '2025-07-01' // Date should be included when creating from MealPlanner
         });
       });
     });
@@ -824,7 +1072,7 @@ describe('MealPlanner', () => {
         name: 'Duplicate Meal',
         description: 'Duplicate description',
         mealType: 'dinner',
-        totalTime: 30,
+        recipe: { prepTime: 30 },
       };
 
       api.post.mockResolvedValue({ data: duplicateMeal });

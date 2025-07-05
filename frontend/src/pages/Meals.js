@@ -30,7 +30,7 @@ const Meals = () => {
     { value: 'name', label: 'Name' },
     { value: 'mealType', label: 'Meal Type' },
     { value: 'rating', label: 'Rating' },
-    { value: 'totalTime', label: 'Total Time' },
+    { value: 'prepTime', label: 'Prep Time' },
   ];
 
   useEffect(() => {
@@ -129,9 +129,9 @@ const Meals = () => {
           aValue = a.rating || 0;
           bValue = b.rating || 0;
           break;
-        case 'totalTime':
-          aValue = a.totalTime || 0;
-          bValue = b.totalTime || 0;
+              case 'prepTime':
+        aValue = a.recipe?.prepTime || 0;
+        bValue = b.recipe?.prepTime || 0;
           break;
         default:
           aValue = a.name.toLowerCase();
@@ -275,10 +275,10 @@ const Meals = () => {
                   )}
                   
                   <div className="space-y-2 text-sm mb-4">
-                    {meal.totalTime > 0 && (
+                    {meal.recipe?.prepTime > 0 && (
                       <div className="flex items-center text-secondary-600">
                         <Clock className="w-4 h-4 mr-2" />
-                        {meal.totalTime} minutes
+                        {meal.recipe.prepTime} minutes prep
                       </div>
                     )}
                     

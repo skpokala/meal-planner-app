@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Clock, Users, Trash2, Calendar, CalendarDays, CalendarCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Clock, Users, Trash2, Calendar, CalendarDays, CalendarCheck, List } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MealModal from '../components/MealModal';
@@ -8,7 +8,8 @@ import toast from 'react-hot-toast';
 const VIEW_MODES = {
   MONTHLY: 'monthly',
   WEEKLY: 'weekly',
-  DAILY: 'daily'
+  DAILY: 'daily',
+  LIST: 'list'
 };
 
 const MealPlanner = () => {
@@ -142,6 +143,25 @@ const MealPlanner = () => {
     return days;
   };
 
+  const getAllAssignments = () => {
+    const allAssignments = [];
+    
+    // Collect all assignments from all dates
+    Object.entries(mealAssignments).forEach(([dateKey, assignments]) => {
+      assignments.forEach(assignment => {
+        allAssignments.push({
+          ...assignment,
+          dateObj: new Date(dateKey)
+        });
+      });
+    });
+    
+    // Sort by date
+    allAssignments.sort((a, b) => a.dateObj - b.dateObj);
+    
+    return allAssignments;
+  };
+
   const navigateMonth = (direction) => {
     setCurrentDate(prev => {
       const newDate = new Date(prev);
@@ -174,6 +194,9 @@ const MealPlanner = () => {
       case VIEW_MODES.WEEKLY:
         navigateWeek(direction);
         break;
+      case VIEW_MODES.LIST:
+        // List view doesn't need navigation
+        break;
       case VIEW_MODES.MONTHLY:
       default:
         navigateMonth(direction);
@@ -187,6 +210,8 @@ const MealPlanner = () => {
         return formatDayDate(currentDate);
       case VIEW_MODES.WEEKLY:
         return formatWeekRange(currentDate);
+      case VIEW_MODES.LIST:
+        return 'All Planned Meals';
       case VIEW_MODES.MONTHLY:
       default:
         return formatMonthYear(currentDate);
@@ -199,6 +224,9 @@ const MealPlanner = () => {
         return [currentDate];
       case VIEW_MODES.WEEKLY:
         return getDaysInWeek(currentDate);
+      case VIEW_MODES.LIST:
+        // For list view, we'll return all assignments sorted by date
+        return getAllAssignments();
       case VIEW_MODES.MONTHLY:
       default:
         return getDaysInMonth(currentDate);
@@ -378,6 +406,18 @@ const MealPlanner = () => {
             <CalendarCheck className="w-4 h-4" />
             Day
           </button>
+          <button
+            onClick={() => setViewMode(VIEW_MODES.LIST)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              viewMode === VIEW_MODES.LIST
+                ? 'bg-white text-primary-600 shadow-sm'
+                : 'text-secondary-600 hover:text-secondary-900'
+            }`}
+            title="List View"
+          >
+            <List className="w-4 h-4" />
+            List
+          </button>
         </div>
       </div>
 
@@ -385,25 +425,33 @@ const MealPlanner = () => {
       <div className="card mb-6">
         <div className="card-body">
           <div className="flex items-center justify-between">
-            <button
-              onClick={() => navigate(-1)}
-              className="p-2 hover:bg-secondary-100 rounded-lg transition-colors"
-              title={`Previous ${viewMode}`}
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            
-            <h2 className="text-xl font-semibold text-secondary-900">
-              {getViewTitle()}
-            </h2>
-            
-            <button
-              onClick={() => navigate(1)}
-              className="p-2 hover:bg-secondary-100 rounded-lg transition-colors"
-              title={`Next ${viewMode}`}
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
+            {viewMode !== VIEW_MODES.LIST ? (
+              <>
+                <button
+                  onClick={() => navigate(-1)}
+                  className="p-2 hover:bg-secondary-100 rounded-lg transition-colors"
+                  title={`Previous ${viewMode}`}
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                
+                <h2 className="text-xl font-semibold text-secondary-900">
+                  {getViewTitle()}
+                </h2>
+                
+                <button
+                  onClick={() => navigate(1)}
+                  className="p-2 hover:bg-secondary-100 rounded-lg transition-colors"
+                  title={`Next ${viewMode}`}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </>
+            ) : (
+              <h2 className="text-xl font-semibold text-secondary-900 mx-auto">
+                {getViewTitle()}
+              </h2>
+            )}
           </div>
         </div>
       </div>
@@ -412,7 +460,7 @@ const MealPlanner = () => {
       <div className="card">
         <div className="card-body p-0">
           {/* Day Headers - only show for monthly and weekly views */}
-          {viewMode !== VIEW_MODES.DAILY && (
+          {viewMode !== VIEW_MODES.DAILY && viewMode !== VIEW_MODES.LIST && (
             <div className={`grid ${viewMode === VIEW_MODES.WEEKLY ? 'grid-cols-7' : 'grid-cols-7'} border-b border-secondary-200`}>
               {dayNames.map(day => (
                 <div key={day} className="p-3 text-center font-medium text-secondary-600 border-r border-secondary-200 last:border-r-0">
@@ -422,90 +470,161 @@ const MealPlanner = () => {
             </div>
           )}
 
-          {/* Calendar Days */}
-          <div className={`grid ${
-            viewMode === VIEW_MODES.DAILY 
-              ? 'grid-cols-1' 
-              : viewMode === VIEW_MODES.WEEKLY
-              ? 'grid-cols-7'
-              : 'grid-cols-7'
-          }`}>
-            {days.map((date, index) => (
-              <div
-                key={index}
-                className={`${
-                  viewMode === VIEW_MODES.DAILY 
-                    ? 'min-h-[400px]' 
-                    : 'min-h-[120px]'
-                } border-r border-b border-secondary-200 last:border-r-0 p-2 ${
-                  !date ? 'bg-secondary-50' : ''
-                } ${isToday(date) ? 'bg-primary-50' : ''}`}
-              >
-                {date && (
-                  <>
-                    {/* Date Display */}
-                    <div className={`font-medium mb-2 ${
-                      isToday(date) ? 'text-primary-600' : 'text-secondary-900'
-                    } ${viewMode === VIEW_MODES.DAILY ? 'text-lg' : 'text-sm'}`}>
-                      {viewMode === VIEW_MODES.DAILY 
-                        ? date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
-                        : date.getDate()
-                      }
-                    </div>
-
-                    {/* Assigned Meals */}
-                    <div className={`space-y-1 mb-2 ${viewMode === VIEW_MODES.DAILY ? 'space-y-2' : ''}`}>
-                      {getAssignedMeals(date).map((assignment) => (
-                        <div
-                          key={assignment._id}
-                          className="group relative"
-                        >
-                          <div className={`px-2 py-1 rounded flex items-center justify-between ${getMealTypeColor(assignment.mealType)} ${
-                            viewMode === VIEW_MODES.DAILY ? 'text-sm' : 'text-xs'
-                          }`}>
-                            <div className="flex-1 min-w-0">
-                              <div className="truncate" title={assignment.meal.name}>
-                                {assignment.meal.name}
-                              </div>
-                              {viewMode === VIEW_MODES.DAILY && assignment.meal.description && (
-                                <div className="text-xs opacity-75 truncate">
-                                  {assignment.meal.description}
-                                </div>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => handleMealRemove(date, assignment._id)}
-                              className="opacity-0 group-hover:opacity-100 ml-1 p-0.5 hover:bg-black hover:bg-opacity-10 rounded transition-opacity"
-                              title="Remove meal"
-                            >
-                              <Trash2 className={viewMode === VIEW_MODES.DAILY ? 'w-4 h-4' : 'w-3 h-3'} />
-                            </button>
+          {/* Calendar Days or List View */}
+          {viewMode === VIEW_MODES.LIST ? (
+            /* List View */
+            <div className="divide-y divide-secondary-200">
+              {days.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Calendar className="w-12 h-12 text-secondary-400 mx-auto mb-3" />
+                  <h3 className="text-lg font-medium text-secondary-900 mb-2">No meals planned yet</h3>
+                  <p className="text-secondary-600 mb-4">Start planning your meals by switching to calendar view and adding meals to specific dates.</p>
+                  <button
+                    onClick={() => setViewMode(VIEW_MODES.MONTHLY)}
+                    className="btn-primary"
+                  >
+                    Go to Calendar View
+                  </button>
+                </div>
+              ) : (
+                days.map((assignment, index) => (
+                  <div key={assignment._id} className="p-4 hover:bg-secondary-50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="text-sm font-medium text-secondary-900">
+                            {assignment.dateObj.toLocaleDateString('en-US', { 
+                              weekday: 'long', 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })}
                           </div>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getMealTypeColor(assignment.mealType)}`}>
+                            {assignment.mealType}
+                          </span>
                         </div>
-                      ))}
+                        <div className="text-lg font-semibold text-secondary-900 mb-1">
+                          {assignment.meal.name}
+                        </div>
+                        {assignment.meal.description && (
+                          <div className="text-sm text-secondary-600 mb-2">
+                            {assignment.meal.description}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-4 text-sm text-secondary-500">
+                          {assignment.meal.recipe?.prepTime && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              {assignment.meal.recipe.prepTime} mins prep
+                            </div>
+                          )}
+                          {assignment.meal.servings && (
+                            <div className="flex items-center gap-1">
+                              <Users className="w-4 h-4" />
+                              {assignment.meal.servings} servings
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleMealRemove(assignment.dateObj, assignment._id)}
+                        className="p-2 text-secondary-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Remove meal"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
                     </div>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
+            /* Calendar Grid */
+            <div className={`grid ${
+              viewMode === VIEW_MODES.DAILY 
+                ? 'grid-cols-1' 
+                : viewMode === VIEW_MODES.WEEKLY
+                ? 'grid-cols-7'
+                : 'grid-cols-7'
+            }`}>
+              {days.map((date, index) => (
+                <div
+                  key={index}
+                  className={`${
+                    viewMode === VIEW_MODES.DAILY 
+                      ? 'min-h-[400px]' 
+                      : 'min-h-[120px]'
+                  } border-r border-b border-secondary-200 last:border-r-0 p-2 ${
+                    !date ? 'bg-secondary-50' : ''
+                  } ${isToday(date) ? 'bg-primary-50' : ''}`}
+                >
+                  {date && (
+                    <>
+                      {/* Date Display */}
+                      <div className={`font-medium mb-2 ${
+                        isToday(date) ? 'text-primary-600' : 'text-secondary-900'
+                      } ${viewMode === VIEW_MODES.DAILY ? 'text-lg' : 'text-sm'}`}>
+                        {viewMode === VIEW_MODES.DAILY 
+                          ? date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+                          : date.getDate()
+                        }
+                      </div>
 
-                    {/* Meal Selector Dropdown */}
-                    <select
-                      onChange={(e) => handleMealSelect(date, e.target.value)}
-                      value=""
-                      className={`w-full border-0 border-t border-secondary-200 bg-transparent px-2 py-1 hover:bg-secondary-50 focus:bg-white focus:border-primary-300 focus:outline-none appearance-none cursor-pointer ${
-                        viewMode === VIEW_MODES.DAILY ? 'text-sm' : 'text-xs'
-                      }`}
-                    >
-                      <option value="">Add meal...</option>
-                      {getAvailableMealsForDate(date).map((meal, mealIndex) => (
-                        <option key={`day-${index}-meal-${mealIndex}-${meal._id}`} value={meal._id}>
-                          {meal.name} ({meal.mealType})
-                        </option>
-                      ))}
-                      <option key={`day-${index}-create-new`} value="create-new">+ Create new meal</option>
-                    </select>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
+                      {/* Assigned Meals */}
+                      <div className={`space-y-1 mb-2 ${viewMode === VIEW_MODES.DAILY ? 'space-y-2' : ''}`}>
+                        {getAssignedMeals(date).map((assignment) => (
+                          <div
+                            key={assignment._id}
+                            className="group relative"
+                          >
+                            <div className={`px-2 py-1 rounded flex items-center justify-between ${getMealTypeColor(assignment.mealType)} ${
+                              viewMode === VIEW_MODES.DAILY ? 'text-sm' : 'text-xs'
+                            }`}>
+                              <div className="flex-1 min-w-0">
+                                <div className="truncate" title={assignment.meal.name}>
+                                  {assignment.meal.name}
+                                </div>
+                                {viewMode === VIEW_MODES.DAILY && assignment.meal.description && (
+                                  <div className="text-xs opacity-75 truncate">
+                                    {assignment.meal.description}
+                                  </div>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => handleMealRemove(date, assignment._id)}
+                                className="opacity-0 group-hover:opacity-100 ml-1 p-0.5 hover:bg-black hover:bg-opacity-10 rounded transition-opacity"
+                                title="Remove meal"
+                              >
+                                <Trash2 className={viewMode === VIEW_MODES.DAILY ? 'w-4 h-4' : 'w-3 h-3'} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Meal Selector Dropdown */}
+                      <select
+                        onChange={(e) => handleMealSelect(date, e.target.value)}
+                        value=""
+                        className={`w-full border-0 border-t border-secondary-200 bg-transparent px-2 py-1 hover:bg-secondary-50 focus:bg-white focus:border-primary-300 focus:outline-none appearance-none cursor-pointer ${
+                          viewMode === VIEW_MODES.DAILY ? 'text-sm' : 'text-xs'
+                        }`}
+                      >
+                        <option value="">Add meal...</option>
+                        {getAvailableMealsForDate(date).map((meal, mealIndex) => (
+                          <option key={`day-${index}-meal-${mealIndex}-${meal._id}`} value={meal._id}>
+                            {meal.name} ({meal.mealType})
+                          </option>
+                        ))}
+                        <option key={`day-${index}-create-new`} value="create-new">+ Create new meal</option>
+                      </select>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -519,6 +638,7 @@ const MealPlanner = () => {
         }}
         onSave={handleNewMealCreated}
         mode="add"
+        selectedDate={selectedDate}
       />
     </div>
   );

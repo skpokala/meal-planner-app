@@ -3,12 +3,12 @@ import { X, Save, Clock, Plus } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
-const MealModal = ({ meal, isOpen, onClose, onSave, mode = 'edit' }) => {
+const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit', selectedDate = null }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     mealType: 'dinner',
-    totalTime: '',
+    prepTime: '',
   });
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +29,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, mode = 'edit' }) => {
           name: meal.name || '',
           description: meal.description || '',
           mealType: meal.mealType || 'dinner',
-          totalTime: meal.totalTime || '',
+          prepTime: meal.recipe?.prepTime || '',
         });
       } else if (isAddMode) {
         // Reset form for add mode
@@ -37,7 +37,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, mode = 'edit' }) => {
           name: '',
           description: '',
           mealType: 'dinner',
-          totalTime: '',
+          prepTime: '',
         });
       }
     }
@@ -62,13 +62,39 @@ const MealModal = ({ meal, isOpen, onClose, onSave, mode = 'edit' }) => {
     try {
       let response;
       if (isEditMode) {
-        response = await api.put(`/meals/${meal._id}`, formData);
+        const mealData = {
+          name: formData.name,
+          description: formData.description,
+          mealType: formData.mealType,
+          recipe: {
+            ...meal.recipe,
+            prepTime: parseInt(formData.prepTime) || 0
+          }
+        };
+        response = await api.put(`/meals/${meal._id}`, mealData);
         toast.success('Meal updated successfully');
       } else {
-        response = await api.post('/meals', formData);
+        // For creating new meals, include the date and structure recipe properly
+        const mealData = {
+          name: formData.name,
+          description: formData.description,
+          mealType: formData.mealType,
+          recipe: {
+            prepTime: parseInt(formData.prepTime) || 0
+          },
+          date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+        };
+        response = await api.post('/meals', mealData);
         toast.success('Meal created successfully');
       }
-      onSave(response.data);
+      
+      // Call the appropriate callback
+      if (onSave) {
+        onSave(response.data);
+      }
+      if (onMealCreated) {
+        onMealCreated(response.data);
+      }
       onClose();
     } catch (error) {
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} meal:`, error);
@@ -162,18 +188,18 @@ const MealModal = ({ meal, isOpen, onClose, onSave, mode = 'edit' }) => {
             </select>
           </div>
 
-          {/* Total Time */}
+          {/* Prep Time */}
           <div>
-            <label htmlFor="totalTime" className="block text-sm font-medium text-secondary-700 mb-1">
-              Total Time (minutes)
+            <label htmlFor="prepTime" className="block text-sm font-medium text-secondary-700 mb-1">
+              Prep Time (minutes)
             </label>
             <div className="relative">
               <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 w-4 h-4" />
               <input
                 type="number"
-                id="totalTime"
-                name="totalTime"
-                value={formData.totalTime}
+                id="prepTime"
+                name="prepTime"
+                value={formData.prepTime}
                 onChange={handleInputChange}
                 className="input w-full pl-10"
                 placeholder="e.g., 30"

@@ -14,7 +14,7 @@ describe('MealModal', () => {
     name: 'Spaghetti Bolognese',
     description: 'Classic Italian pasta',
     mealType: 'dinner',
-    totalTime: 45
+    recipe: { prepTime: 45 }
   };
 
   const mockOnClose = jest.fn();
@@ -132,7 +132,7 @@ describe('MealModal', () => {
         name: 'Test Meal',
         description: 'Test Description',
         mealType: 'lunch',
-        totalTime: 30
+        recipe: { prepTime: 30 }
       };
       
       renderModal({ meal, mode: 'edit' });
@@ -241,7 +241,7 @@ describe('MealModal', () => {
           name: 'Updated Meal',
           description: 'Updated Description',
           mealType: 'breakfast',
-          totalTime: '60'
+          prepTime: '60'
         });
       });
     });
@@ -315,13 +315,16 @@ describe('MealModal', () => {
           name: 'New Meal',
           description: 'New Description',
           mealType: 'lunch',
-          totalTime: '45'
+          recipe: {
+            prepTime: 45
+          },
+          date: new Date().toISOString().split('T')[0] // Today's date
         });
       });
     });
 
     it('calls onSave and onClose after successful creation', async () => {
-      const newMeal = { _id: '2', name: 'New Meal', description: 'New Description', mealType: 'lunch', totalTime: 45 };
+              const newMeal = { _id: '2', name: 'New Meal', description: 'New Description', mealType: 'lunch', recipe: { prepTime: 45 } };
       api.post.mockResolvedValue({ data: newMeal });
       
       renderModal({ mode: 'add', meal: null });
@@ -505,7 +508,7 @@ describe('MealModal', () => {
         _id: '1',
         name: 'Simple Meal',
         mealType: 'dinner'
-        // description, totalTime are missing
+        // description, prepTime are missing
       };
       
       renderModal({ meal: mealWithMissingFields, mode: 'edit' });

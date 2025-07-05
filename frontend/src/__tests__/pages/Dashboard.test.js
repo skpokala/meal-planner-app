@@ -44,7 +44,7 @@ const mockMeals = [
     description: 'Classic Italian pasta',
     mealType: 'dinner',
     date: '2023-12-01',
-    totalTime: 45,
+          recipe: { prepTime: 45 },
     rating: 4.5
   },
   {
@@ -53,7 +53,7 @@ const mockMeals = [
     description: 'Fluffy breakfast pancakes',
     mealType: 'breakfast',
     date: '2023-12-02',
-    totalTime: 20,
+          recipe: { prepTime: 20 },
     rating: 4.0
   }
 ];
@@ -379,8 +379,8 @@ describe('Dashboard Component', () => {
         expect(screen.getByText('4')).toBeInTheDocument();
         
         // Check timing
-        expect(screen.getByText('45m')).toBeInTheDocument();
-        expect(screen.getByText('20m')).toBeInTheDocument();
+        expect(screen.getByText('45m prep')).toBeInTheDocument();
+        expect(screen.getByText('20m prep')).toBeInTheDocument();
       });
     });
   });
@@ -450,7 +450,7 @@ describe('Dashboard Component', () => {
           name: 'Test Meal',
           mealType: 'dinner',
           date: 'invalid-date',
-          totalTime: 30,
+          recipe: { prepTime: 30 },
           rating: 4.0
         }
       ];
