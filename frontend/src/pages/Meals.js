@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, ChefHat, Clock, Users, Search, Filter, Calendar as CalendarIcon, Star, Edit, Trash2 } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
+import EditMealModal from '../components/EditMealModal';
 import toast from 'react-hot-toast';
 
 const Meals = () => {
@@ -12,6 +13,8 @@ const Meals = () => {
   const [selectedMealType, setSelectedMealType] = useState('');
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState(null);
   const navigate = useNavigate();
 
   const mealTypes = [
@@ -56,6 +59,25 @@ const Meals = () => {
         toast.error('Failed to delete meal');
       }
     }
+  };
+
+  const handleEditMeal = (meal) => {
+    setSelectedMeal(meal);
+    setEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setEditModalOpen(false);
+    setSelectedMeal(null);
+  };
+
+  const handleSaveMeal = (updatedMeal) => {
+    // Update the meal in the meals array
+    setMeals(prevMeals => 
+      prevMeals.map(meal => 
+        meal._id === updatedMeal._id ? updatedMeal : meal
+      )
+    );
   };
 
   const getMealTypeColor = (mealType) => {
@@ -287,7 +309,7 @@ const Meals = () => {
                   <div className="flex items-center justify-between pt-3 border-t border-secondary-200">
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => navigate(`/meal-planner?edit=${meal._id}`)}
+                        onClick={() => handleEditMeal(meal)}
                         className="p-2 text-secondary-600 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
                         title="Edit meal"
                       >
@@ -308,6 +330,14 @@ const Meals = () => {
           )}
         </div>
       </div>
+
+      {/* Edit Meal Modal */}
+      <EditMealModal
+        meal={selectedMeal}
+        isOpen={editModalOpen}
+        onClose={handleCloseEditModal}
+        onSave={handleSaveMeal}
+      />
     </div>
   );
 };

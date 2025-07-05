@@ -278,7 +278,7 @@ describe('Meals Component', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/meal-planner');
     });
 
-    it('navigates to meal planner with edit parameter when edit button is clicked', async () => {
+    it('opens edit modal when edit button is clicked', async () => {
       renderMeals();
       
       await waitFor(() => {
@@ -288,7 +288,149 @@ describe('Meals Component', () => {
       const editButtons = screen.getAllByTitle('Edit meal');
       fireEvent.click(editButtons[0]);
       
-      expect(mockNavigate).toHaveBeenCalledWith('/meal-planner?edit=1');
+      await waitFor(() => {
+        expect(screen.getByText('Edit Meal')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('Spaghetti Bolognese')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('Classic Italian pasta')).toBeInTheDocument();
+      });
+    });
+
+    it('closes edit modal when cancel button is clicked', async () => {
+      renderMeals();
+      
+      await waitFor(() => {
+        expect(screen.getByText('Spaghetti Bolognese')).toBeInTheDocument();
+      });
+      
+      const editButtons = screen.getAllByTitle('Edit meal');
+      fireEvent.click(editButtons[0]);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Edit Meal')).toBeInTheDocument();
+      });
+      
+      const cancelButton = screen.getByText('Cancel');
+      fireEvent.click(cancelButton);
+      
+      await waitFor(() => {
+        expect(screen.queryByText('Edit Meal')).not.toBeInTheDocument();
+      });
+    });
+
+    it('closes edit modal when X button is clicked', async () => {
+      renderMeals();
+      
+      await waitFor(() => {
+        expect(screen.getByText('Spaghetti Bolognese')).toBeInTheDocument();
+      });
+      
+      const editButtons = screen.getAllByTitle('Edit meal');
+      fireEvent.click(editButtons[0]);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Edit Meal')).toBeInTheDocument();
+      });
+      
+      const closeButton = screen.getByTitle('Close');
+      fireEvent.click(closeButton);
+      
+      await waitFor(() => {
+        expect(screen.queryByText('Edit Meal')).not.toBeInTheDocument();
+      });
+    });
+
+    it('updates meal when edit form is submitted', async () => {
+      api.put.mockResolvedValue({ 
+        data: { 
+          _id: '1', 
+          name: 'Updated Spaghetti', 
+          description: 'Updated description',
+          mealType: 'dinner',
+          date: '2023-12-01',
+          totalTime: 50
+        } 
+      });
+      
+      renderMeals();
+      
+      await waitFor(() => {
+        expect(screen.getByText('Spaghetti Bolognese')).toBeInTheDocument();
+      });
+      
+      const editButtons = screen.getAllByTitle('Edit meal');
+      fireEvent.click(editButtons[0]);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Edit Meal')).toBeInTheDocument();
+      });
+      
+      const nameInput = screen.getByDisplayValue('Spaghetti Bolognese');
+      fireEvent.change(nameInput, { target: { value: 'Updated Spaghetti' } });
+      
+      const submitButton = screen.getByText('Update Meal');
+      fireEvent.click(submitButton);
+      
+      await waitFor(() => {
+        expect(api.put).toHaveBeenCalledWith('/meals/1', {
+          name: 'Updated Spaghetti',
+          description: 'Classic Italian pasta',
+          mealType: 'dinner',
+          date: '2023-12-03',
+          totalTime: 45
+        });
+        expect(toast.success).toHaveBeenCalledWith('Meal updated successfully');
+        expect(screen.queryByText('Edit Meal')).not.toBeInTheDocument();
+      });
+    });
+
+    it('handles API error when updating meal', async () => {
+      api.put.mockRejectedValue(new Error('Update failed'));
+      
+      renderMeals();
+      
+      await waitFor(() => {
+        expect(screen.getByText('Spaghetti Bolognese')).toBeInTheDocument();
+      });
+      
+      const editButtons = screen.getAllByTitle('Edit meal');
+      fireEvent.click(editButtons[0]);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Edit Meal')).toBeInTheDocument();
+      });
+      
+      const submitButton = screen.getByText('Update Meal');
+      fireEvent.click(submitButton);
+      
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Failed to update meal');
+      });
+    });
+
+    it('shows validation error when meal name is empty', async () => {
+      renderMeals();
+      
+      await waitFor(() => {
+        expect(screen.getByText('Spaghetti Bolognese')).toBeInTheDocument();
+      });
+      
+      const editButtons = screen.getAllByTitle('Edit meal');
+      fireEvent.click(editButtons[0]);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Edit Meal')).toBeInTheDocument();
+      });
+      
+      const nameInput = screen.getByDisplayValue('Spaghetti Bolognese');
+      fireEvent.change(nameInput, { target: { value: '' } });
+      
+      const submitButton = screen.getByText('Update Meal');
+      fireEvent.click(submitButton);
+      
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Meal name is required');
+        expect(api.put).not.toHaveBeenCalled();
+      });
     });
 
     it('deletes meal when delete button is clicked and confirmed', async () => {
