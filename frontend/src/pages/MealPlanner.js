@@ -111,6 +111,12 @@ const MealPlanner = () => {
         throw new Error('Meal not found');
       }
       
+      // Check for duplicate assignment
+      if (isMealAssignedToDate(date, mealId)) {
+        toast.error(`${selectedMeal.name} is already assigned to ${date.toLocaleDateString()}`);
+        return;
+      }
+      
       // Validate meal data
       if (!selectedMeal.name || !selectedMeal.mealType) {
         throw new Error('Invalid meal data');
@@ -155,6 +161,12 @@ const MealPlanner = () => {
     setMeals(prev => [newMeal, ...prev]);
     
     if (selectedDate) {
+      // Check for duplicate assignment
+      if (isMealAssignedToDate(selectedDate, newMeal._id)) {
+        toast.error(`${newMeal.name} is already assigned to ${selectedDate.toLocaleDateString()}`);
+        return;
+      }
+
       const dateKey = formatDateKey(selectedDate);
       const newAssignment = {
         _id: `${newMeal._id}-${dateKey}-${Date.now()}`,
@@ -184,6 +196,15 @@ const MealPlanner = () => {
   const getAssignedMeals = (date) => {
     const dateKey = formatDateKey(date);
     return mealAssignments[dateKey] || [];
+  };
+
+  const isMealAssignedToDate = (date, mealId) => {
+    const assignedMeals = getAssignedMeals(date);
+    return assignedMeals.some(assignment => assignment.mealId === mealId);
+  };
+
+  const getAvailableMealsForDate = (date) => {
+    return meals.filter(meal => !isMealAssignedToDate(date, meal._id));
   };
 
   const isToday = (date) => {
@@ -296,12 +317,12 @@ const MealPlanner = () => {
                       className="w-full text-xs border border-secondary-300 rounded px-2 py-1 hover:border-primary-300 focus:border-primary-500 focus:outline-none"
                     >
                       <option value="">Add meal...</option>
-                      {meals.map(meal => (
-                        <option key={meal._id} value={meal._id}>
+                      {getAvailableMealsForDate(date).map(meal => (
+                        <option key={`${formatDateKey(date)}-${meal._id}`} value={meal._id}>
                           {meal.name} ({meal.mealType})
                         </option>
                       ))}
-                      <option value="create-new">+ Create new meal</option>
+                      <option key={`${formatDateKey(date)}-create-new`} value="create-new">+ Create new meal</option>
                     </select>
                   </>
                 )}

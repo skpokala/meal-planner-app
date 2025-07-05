@@ -292,6 +292,126 @@ describe('MealPlanner', () => {
       // Should not show any success message
       expect(screen.queryByText('added to')).not.toBeInTheDocument();
     });
+
+    test('filters assigned meals from dropdown preventing duplicate selection', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getAllByText('Add meal...')[0]).toBeInTheDocument();
+      });
+
+      // First assignment - should succeed
+      const dropdowns = screen.getAllByText('Add meal...');
+      let targetDropdown = null;
+      
+      // Find a dropdown for a date without existing assignments
+      for (const dropdown of dropdowns) {
+        const selectElement = dropdown.closest('select');
+        const dayElement = selectElement.closest('div').querySelector('div');
+        if (dayElement && dayElement.textContent === '1') {
+          targetDropdown = dropdown;
+          break;
+        }
+      }
+
+      const selectElement = targetDropdown.closest('select');
+      
+      // First assignment - should succeed
+      fireEvent.change(selectElement, { target: { value: '2' } });
+
+      await waitFor(() => {
+        expect(screen.getAllByText(/Pancakes added to/)[0]).toBeInTheDocument();
+      });
+
+      // Verify the meal is now filtered out from dropdown options
+      const options = Array.from(selectElement.querySelectorAll('option'));
+      const mealOptions = options.filter(option => option.value && option.value !== 'create-new');
+      
+      // Should not include Pancakes (ID '2') anymore since it's now assigned
+      expect(mealOptions.some(option => option.value === '2')).toBe(false);
+      // Should still include other meals
+      expect(mealOptions.some(option => option.value === '1')).toBe(true);
+      expect(mealOptions.some(option => option.value === '3')).toBe(true);
+    });
+
+    test('filters out already assigned meals from dropdown options', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getAllByText('Add meal...')[0]).toBeInTheDocument();
+      });
+
+      // Find the dropdown for July 15th (which has Spaghetti Bolognese pre-assigned)
+      const dropdowns = screen.getAllByText('Add meal...');
+      let targetDropdown = null;
+      
+      for (const dropdown of dropdowns) {
+        const selectElement = dropdown.closest('select');
+        const dayElement = selectElement.closest('div').querySelector('div');
+        if (dayElement && dayElement.textContent === '15') {
+          targetDropdown = dropdown;
+          break;
+        }
+      }
+
+      expect(targetDropdown).toBeTruthy();
+      const selectElement = targetDropdown.closest('select');
+      
+      // Check that Spaghetti Bolognese (meal ID '1') is not in the options
+      const options = Array.from(selectElement.querySelectorAll('option'));
+      const mealOptions = options.filter(option => option.value && option.value !== 'create-new');
+      
+      // Should not include Spaghetti Bolognese since it's already assigned
+      expect(mealOptions.some(option => option.value === '1')).toBe(false);
+      
+      // Should still include other meals
+      expect(mealOptions.some(option => option.value === '2')).toBe(true);
+      expect(mealOptions.some(option => option.value === '3')).toBe(true);
+    });
+
+    test('shows all meals in dropdown for date with no assignments', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getAllByText('Add meal...')[0]).toBeInTheDocument();
+      });
+
+      // Find a dropdown for a date without assignments (e.g., July 1st - not July 15th which has pre-assigned meal)
+      const dropdowns = screen.getAllByText('Add meal...');
+      let targetDropdown = null;
+      
+      for (const dropdown of dropdowns) {
+        const selectElement = dropdown.closest('select');
+        const dayElement = selectElement.closest('div').querySelector('div');
+        if (dayElement && dayElement.textContent === '1') {
+          targetDropdown = dropdown;
+          break;
+        }
+      }
+      
+      expect(targetDropdown).toBeTruthy();
+      const selectElement = targetDropdown.closest('select');
+      const options = Array.from(selectElement.querySelectorAll('option'));
+      const mealOptions = options.filter(option => option.value && option.value !== 'create-new');
+      
+      // Should include all available meals
+      expect(mealOptions.length).toBe(3); // All 3 mock meals should be available
+      expect(mealOptions.some(option => option.value === '1')).toBe(true);
+      expect(mealOptions.some(option => option.value === '2')).toBe(true);
+      expect(mealOptions.some(option => option.value === '3')).toBe(true);
+    });
   });
 
   describe('Meal Creation Integration', () => {
@@ -376,6 +496,70 @@ describe('MealPlanner', () => {
 
       await waitFor(() => {
         expect(screen.queryByText('Create Meal')).not.toBeInTheDocument();
+      });
+    });
+
+    test('prevents duplicate assignment when creating new meal that already exists on date', async () => {
+      // Mock a meal that has the same ID as an existing assignment
+      const duplicateMeal = {
+        _id: '1', // Same as Spaghetti Bolognese which is already assigned to July 15th
+        name: 'Duplicate Meal',
+        description: 'Duplicate description',
+        mealType: 'dinner',
+        totalTime: 30,
+      };
+
+      api.post.mockResolvedValue({ data: duplicateMeal });
+
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getAllByText('Add meal...')[0]).toBeInTheDocument();
+      });
+
+      // Find the dropdown for July 15th (which already has Spaghetti Bolognese assigned)
+      const dropdowns = screen.getAllByText('Add meal...');
+      let targetDropdown = null;
+      
+      for (const dropdown of dropdowns) {
+        const selectElement = dropdown.closest('select');
+        const dayElement = selectElement.closest('div').querySelector('div');
+        if (dayElement && dayElement.textContent === '15') {
+          targetDropdown = dropdown;
+          break;
+        }
+      }
+
+      expect(targetDropdown).toBeTruthy();
+      const selectElement = targetDropdown.closest('select');
+      
+      // Open modal for creating new meal
+      fireEvent.change(selectElement, { target: { value: 'create-new' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Create Meal')).toBeInTheDocument();
+      });
+
+      // Fill form
+      const nameInput = screen.getByLabelText('Meal Name *');
+      const descriptionInput = screen.getByLabelText('Description');
+      const mealTypeSelect = screen.getByLabelText('Meal Type');
+
+      fireEvent.change(nameInput, { target: { value: 'Duplicate Meal' } });
+      fireEvent.change(descriptionInput, { target: { value: 'Duplicate description' } });
+      fireEvent.change(mealTypeSelect, { target: { value: 'dinner' } });
+
+      // Submit form
+      const submitButton = screen.getByText('Create Meal');
+      fireEvent.click(submitButton);
+
+      // Should show duplicate assignment error
+      await waitFor(() => {
+        expect(screen.getByText(/Duplicate Meal is already assigned to/)).toBeInTheDocument();
       });
     });
   });
