@@ -387,6 +387,8 @@ describe('Dashboard Component', () => {
 
   describe('Error Handling', () => {
     it('handles API error when fetching dashboard data', async () => {
+      // Clear and reset mocks before setting up error scenario
+      jest.clearAllMocks();
       api.get.mockRejectedValue(new Error('API Error'));
       
       renderDashboard();
@@ -397,6 +399,8 @@ describe('Dashboard Component', () => {
     });
 
     it('handles partial API failures gracefully', async () => {
+      // Clear mocks and set up specific failure scenario
+      jest.clearAllMocks();
       api.get.mockImplementation((url) => {
         if (url === '/family-members') {
           return Promise.resolve({ data: { count: 2, familyMembers: mockFamilyMembers } });
