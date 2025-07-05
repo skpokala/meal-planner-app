@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Clock, Users, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Clock, Users, Trash2, Calendar, CalendarDays, CalendarCheck } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MealModal from '../components/MealModal';
 import toast from 'react-hot-toast';
 
+const VIEW_MODES = {
+  MONTHLY: 'monthly',
+  WEEKLY: 'weekly',
+  DAILY: 'daily'
+};
+
 const MealPlanner = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState(VIEW_MODES.MONTHLY);
   const [meals, setMeals] = useState([]);
   const [mealAssignments, setMealAssignments] = useState({});
   const [loading, setLoading] = useState(true);
@@ -86,12 +93,116 @@ const MealPlanner = () => {
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   };
 
+  const formatWeekRange = (date) => {
+    const startOfWeek = getStartOfWeek(date);
+    const endOfWeek = getEndOfWeek(date);
+    
+    if (startOfWeek.getMonth() === endOfWeek.getMonth()) {
+      return `${startOfWeek.toLocaleDateString('en-US', { month: 'long' })} ${startOfWeek.getDate()}-${endOfWeek.getDate()}, ${startOfWeek.getFullYear()}`;
+    } else {
+      return `${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${endOfWeek.getFullYear()}`;
+    }
+  };
+
+  const formatDayDate = (date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const getStartOfWeek = (date) => {
+    const startOfWeek = new Date(date);
+    const day = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - day;
+    startOfWeek.setDate(diff);
+    return startOfWeek;
+  };
+
+  const getEndOfWeek = (date) => {
+    const endOfWeek = new Date(date);
+    const day = endOfWeek.getDay();
+    const diff = endOfWeek.getDate() + (6 - day);
+    endOfWeek.setDate(diff);
+    return endOfWeek;
+  };
+
+  const getDaysInWeek = (date) => {
+    const startOfWeek = getStartOfWeek(date);
+    const days = [];
+    
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(startOfWeek);
+      day.setDate(startOfWeek.getDate() + i);
+      days.push(day);
+    }
+    
+    return days;
+  };
+
   const navigateMonth = (direction) => {
     setCurrentDate(prev => {
       const newDate = new Date(prev);
       newDate.setMonth(prev.getMonth() + direction);
       return newDate;
     });
+  };
+
+  const navigateWeek = (direction) => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setDate(prev.getDate() + (direction * 7));
+      return newDate;
+    });
+  };
+
+  const navigateDay = (direction) => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setDate(prev.getDate() + direction);
+      return newDate;
+    });
+  };
+
+  const navigate = (direction) => {
+    switch (viewMode) {
+      case VIEW_MODES.DAILY:
+        navigateDay(direction);
+        break;
+      case VIEW_MODES.WEEKLY:
+        navigateWeek(direction);
+        break;
+      case VIEW_MODES.MONTHLY:
+      default:
+        navigateMonth(direction);
+        break;
+    }
+  };
+
+  const getViewTitle = () => {
+    switch (viewMode) {
+      case VIEW_MODES.DAILY:
+        return formatDayDate(currentDate);
+      case VIEW_MODES.WEEKLY:
+        return formatWeekRange(currentDate);
+      case VIEW_MODES.MONTHLY:
+      default:
+        return formatMonthYear(currentDate);
+    }
+  };
+
+  const getCurrentViewDays = () => {
+    switch (viewMode) {
+      case VIEW_MODES.DAILY:
+        return [currentDate];
+      case VIEW_MODES.WEEKLY:
+        return getDaysInWeek(currentDate);
+      case VIEW_MODES.MONTHLY:
+      default:
+        return getDaysInMonth(currentDate);
+    }
   };
 
   const handleMealSelect = async (date, mealId) => {
@@ -217,7 +328,7 @@ const MealPlanner = () => {
     return <LoadingSpinner size="lg" text="Loading meal planner..." />;
   }
 
-  const days = getDaysInMonth(currentDate);
+  const days = getCurrentViewDays();
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
@@ -228,6 +339,46 @@ const MealPlanner = () => {
           <h1 className="text-2xl font-bold text-secondary-900">Meal Planner</h1>
           <p className="text-secondary-600">Plan your family meals on the calendar</p>
         </div>
+        
+        {/* View Toggle Buttons */}
+        <div className="flex bg-secondary-100 rounded-lg p-1">
+          <button
+            onClick={() => setViewMode(VIEW_MODES.MONTHLY)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              viewMode === VIEW_MODES.MONTHLY
+                ? 'bg-white text-primary-600 shadow-sm'
+                : 'text-secondary-600 hover:text-secondary-900'
+            }`}
+            title="Monthly View"
+          >
+            <Calendar className="w-4 h-4" />
+            Month
+          </button>
+          <button
+            onClick={() => setViewMode(VIEW_MODES.WEEKLY)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              viewMode === VIEW_MODES.WEEKLY
+                ? 'bg-white text-primary-600 shadow-sm'
+                : 'text-secondary-600 hover:text-secondary-900'
+            }`}
+            title="Weekly View"
+          >
+            <CalendarDays className="w-4 h-4" />
+            Week
+          </button>
+          <button
+            onClick={() => setViewMode(VIEW_MODES.DAILY)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              viewMode === VIEW_MODES.DAILY
+                ? 'bg-white text-primary-600 shadow-sm'
+                : 'text-secondary-600 hover:text-secondary-900'
+            }`}
+            title="Daily View"
+          >
+            <CalendarCheck className="w-4 h-4" />
+            Day
+          </button>
+        </div>
       </div>
 
       {/* Calendar Navigation */}
@@ -235,21 +386,21 @@ const MealPlanner = () => {
         <div className="card-body">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => navigateMonth(-1)}
+              onClick={() => navigate(-1)}
               className="p-2 hover:bg-secondary-100 rounded-lg transition-colors"
-              title="Previous month"
+              title={`Previous ${viewMode}`}
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             
             <h2 className="text-xl font-semibold text-secondary-900">
-              {formatMonthYear(currentDate)}
+              {getViewTitle()}
             </h2>
             
             <button
-              onClick={() => navigateMonth(1)}
+              onClick={() => navigate(1)}
               className="p-2 hover:bg-secondary-100 rounded-lg transition-colors"
-              title="Next month"
+              title={`Next ${viewMode}`}
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -260,50 +411,74 @@ const MealPlanner = () => {
       {/* Calendar Grid */}
       <div className="card">
         <div className="card-body p-0">
-          {/* Day Headers */}
-          <div className="grid grid-cols-7 border-b border-secondary-200">
-            {dayNames.map(day => (
-              <div key={day} className="p-3 text-center font-medium text-secondary-600 border-r border-secondary-200 last:border-r-0">
-                {day}
-              </div>
-            ))}
-          </div>
+          {/* Day Headers - only show for monthly and weekly views */}
+          {viewMode !== VIEW_MODES.DAILY && (
+            <div className={`grid ${viewMode === VIEW_MODES.WEEKLY ? 'grid-cols-7' : 'grid-cols-7'} border-b border-secondary-200`}>
+              {dayNames.map(day => (
+                <div key={day} className="p-3 text-center font-medium text-secondary-600 border-r border-secondary-200 last:border-r-0">
+                  {day}
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Calendar Days */}
-          <div className="grid grid-cols-7">
+          <div className={`grid ${
+            viewMode === VIEW_MODES.DAILY 
+              ? 'grid-cols-1' 
+              : viewMode === VIEW_MODES.WEEKLY
+              ? 'grid-cols-7'
+              : 'grid-cols-7'
+          }`}>
             {days.map((date, index) => (
               <div
                 key={index}
-                className={`min-h-[120px] border-r border-b border-secondary-200 last:border-r-0 p-2 ${
+                className={`${
+                  viewMode === VIEW_MODES.DAILY 
+                    ? 'min-h-[400px]' 
+                    : 'min-h-[120px]'
+                } border-r border-b border-secondary-200 last:border-r-0 p-2 ${
                   !date ? 'bg-secondary-50' : ''
                 } ${isToday(date) ? 'bg-primary-50' : ''}`}
               >
                 {date && (
                   <>
-                    {/* Date Number */}
-                    <div className={`text-sm font-medium mb-2 ${
+                    {/* Date Display */}
+                    <div className={`font-medium mb-2 ${
                       isToday(date) ? 'text-primary-600' : 'text-secondary-900'
-                    }`}>
-                      {date.getDate()}
+                    } ${viewMode === VIEW_MODES.DAILY ? 'text-lg' : 'text-sm'}`}>
+                      {viewMode === VIEW_MODES.DAILY 
+                        ? date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+                        : date.getDate()
+                      }
                     </div>
 
                     {/* Assigned Meals */}
-                    <div className="space-y-1 mb-2">
+                    <div className={`space-y-1 mb-2 ${viewMode === VIEW_MODES.DAILY ? 'space-y-2' : ''}`}>
                       {getAssignedMeals(date).map((assignment) => (
                         <div
                           key={assignment._id}
                           className="group relative"
                         >
-                          <div className={`text-xs px-2 py-1 rounded flex items-center justify-between ${getMealTypeColor(assignment.mealType)}`}>
-                            <span className="truncate flex-1" title={assignment.meal.name}>
-                              {assignment.meal.name}
-                            </span>
+                          <div className={`px-2 py-1 rounded flex items-center justify-between ${getMealTypeColor(assignment.mealType)} ${
+                            viewMode === VIEW_MODES.DAILY ? 'text-sm' : 'text-xs'
+                          }`}>
+                            <div className="flex-1 min-w-0">
+                              <div className="truncate" title={assignment.meal.name}>
+                                {assignment.meal.name}
+                              </div>
+                              {viewMode === VIEW_MODES.DAILY && assignment.meal.description && (
+                                <div className="text-xs opacity-75 truncate">
+                                  {assignment.meal.description}
+                                </div>
+                              )}
+                            </div>
                             <button
                               onClick={() => handleMealRemove(date, assignment._id)}
                               className="opacity-0 group-hover:opacity-100 ml-1 p-0.5 hover:bg-black hover:bg-opacity-10 rounded transition-opacity"
                               title="Remove meal"
                             >
-                              <Trash2 className="w-3 h-3" />
+                              <Trash2 className={viewMode === VIEW_MODES.DAILY ? 'w-4 h-4' : 'w-3 h-3'} />
                             </button>
                           </div>
                         </div>
@@ -314,15 +489,17 @@ const MealPlanner = () => {
                     <select
                       onChange={(e) => handleMealSelect(date, e.target.value)}
                       value=""
-                      className="w-full text-xs border border-secondary-300 rounded px-2 py-1 hover:border-primary-300 focus:border-primary-500 focus:outline-none"
+                      className={`w-full border border-secondary-300 rounded px-2 py-1 hover:border-primary-300 focus:border-primary-500 focus:outline-none ${
+                        viewMode === VIEW_MODES.DAILY ? 'text-sm' : 'text-xs'
+                      }`}
                     >
                       <option value="">Add meal...</option>
-                      {getAvailableMealsForDate(date).map(meal => (
-                        <option key={`${formatDateKey(date)}-${meal._id}`} value={meal._id}>
+                      {getAvailableMealsForDate(date).map((meal, mealIndex) => (
+                        <option key={`day-${index}-meal-${mealIndex}-${meal._id}`} value={meal._id}>
                           {meal.name} ({meal.mealType})
                         </option>
                       ))}
-                      <option key={`${formatDateKey(date)}-create-new`} value="create-new">+ Create new meal</option>
+                      <option key={`day-${index}-create-new`} value="create-new">+ Create new meal</option>
                     </select>
                   </>
                 )}

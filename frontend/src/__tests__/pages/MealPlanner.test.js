@@ -95,6 +95,41 @@ describe('MealPlanner', () => {
       expect(screen.getByText('Plan your family meals on the calendar')).toBeInTheDocument();
     });
 
+    test('renders view toggle buttons', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Monthly View')).toBeInTheDocument();
+      });
+      expect(screen.getByTitle('Weekly View')).toBeInTheDocument();
+      expect(screen.getByTitle('Daily View')).toBeInTheDocument();
+      expect(screen.getByText('Month')).toBeInTheDocument();
+      expect(screen.getByText('Week')).toBeInTheDocument();
+      expect(screen.getByText('Day')).toBeInTheDocument();
+    });
+
+    test('monthly view is selected by default', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        const monthButton = screen.getByTitle('Monthly View');
+        expect(monthButton).toHaveClass('bg-white text-primary-600 shadow-sm');
+      });
+      
+      const weekButton = screen.getByTitle('Weekly View');
+      const dayButton = screen.getByTitle('Daily View');
+      expect(weekButton).toHaveClass('text-secondary-600 hover:text-secondary-900');
+      expect(dayButton).toHaveClass('text-secondary-600 hover:text-secondary-900');
+    });
+
     test('renders calendar navigation', async () => {
       render(
         <TestWrapper>
@@ -103,9 +138,9 @@ describe('MealPlanner', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTitle('Previous month')).toBeInTheDocument();
+        expect(screen.getByTitle('Previous monthly')).toBeInTheDocument();
       });
-      expect(screen.getByTitle('Next month')).toBeInTheDocument();
+      expect(screen.getByTitle('Next monthly')).toBeInTheDocument();
     });
 
     test('renders calendar grid with day headers', async () => {
@@ -150,8 +185,8 @@ describe('MealPlanner', () => {
     });
   });
 
-  describe('Calendar Navigation', () => {
-    test('navigates to previous month', async () => {
+  describe('View Mode Switching', () => {
+    test('switches to weekly view when week button is clicked', async () => {
       render(
         <TestWrapper>
           <MealPlanner />
@@ -159,11 +194,261 @@ describe('MealPlanner', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTitle('Previous month')).toBeInTheDocument();
+        expect(screen.getByTitle('Weekly View')).toBeInTheDocument();
+      });
+
+      const weekButton = screen.getByTitle('Weekly View');
+      fireEvent.click(weekButton);
+
+      await waitFor(() => {
+        expect(weekButton).toHaveClass('bg-white text-primary-600 shadow-sm');
+      });
+      
+      // Check navigation titles updated
+      expect(screen.getByTitle('Previous weekly')).toBeInTheDocument();
+      expect(screen.getByTitle('Next weekly')).toBeInTheDocument();
+    });
+
+    test('switches to daily view when day button is clicked', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Daily View')).toBeInTheDocument();
+      });
+
+      const dayButton = screen.getByTitle('Daily View');
+      fireEvent.click(dayButton);
+
+      await waitFor(() => {
+        expect(dayButton).toHaveClass('bg-white text-primary-600 shadow-sm');
+      });
+      
+      // Check navigation titles updated
+      expect(screen.getByTitle('Previous daily')).toBeInTheDocument();
+      expect(screen.getByTitle('Next daily')).toBeInTheDocument();
+    });
+
+    test('switches back to monthly view from weekly view', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Weekly View')).toBeInTheDocument();
+      });
+
+      // Switch to weekly first
+      const weekButton = screen.getByTitle('Weekly View');
+      fireEvent.click(weekButton);
+
+      await waitFor(() => {
+        expect(weekButton).toHaveClass('bg-white text-primary-600 shadow-sm');
+      });
+
+      // Switch back to monthly
+      const monthButton = screen.getByTitle('Monthly View');
+      fireEvent.click(monthButton);
+
+      await waitFor(() => {
+        expect(monthButton).toHaveClass('bg-white text-primary-600 shadow-sm');
+      });
+      expect(weekButton).toHaveClass('text-secondary-600 hover:text-secondary-900');
+    });
+  });
+
+  describe('Weekly View', () => {
+    test('displays week range in header when in weekly view', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Weekly View')).toBeInTheDocument();
+      });
+
+      const weekButton = screen.getByTitle('Weekly View');
+      fireEvent.click(weekButton);
+
+      await waitFor(() => {
+        // Should show week range like "Jun 29 - Jul 5, 2025" or "January 12-18, 2025"
+        const header = screen.getByRole('heading', { level: 2 });
+        expect(header.textContent).toMatch(/\w+ \d+ - \w+ \d+, \d{4}|\w+ \d+-\d+, \d{4}/);
+      });
+    });
+
+    test('shows 7 days in weekly view', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Weekly View')).toBeInTheDocument();
+      });
+
+      const weekButton = screen.getByTitle('Weekly View');
+      fireEvent.click(weekButton);
+
+      await waitFor(() => {
+        // Should show day headers
+        expect(screen.getByText('Sun')).toBeInTheDocument();
+        expect(screen.getByText('Mon')).toBeInTheDocument();
+        expect(screen.getByText('Tue')).toBeInTheDocument();
+        expect(screen.getByText('Wed')).toBeInTheDocument();
+        expect(screen.getByText('Thu')).toBeInTheDocument();
+        expect(screen.getByText('Fri')).toBeInTheDocument();
+        expect(screen.getByText('Sat')).toBeInTheDocument();
+      });
+    });
+
+    test('navigates weeks correctly', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Weekly View')).toBeInTheDocument();
+      });
+
+      const weekButton = screen.getByTitle('Weekly View');
+      fireEvent.click(weekButton);
+
+      await waitFor(() => {
+        const currentWeek = screen.getByRole('heading', { level: 2 }).textContent;
+        const nextButton = screen.getByTitle('Next weekly');
+        
+        fireEvent.click(nextButton);
+
+        return waitFor(() => {
+          const newWeek = screen.getByRole('heading', { level: 2 }).textContent;
+          expect(newWeek).not.toBe(currentWeek);
+        });
+      });
+    });
+  });
+
+  describe('Daily View', () => {
+    test('displays full date in header when in daily view', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Daily View')).toBeInTheDocument();
+      });
+
+      const dayButton = screen.getByTitle('Daily View');
+      fireEvent.click(dayButton);
+
+      await waitFor(() => {
+        // Should show full date like "Monday, January 13, 2025"
+        const header = screen.getByRole('heading', { level: 2 });
+        expect(header.textContent).toMatch(/\w+, \w+ \d+, \d{4}/);
+      });
+    });
+
+    test('shows single day in daily view', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Daily View')).toBeInTheDocument();
+      });
+
+      const dayButton = screen.getByTitle('Daily View');
+      fireEvent.click(dayButton);
+
+      await waitFor(() => {
+        // Should NOT show day headers in daily view
+        expect(screen.queryByText('Sun')).not.toBeInTheDocument();
+        expect(screen.queryByText('Mon')).not.toBeInTheDocument();
+        expect(screen.queryByText('Tue')).not.toBeInTheDocument();
+        expect(screen.queryByText('Wed')).not.toBeInTheDocument();
+        expect(screen.queryByText('Thu')).not.toBeInTheDocument();
+        expect(screen.queryByText('Fri')).not.toBeInTheDocument();
+        expect(screen.queryByText('Sat')).not.toBeInTheDocument();
+      });
+    });
+
+    test('navigates days correctly', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Daily View')).toBeInTheDocument();
+      });
+
+      const dayButton = screen.getByTitle('Daily View');
+      fireEvent.click(dayButton);
+
+      await waitFor(() => {
+        const currentDay = screen.getByRole('heading', { level: 2 }).textContent;
+        const nextButton = screen.getByTitle('Next daily');
+        
+        fireEvent.click(nextButton);
+
+        return waitFor(() => {
+          const newDay = screen.getByRole('heading', { level: 2 }).textContent;
+          expect(newDay).not.toBe(currentDay);
+        });
+      });
+    });
+
+    test('shows expanded meal details in daily view', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Daily View')).toBeInTheDocument();
+      });
+
+      const dayButton = screen.getByTitle('Daily View');
+      fireEvent.click(dayButton);
+
+      await waitFor(() => {
+        // Should show meal assignments with larger text and more space
+        const mealElements = screen.getAllByText('Add meal...');
+        expect(mealElements.length).toBe(1); // Only one day shown
+      });
+    });
+  });
+
+  describe('Calendar Navigation', () => {
+    test('navigates to previous month in monthly view', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Previous monthly')).toBeInTheDocument();
       });
 
       const currentMonth = screen.getByRole('heading', { level: 2 }).textContent;
-      const prevButton = screen.getByTitle('Previous month');
+      const prevButton = screen.getByTitle('Previous monthly');
       
       fireEvent.click(prevButton);
 
@@ -173,7 +458,7 @@ describe('MealPlanner', () => {
       });
     });
 
-    test('navigates to next month', async () => {
+    test('navigates to next month in monthly view', async () => {
       render(
         <TestWrapper>
           <MealPlanner />
@@ -181,17 +466,48 @@ describe('MealPlanner', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTitle('Next month')).toBeInTheDocument();
+        expect(screen.getByTitle('Next monthly')).toBeInTheDocument();
       });
 
       const currentMonth = screen.getByRole('heading', { level: 2 }).textContent;
-      const nextButton = screen.getByTitle('Next month');
+      const nextButton = screen.getByTitle('Next monthly');
       
       fireEvent.click(nextButton);
 
       await waitFor(() => {
         const newMonth = screen.getByRole('heading', { level: 2 }).textContent;
         expect(newMonth).not.toBe(currentMonth);
+      });
+    });
+
+    test('navigation titles update based on view mode', async () => {
+      render(
+        <TestWrapper>
+          <MealPlanner />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Previous monthly')).toBeInTheDocument();
+        expect(screen.getByTitle('Next monthly')).toBeInTheDocument();
+      });
+
+      // Switch to weekly view
+      const weekButton = screen.getByTitle('Weekly View');
+      fireEvent.click(weekButton);
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Previous weekly')).toBeInTheDocument();
+        expect(screen.getByTitle('Next weekly')).toBeInTheDocument();
+      });
+
+      // Switch to daily view
+      const dayButton = screen.getByTitle('Daily View');
+      fireEvent.click(dayButton);
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Previous daily')).toBeInTheDocument();
+        expect(screen.getByTitle('Next daily')).toBeInTheDocument();
       });
     });
   });
@@ -263,13 +579,15 @@ describe('MealPlanner', () => {
         expect(screen.getByText('Spaghetti Bolognese')).toBeInTheDocument();
       });
 
-      const mealElement = screen.getByText('Spaghetti Bolognese').closest('div');
-      const removeButton = mealElement.querySelector('[title="Remove meal"]');
+      const mealElement = screen.getByText('Spaghetti Bolognese');
+      const mealContainer = mealElement.closest('.group');
+      const removeButton = mealContainer.querySelector('[title="Remove meal"]');
       
+      expect(removeButton).toBeInTheDocument();
       fireEvent.click(removeButton);
 
       await waitFor(() => {
-        expect(screen.getAllByText('Meal removed')[0]).toBeInTheDocument();
+        expect(screen.queryByText('Spaghetti Bolognese')).not.toBeInTheDocument();
       });
     });
 
@@ -639,13 +957,15 @@ describe('MealPlanner', () => {
       });
 
       // Force an error by mocking the removal process
-      const mealElement = screen.getByText('Spaghetti Bolognese').closest('div');
-      const removeButton = mealElement.querySelector('[title="Remove meal"]');
+      const mealElement = screen.getByText('Spaghetti Bolognese');
+      const mealContainer = mealElement.closest('.group');
+      const removeButton = mealContainer.querySelector('[title="Remove meal"]');
       
+      expect(removeButton).toBeInTheDocument();
       fireEvent.click(removeButton);
 
       await waitFor(() => {
-        expect(screen.getAllByText('Meal removed')[0]).toBeInTheDocument();
+        expect(screen.queryByText('Spaghetti Bolognese')).not.toBeInTheDocument();
       });
 
       consoleSpy.mockRestore();
@@ -709,7 +1029,8 @@ describe('MealPlanner', () => {
 
       await waitFor(() => {
         const mealElement = screen.getByText('Spaghetti Bolognese');
-        const mealBadge = mealElement.closest('div');
+        // Navigate to the div that contains the meal type color classes
+        const mealBadge = mealElement.closest('div').parentElement.parentElement;
         expect(mealBadge).toHaveClass('bg-blue-100', 'text-blue-800');
       });
     });
@@ -739,9 +1060,11 @@ describe('MealPlanner', () => {
         expect(screen.getByText('Spaghetti Bolognese')).toBeInTheDocument();
       });
 
-      const mealElement = screen.getByText('Spaghetti Bolognese').closest('div');
-      const removeButton = mealElement.querySelector('[title="Remove meal"]');
+      const mealElement = screen.getByText('Spaghetti Bolognese');
+      const mealContainer = mealElement.closest('.group');
+      const removeButton = mealContainer.querySelector('[title="Remove meal"]');
       
+      expect(removeButton).toBeInTheDocument();
       expect(removeButton).toHaveClass('opacity-0');
       expect(removeButton).toHaveClass('group-hover:opacity-100');
     });
@@ -756,9 +1079,9 @@ describe('MealPlanner', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTitle('Previous month')).toBeInTheDocument();
+        expect(screen.getByTitle('Previous monthly')).toBeInTheDocument();
       });
-      expect(screen.getByTitle('Next month')).toBeInTheDocument();
+      expect(screen.getByTitle('Next monthly')).toBeInTheDocument();
     });
 
     test('has proper titles for remove buttons', async () => {
@@ -772,9 +1095,11 @@ describe('MealPlanner', () => {
         expect(screen.getByText('Spaghetti Bolognese')).toBeInTheDocument();
       });
 
-      const mealElement = screen.getByText('Spaghetti Bolognese').closest('div');
-      const removeButton = mealElement.querySelector('[title="Remove meal"]');
+      const mealElement = screen.getByText('Spaghetti Bolognese');
+      const mealContainer = mealElement.closest('.group');
+      const removeButton = mealContainer.querySelector('[title="Remove meal"]');
       
+      expect(removeButton).toBeInTheDocument();
       expect(removeButton).toHaveAttribute('title', 'Remove meal');
     });
 
