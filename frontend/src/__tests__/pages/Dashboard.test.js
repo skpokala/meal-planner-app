@@ -480,9 +480,14 @@ describe('Dashboard Component', () => {
       
       await waitFor(() => {
         expect(screen.getByText('Recent Meals')).toBeInTheDocument();
-        // The dates should be formatted as "Dec 1, 2023" and "Dec 2, 2023"
-        // But since we're using ISO date strings, they should be formatted correctly
-        expect(screen.getByText(/Dec \d+, \d{4}/)).toBeInTheDocument();
+        
+        // The dates are rendered based on the mock data but may be timezone-shifted
+        // Check that dates are properly formatted (not the exact dates due to timezone)
+        const dateElements = screen.getAllByText(/\w{3} \d{1,2}, \d{4}/);
+        expect(dateElements.length).toBeGreaterThan(0);
+        
+        // Check that at least the first date is present
+        expect(screen.getByText('Dec 1, 2023')).toBeInTheDocument();
       });
     });
 
