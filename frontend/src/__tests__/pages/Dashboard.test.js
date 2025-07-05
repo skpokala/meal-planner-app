@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import Dashboard from '../../pages/Dashboard';
@@ -81,21 +81,7 @@ const renderDashboard = () => {
   );
 };
 
-// Helper function for more reliable async testing in CI
-const waitForAsync = async (fn, timeout = 30000, interval = 100) => {
-  const start = Date.now();
-  while (Date.now() - start < timeout) {
-    try {
-      await fn();
-      return;
-    } catch (error) {
-      if (Date.now() - start >= timeout) {
-        throw error;
-      }
-      await new Promise(resolve => setTimeout(resolve, interval));
-    }
-  }
-};
+
 
 describe('Dashboard Component', () => {
   beforeEach(() => {
@@ -407,20 +393,36 @@ describe('Dashboard Component', () => {
       jest.clearAllMocks();
       api.get.mockRejectedValue(new Error('API Error'));
       
-      renderDashboard();
-      
-      // Small delay to ensure component is mounted
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Wait for loading to complete
-      await waitForAsync(() => {
-        expect(screen.queryByText('Loading dashboard...')).not.toBeInTheDocument();
+      let component;
+      await act(async () => {
+        component = renderDashboard();
       });
       
-      // Wait for error toast with retry logic
-      await waitForAsync(() => {
-        expect(toast.error).toHaveBeenCalledWith('Failed to load dashboard data');
+      // Ensure all promises are flushed
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 0));
       });
+      
+      // Use a more reliable approach - wait for the component to not be loading
+      await waitFor(
+        () => {
+          expect(screen.queryByText('Loading dashboard...')).not.toBeInTheDocument();
+        },
+        { timeout: 30000 }
+      );
+      
+      // Ensure all async operations complete
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 0));
+      });
+      
+      // Then check that the error toast was called
+      await waitFor(
+        () => {
+          expect(toast.error).toHaveBeenCalledWith('Failed to load dashboard data');
+        },
+        { timeout: 30000 }
+      );
     });
 
     it('handles partial API failures gracefully', async () => {
@@ -439,20 +441,36 @@ describe('Dashboard Component', () => {
         return Promise.reject(new Error('Unknown endpoint'));
       });
       
-      renderDashboard();
+      let component;
+      await act(async () => {
+        component = renderDashboard();
+      });
       
-      // Small delay to ensure component is mounted
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Ensure all promises are flushed
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 0));
+      });
       
       // Wait for loading to complete
-      await waitForAsync(() => {
-        expect(screen.queryByText('Loading dashboard...')).not.toBeInTheDocument();
+      await waitFor(
+        () => {
+          expect(screen.queryByText('Loading dashboard...')).not.toBeInTheDocument();
+        },
+        { timeout: 30000 }
+      );
+      
+      // Ensure all async operations complete
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 0));
       });
       
-      // Wait for error toast with retry logic
-      await waitForAsync(() => {
-        expect(toast.error).toHaveBeenCalledWith('Failed to load dashboard data');
-      });
+      // Wait for error toast
+      await waitFor(
+        () => {
+          expect(toast.error).toHaveBeenCalledWith('Failed to load dashboard data');
+        },
+        { timeout: 30000 }
+      );
     });
   });
 
