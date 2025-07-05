@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Users, Calendar, ChefHat, Plus, Clock, Star, Settings } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
+import MealModal from '../components/MealModal';
 import toast from 'react-hot-toast';
 
 const Dashboard = () => {
@@ -13,34 +14,42 @@ const Dashboard = () => {
   });
   const [recentMeals, setRecentMeals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [mealModalOpen, setMealModalOpen] = useState(false);
   const navigate = useNavigate();
 
+  const fetchDashboardData = async () => {
+    try {
+      const [familyResponse, mealStatsResponse, mealsResponse] = await Promise.all([
+        api.get('/family-members'),
+        api.get('/meals/stats/overview'),
+        api.get('/meals?limit=5')
+      ]);
+
+      setStats({
+        familyMembers: familyResponse.data.count,
+        totalMeals: mealStatsResponse.data.stats.overview.totalMeals,
+        plannedMeals: mealStatsResponse.data.stats.overview.plannedMeals,
+      });
+
+      setRecentMeals(mealsResponse.data.meals.slice(0, 5));
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      toast.error('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const [familyResponse, mealStatsResponse, mealsResponse] = await Promise.all([
-          api.get('/family-members'),
-          api.get('/meals/stats/overview'),
-          api.get('/meals?limit=5')
-        ]);
-
-        setStats({
-          familyMembers: familyResponse.data.count,
-          totalMeals: mealStatsResponse.data.stats.overview.totalMeals,
-          plannedMeals: mealStatsResponse.data.stats.overview.plannedMeals,
-        });
-
-        setRecentMeals(mealsResponse.data.meals.slice(0, 5));
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        toast.error('Failed to load dashboard data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDashboardData();
   }, []);
+
+  const handleMealCreated = async (newMeal) => {
+    setMealModalOpen(false);
+    toast.success('Meal created successfully!');
+    // Refresh dashboard data to reflect new meal
+    await fetchDashboardData();
+  };
 
   const statCards = [
     {
@@ -67,14 +76,23 @@ const Dashboard = () => {
   ];
 
   const formatDate = (dateString) => {
-    // Parse the date string properly to avoid timezone issues
-    const [year, month, day] = dateString.split('-').map(Number);
-    const date = new Date(year, month - 1, day); // month is 0-indexed
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    try {
+      // Handle both ISO string and date string formats
+      const date = new Date(dateString);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
+      
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    } catch (error) {
+      return 'Invalid date';
+    }
   };
 
   const getMealTypeColor = (mealType) => {
@@ -140,7 +158,7 @@ const Dashboard = () => {
                 Recent Meals
               </h3>
               <button
-                onClick={() => navigate('/meal-planner')}
+                onClick={() => setMealModalOpen(true)}
                 className="btn-primary btn-sm"
               >
                 <Plus className="w-4 h-4 mr-1" />
@@ -154,7 +172,7 @@ const Dashboard = () => {
                 <ChefHat className="w-12 h-12 text-secondary-400 mx-auto mb-4" />
                 <p className="text-secondary-600">No meals planned yet</p>
                 <button
-                  onClick={() => navigate('/meal-planner')}
+                  onClick={() => setMealModalOpen(true)}
                   className="mt-4 btn-primary"
                 >
                   Plan Your First Meal
@@ -260,6 +278,15 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Meal Modal */}
+      {mealModalOpen && (
+        <MealModal
+          isOpen={mealModalOpen}
+          onClose={() => setMealModalOpen(false)}
+          onMealCreated={handleMealCreated}
+        />
+      )}
     </div>
   );
 };

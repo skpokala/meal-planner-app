@@ -348,13 +348,25 @@ router.get('/stats/overview', async (req, res) => {
   try {
     const query = req.user.role === 'admin' ? {} : { createdBy: req.user._id };
     
+    // Get today's date at midnight for future meal filtering
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     const stats = await Meal.aggregate([
       { $match: query },
       {
         $group: {
           _id: null,
           totalMeals: { $sum: 1 },
-          plannedMeals: { $sum: { $cond: ['$isPlanned', 1, 0] } },
+          plannedMeals: { 
+            $sum: { 
+              $cond: [
+                { $and: ['$isPlanned', { $gte: ['$date', today] }] },
+                1, 
+                0
+              ] 
+            } 
+          },
           cookedMeals: { $sum: { $cond: ['$isCooked', 1, 0] } },
           averageRating: { $avg: '$rating' }
         }
