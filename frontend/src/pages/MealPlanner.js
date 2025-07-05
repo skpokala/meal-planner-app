@@ -1,31 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ChefHat, Clock, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Clock, Users, Trash2 } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
+import MealModal from '../components/MealModal';
 import toast from 'react-hot-toast';
 
 const MealPlanner = () => {
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [meals, setMeals] = useState([]);
-  // eslint-disable-next-line no-unused-vars
-  const [familyMembers, setFamilyMembers] = useState([]); // Used for future assignment features
+  const [mealAssignments, setMealAssignments] = useState({});
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    mealType: 'dinner',
-    date: new Date().toISOString().split('T')[0],
-    assignedTo: [],
-    ingredients: [],
-    recipe: {
-      prepTime: '',
-      cookTime: '',
-      servings: '',
-      difficulty: 'medium',
-      instructions: []
-    }
-  });
+  const [mealModalOpen, setMealModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -33,13 +19,34 @@ const MealPlanner = () => {
 
   const fetchData = async () => {
     try {
-      const [mealsResponse, familyResponse] = await Promise.all([
-        api.get('/meals'),
-        api.get('/family-members')
-      ]);
+      // Fetch meals first (required)
+      const mealsResponse = await api.get('/meals');
+      setMeals(mealsResponse.data.meals || []);
       
-      setMeals(mealsResponse.data.meals);
-      setFamilyMembers(familyResponse.data.familyMembers);
+      // Try to fetch meal assignments (optional - might not exist)
+      try {
+        const assignmentsResponse = await api.get('/meal-assignments');
+        
+        // Convert assignments array to date-keyed object for easier lookup
+        const assignmentsMap = {};
+        if (assignmentsResponse.data.assignments) {
+          assignmentsResponse.data.assignments.forEach(assignment => {
+            const dateKey = assignment.date;
+            if (!assignmentsMap[dateKey]) {
+              assignmentsMap[dateKey] = [];
+            }
+            assignmentsMap[dateKey].push(assignment);
+          });
+        }
+        setMealAssignments(assignmentsMap);
+      } catch (assignmentsError) {
+        // Silently handle 404 for meal assignments - this endpoint might not exist
+        if (assignmentsError.response?.status !== 404) {
+          console.error('Error fetching meal assignments:', assignmentsError);
+        }
+        setMealAssignments({});
+      }
+      
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load meal data');
@@ -48,53 +55,118 @@ const MealPlanner = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await api.post('/meals', formData);
-      toast.success('Meal planned successfully');
-      setShowModal(false);
-      resetForm();
-      fetchData();
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Failed to plan meal';
-      toast.error(errorMessage);
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    const days = [];
+    
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
     }
+    
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(new Date(year, month, day));
+    }
+    
+    return days;
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      mealType: 'dinner',
-      date: new Date().toISOString().split('T')[0],
-      assignedTo: [],
-      ingredients: [],
-      recipe: {
-        prepTime: '',
-        cookTime: '',
-        servings: '',
-        difficulty: 'medium',
-        instructions: []
-      }
+  const formatDateKey = (date) => {
+    return date.toISOString().split('T')[0];
+  };
+
+  const formatMonthYear = (date) => {
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+
+  const navigateMonth = (direction) => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(prev.getMonth() + direction);
+      return newDate;
     });
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
-      setFormData(prev => ({
+  const handleMealSelect = async (date, mealId) => {
+    if (mealId === 'create-new') {
+      setSelectedDate(date);
+      setMealModalOpen(true);
+      return;
+    }
+
+    if (!mealId) return;
+
+    try {
+      const dateKey = formatDateKey(date);
+      const selectedMeal = meals.find(meal => meal._id === mealId);
+      
+      if (!selectedMeal) {
+        throw new Error('Meal not found');
+      }
+      
+      // Validate meal data
+      if (!selectedMeal.name || !selectedMeal.mealType) {
+        throw new Error('Invalid meal data');
+      }
+      
+      // For now, we'll store assignments locally since the backend endpoint might not exist
+      const newAssignment = {
+        _id: `${mealId}-${dateKey}-${Date.now()}`,
+        mealId: mealId,
+        meal: selectedMeal,
+        date: dateKey,
+        mealType: selectedMeal.mealType
+      };
+
+      setMealAssignments(prev => ({
         ...prev,
-        [parent]: {
-          ...prev[parent],
-          [child]: value
-        }
+        [dateKey]: [...(prev[dateKey] || []), newAssignment]
       }));
-    } else {
-      setFormData(prev => ({
+
+      toast.success(`${selectedMeal.name} added to ${date.toLocaleDateString()}`);
+    } catch (error) {
+      console.error('Error assigning meal:', error);
+      toast.error('Failed to assign meal');
+    }
+  };
+
+  const handleMealRemove = async (date, assignmentId) => {
+    try {
+      const dateKey = formatDateKey(date);
+      setMealAssignments(prev => ({
         ...prev,
-        [name]: value
+        [dateKey]: prev[dateKey]?.filter(assignment => assignment._id !== assignmentId) || []
+      }));
+      toast.success('Meal removed');
+    } catch (error) {
+      console.error('Error removing meal:', error);
+      toast.error('Failed to remove meal');
+    }
+  };
+
+  const handleNewMealCreated = (newMeal) => {
+    setMeals(prev => [newMeal, ...prev]);
+    
+    if (selectedDate) {
+      const dateKey = formatDateKey(selectedDate);
+      const newAssignment = {
+        _id: `${newMeal._id}-${dateKey}-${Date.now()}`,
+        mealId: newMeal._id,
+        meal: newMeal,
+        date: dateKey,
+        mealType: newMeal.mealType
+      };
+
+      setMealAssignments(prev => ({
+        ...prev,
+        [dateKey]: [...(prev[dateKey] || []), newAssignment]
       }));
     }
   };
@@ -109,280 +181,147 @@ const MealPlanner = () => {
     return colors[mealType] || 'bg-gray-100 text-gray-800';
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+  const getAssignedMeals = (date) => {
+    const dateKey = formatDateKey(date);
+    return mealAssignments[dateKey] || [];
   };
 
-  const filteredMeals = meals.filter(meal => {
-    const mealDate = new Date(meal.date).toISOString().split('T')[0];
-    return mealDate === selectedDate;
-  });
+  const isToday = (date) => {
+    if (!date) return false;
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  };
 
   if (loading) {
     return <LoadingSpinner size="lg" text="Loading meal planner..." />;
   }
 
+  const days = getDaysInMonth(currentDate);
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-secondary-900">Meal Planner</h1>
-          <p className="text-secondary-600">Plan and manage your family meals</p>
+          <p className="text-secondary-600">Plan your family meals on the calendar</p>
         </div>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowModal(true);
-          }}
-          className="btn-primary"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Plan Meal
-        </button>
       </div>
 
-      {/* Date Selector */}
-      <div className="card mt-6">
+      {/* Calendar Navigation */}
+      <div className="card mb-6">
         <div className="card-body">
           <div className="flex items-center justify-between">
-            <label className="block text-sm font-medium text-secondary-700">
-              Select Date
-            </label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="input w-auto"
-            />
+            <button
+              onClick={() => navigateMonth(-1)}
+              className="p-2 hover:bg-secondary-100 rounded-lg transition-colors"
+              title="Previous month"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            
+            <h2 className="text-xl font-semibold text-secondary-900">
+              {formatMonthYear(currentDate)}
+            </h2>
+            
+            <button
+              onClick={() => navigateMonth(1)}
+              className="p-2 hover:bg-secondary-100 rounded-lg transition-colors"
+              title="Next month"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Meals for Selected Date */}
-      <div className="card mt-6">
-        <div className="card-header">
-          <h3 className="text-lg font-semibold text-secondary-900">
-            Meals for {formatDate(selectedDate)}
-          </h3>
-        </div>
-        <div className="card-body">
-          {filteredMeals.length === 0 ? (
-            <div className="text-center py-8">
-              <ChefHat className="w-12 h-12 text-secondary-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-secondary-900 mb-2">
-                No meals planned
-              </h3>
-              <p className="text-secondary-600 mb-6">
-                Add your first meal for {formatDate(selectedDate)}
-              </p>
-              <button
-                onClick={() => {
-                  resetForm();
-                  setFormData(prev => ({ ...prev, date: selectedDate }));
-                  setShowModal(true);
-                }}
-                className="btn-primary"
+      {/* Calendar Grid */}
+      <div className="card">
+        <div className="card-body p-0">
+          {/* Day Headers */}
+          <div className="grid grid-cols-7 border-b border-secondary-200">
+            {dayNames.map(day => (
+              <div key={day} className="p-3 text-center font-medium text-secondary-600 border-r border-secondary-200 last:border-r-0">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Calendar Days */}
+          <div className="grid grid-cols-7">
+            {days.map((date, index) => (
+              <div
+                key={index}
+                className={`min-h-[120px] border-r border-b border-secondary-200 last:border-r-0 p-2 ${
+                  !date ? 'bg-secondary-50' : ''
+                } ${isToday(date) ? 'bg-primary-50' : ''}`}
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Plan Meal
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredMeals.map((meal) => (
-                <div key={meal._id} className="border border-secondary-200 rounded-card p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-secondary-900">{meal.name}</h4>
-                    <span className={`badge ${getMealTypeColor(meal.mealType)}`}>
-                      {meal.mealType}
-                    </span>
-                  </div>
-                  
-                  {meal.description && (
-                    <p className="text-sm text-secondary-600 mb-3">{meal.description}</p>
-                  )}
-                  
-                  <div className="space-y-2 text-sm">
-                    {meal.totalTime > 0 && (
-                      <div className="flex items-center text-secondary-600">
-                        <Clock className="w-4 h-4 mr-2" />
-                        {meal.totalTime} minutes
-                      </div>
-                    )}
-                    
-                    {meal.assignedTo.length > 0 && (
-                      <div className="flex items-center text-secondary-600">
-                        <Users className="w-4 h-4 mr-2" />
-                        {meal.assignedTo.length} family member(s)
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                {date && (
+                  <>
+                    {/* Date Number */}
+                    <div className={`text-sm font-medium mb-2 ${
+                      isToday(date) ? 'text-primary-600' : 'text-secondary-900'
+                    }`}>
+                      {date.getDate()}
+                    </div>
+
+                    {/* Assigned Meals */}
+                    <div className="space-y-1 mb-2">
+                      {getAssignedMeals(date).map((assignment) => (
+                        <div
+                          key={assignment._id}
+                          className="group relative"
+                        >
+                          <div className={`text-xs px-2 py-1 rounded flex items-center justify-between ${getMealTypeColor(assignment.mealType)}`}>
+                            <span className="truncate flex-1" title={assignment.meal.name}>
+                              {assignment.meal.name}
+                            </span>
+                            <button
+                              onClick={() => handleMealRemove(date, assignment._id)}
+                              className="opacity-0 group-hover:opacity-100 ml-1 p-0.5 hover:bg-black hover:bg-opacity-10 rounded transition-opacity"
+                              title="Remove meal"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Meal Selector Dropdown */}
+                    <select
+                      onChange={(e) => handleMealSelect(date, e.target.value)}
+                      value=""
+                      className="w-full text-xs border border-secondary-300 rounded px-2 py-1 hover:border-primary-300 focus:border-primary-500 focus:outline-none"
+                    >
+                      <option value="">Add meal...</option>
+                      {meals.map(meal => (
+                        <option key={meal._id} value={meal._id}>
+                          {meal.name} ({meal.mealType})
+                        </option>
+                      ))}
+                      <option value="create-new">+ Create new meal</option>
+                    </select>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Planning Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-card shadow-card-lg max-w-2xl w-full m-4 max-h-screen overflow-y-auto">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-secondary-900 mb-4">
-                Plan New Meal
-              </h3>
-              
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-1">
-                    Meal Name
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="input"
-                    required
-                    placeholder="e.g., Spaghetti Bolognese"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    className="input"
-                    rows="3"
-                    placeholder="Brief description of the meal..."
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Meal Type
-                    </label>
-                    <select
-                      name="mealType"
-                      value={formData.mealType}
-                      onChange={handleInputChange}
-                      className="input"
-                      required
-                    >
-                      <option value="breakfast">Breakfast</option>
-                      <option value="lunch">Lunch</option>
-                      <option value="dinner">Dinner</option>
-                      <option value="snack">Snack</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Date
-                    </label>
-                    <input
-                      type="date"
-                      name="date"
-                      value={formData.date}
-                      onChange={handleInputChange}
-                      className="input"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Prep Time (min)
-                    </label>
-                    <input
-                      type="number"
-                      name="recipe.prepTime"
-                      value={formData.recipe.prepTime}
-                      onChange={handleInputChange}
-                      className="input"
-                      placeholder="30"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Cook Time (min)
-                    </label>
-                    <input
-                      type="number"
-                      name="recipe.cookTime"
-                      value={formData.recipe.cookTime}
-                      onChange={handleInputChange}
-                      className="input"
-                      placeholder="45"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Servings
-                    </label>
-                    <input
-                      type="number"
-                      name="recipe.servings"
-                      value={formData.recipe.servings}
-                      onChange={handleInputChange}
-                      className="input"
-                      placeholder="4"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-1">
-                    Difficulty
-                  </label>
-                  <select
-                    name="recipe.difficulty"
-                    value={formData.recipe.difficulty}
-                    onChange={handleInputChange}
-                    className="input"
-                  >
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                  </select>
-                </div>
-
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowModal(false);
-                      resetForm();
-                    }}
-                    className="btn-outline"
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn-primary">
-                    Plan Meal
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Meal Modal */}
+      <MealModal
+        meal={null}
+        isOpen={mealModalOpen}
+        onClose={() => {
+          setMealModalOpen(false);
+          setSelectedDate(null);
+        }}
+        onSave={handleNewMealCreated}
+        mode="add"
+      />
     </div>
   );
 };
