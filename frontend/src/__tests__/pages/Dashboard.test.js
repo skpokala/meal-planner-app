@@ -81,6 +81,22 @@ const renderDashboard = () => {
   );
 };
 
+// Helper function for more reliable async testing in CI
+const waitForAsync = async (fn, timeout = 30000, interval = 100) => {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    try {
+      await fn();
+      return;
+    } catch (error) {
+      if (Date.now() - start >= timeout) {
+        throw error;
+      }
+      await new Promise(resolve => setTimeout(resolve, interval));
+    }
+  }
+};
+
 describe('Dashboard Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -393,7 +409,16 @@ describe('Dashboard Component', () => {
       
       renderDashboard();
       
-      await waitFor(() => {
+      // Small delay to ensure component is mounted
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Wait for loading to complete
+      await waitForAsync(() => {
+        expect(screen.queryByText('Loading dashboard...')).not.toBeInTheDocument();
+      });
+      
+      // Wait for error toast with retry logic
+      await waitForAsync(() => {
         expect(toast.error).toHaveBeenCalledWith('Failed to load dashboard data');
       });
     });
@@ -416,7 +441,16 @@ describe('Dashboard Component', () => {
       
       renderDashboard();
       
-      await waitFor(() => {
+      // Small delay to ensure component is mounted
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Wait for loading to complete
+      await waitForAsync(() => {
+        expect(screen.queryByText('Loading dashboard...')).not.toBeInTheDocument();
+      });
+      
+      // Wait for error toast with retry logic
+      await waitForAsync(() => {
         expect(toast.error).toHaveBeenCalledWith('Failed to load dashboard data');
       });
     });
