@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Clock, Users, Trash2, Calendar, CalendarDays, CalendarCheck, List } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, Clock, Users, Trash2, Calendar, CalendarDays, CalendarCheck, List, Loader2 } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MealModal from '../components/MealModal';
@@ -16,44 +16,32 @@ const MealPlanner = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState(VIEW_MODES.MONTHLY);
   const [meals, setMeals] = useState([]);
-  const [mealAssignments, setMealAssignments] = useState({});
+  const [plannedMeals, setPlannedMeals] = useState({});
   const [loading, setLoading] = useState(true);
   const [mealModalOpen, setMealModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [savingMeals, setSavingMeals] = useState(new Set());
+  const [removingMeals, setRemovingMeals] = useState(new Set());
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      // Fetch meals first (required)
-      const mealsResponse = await api.get('/meals');
+      setLoading(true);
+      
+      // Fetch all available meals (templates)
+      const mealsResponse = await api.get('/meals/templates');
       setMeals(mealsResponse.data.meals || []);
       
-      // Try to fetch meal assignments (optional - might not exist)
-      try {
-        const assignmentsResponse = await api.get('/meal-assignments');
-        
-        // Convert assignments array to date-keyed object for easier lookup
-        const assignmentsMap = {};
-        if (assignmentsResponse.data.assignments) {
-          assignmentsResponse.data.assignments.forEach(assignment => {
-            const dateKey = assignment.date;
-            if (!assignmentsMap[dateKey]) {
-              assignmentsMap[dateKey] = [];
-            }
-            assignmentsMap[dateKey].push(assignment);
-          });
+      // Fetch planned meals for current view period
+      const { startDate, endDate } = getViewDateRange();
+      
+      const calendarResponse = await api.get('/meals/calendar', {
+        params: {
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0]
         }
-        setMealAssignments(assignmentsMap);
-      } catch (assignmentsError) {
-        // Silently handle 404 for meal assignments - this endpoint might not exist
-        if (assignmentsError.response?.status !== 404) {
-          console.error('Error fetching meal assignments:', assignmentsError);
-        }
-        setMealAssignments({});
-      }
+      });
+      
+      setPlannedMeals(calendarResponse.data.mealsByDate || {});
       
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -61,6 +49,39 @@ const MealPlanner = () => {
     } finally {
       setLoading(false);
     }
+  }, [currentDate, viewMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const getViewDateRange = () => {
+    let startDate, endDate;
+    
+    switch (viewMode) {
+      case VIEW_MODES.DAILY:
+        startDate = new Date(currentDate);
+        endDate = new Date(currentDate);
+        break;
+      case VIEW_MODES.WEEKLY:
+        startDate = getStartOfWeek(currentDate);
+        endDate = getEndOfWeek(currentDate);
+        break;
+      case VIEW_MODES.LIST:
+        // For list view, get wider range from 30 days ago to 90 days in future
+        startDate = new Date();
+        startDate.setDate(startDate.getDate() - 30);
+        endDate = new Date();
+        endDate.setDate(endDate.getDate() + 90);
+        break;
+      case VIEW_MODES.MONTHLY:
+      default:
+        startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        break;
+    }
+    
+    return { startDate, endDate };
   };
 
   const getDaysInMonth = (date) => {
@@ -143,23 +164,23 @@ const MealPlanner = () => {
     return days;
   };
 
-  const getAllAssignments = () => {
-    const allAssignments = [];
+  const getAllPlannedMeals = () => {
+    const allMeals = [];
     
-    // Collect all assignments from all dates
-    Object.entries(mealAssignments).forEach(([dateKey, assignments]) => {
-      assignments.forEach(assignment => {
-        allAssignments.push({
-          ...assignment,
+    // Collect all planned meals from all dates
+    Object.entries(plannedMeals).forEach(([dateKey, meals]) => {
+      meals.forEach(meal => {
+        allMeals.push({
+          ...meal,
           dateObj: new Date(dateKey)
         });
       });
     });
     
     // Sort by date
-    allAssignments.sort((a, b) => a.dateObj - b.dateObj);
+    allMeals.sort((a, b) => a.dateObj - b.dateObj);
     
-    return allAssignments;
+    return allMeals;
   };
 
   const navigateMonth = (direction) => {
@@ -225,8 +246,8 @@ const MealPlanner = () => {
       case VIEW_MODES.WEEKLY:
         return getDaysInWeek(currentDate);
       case VIEW_MODES.LIST:
-        // For list view, we'll return all assignments sorted by date
-        return getAllAssignments();
+        // For list view, we'll return all planned meals sorted by date
+        return getAllPlannedMeals();
       case VIEW_MODES.MONTHLY:
       default:
         return getDaysInMonth(currentDate);
@@ -242,83 +263,213 @@ const MealPlanner = () => {
 
     if (!mealId) return;
 
-    try {
-      const dateKey = formatDateKey(date);
-      const selectedMeal = meals.find(meal => meal._id === mealId);
-      
-      if (!selectedMeal) {
-        throw new Error('Meal not found');
-      }
-      
-      // Check for duplicate assignment
-      if (isMealAssignedToDate(date, mealId)) {
-        toast.error(`${selectedMeal.name} is already assigned to ${date.toLocaleDateString()}`);
-        return;
-      }
-      
-      // Validate meal data
-      if (!selectedMeal.name || !selectedMeal.mealType) {
-        throw new Error('Invalid meal data');
-      }
-      
-      // For now, we'll store assignments locally since the backend endpoint might not exist
-      const newAssignment = {
-        _id: `${mealId}-${dateKey}-${Date.now()}`,
-        mealId: mealId,
-        meal: selectedMeal,
-        date: dateKey,
-        mealType: selectedMeal.mealType
-      };
+    const dateKey = formatDateKey(date);
+    const selectedMeal = meals.find(meal => meal._id === mealId);
+    
+    if (!selectedMeal) {
+      toast.error('Meal not found');
+      return;
+    }
+    
+    // Check for duplicate assignment
+    const existingMeals = plannedMeals[dateKey] || [];
+    if (existingMeals.some(meal => meal.name === selectedMeal.name && meal.mealType === selectedMeal.mealType)) {
+      toast.error(`${selectedMeal.name} (${selectedMeal.mealType}) is already planned for ${date.toLocaleDateString()}`);
+      return;
+    }
 
-      setMealAssignments(prev => ({
+    // Create temporary meal object for optimistic update
+    const tempMealId = `temp-${Date.now()}`;
+    const optimisticMeal = {
+      _id: tempMealId,
+      name: selectedMeal.name,
+      description: selectedMeal.description,
+      mealType: selectedMeal.mealType,
+      date: date.toISOString(),
+      ingredients: selectedMeal.ingredients || [],
+      recipe: selectedMeal.recipe || {},
+      nutritionInfo: selectedMeal.nutritionInfo || {},
+      tags: selectedMeal.tags || [],
+      image: selectedMeal.image || '',
+      isPlanned: true,
+      isCooked: false,
+      saving: true // Flag to show saving state
+    };
+
+    try {
+      // Optimistic update - add meal to UI immediately
+      setPlannedMeals(prev => ({
         ...prev,
-        [dateKey]: [...(prev[dateKey] || []), newAssignment]
+        [dateKey]: [...(prev[dateKey] || []), optimisticMeal]
       }));
 
-      toast.success(`${selectedMeal.name} added to ${date.toLocaleDateString()}`);
+      // Track saving state
+      setSavingMeals(prev => new Set([...prev, tempMealId]));
+
+      // Show immediate feedback
+      toast.loading('Planning meal...', { id: tempMealId });
+
+      // Prepare meal data for backend
+      const mealData = {
+        name: selectedMeal.name,
+        description: selectedMeal.description,
+        mealType: selectedMeal.mealType,
+        date: date.toISOString(),
+        ingredients: selectedMeal.ingredients || [],
+        recipe: selectedMeal.recipe || {},
+        nutritionInfo: selectedMeal.nutritionInfo || {},
+        tags: selectedMeal.tags || [],
+        image: selectedMeal.image || '',
+        isTemplate: false, // This is a planned instance, not a template
+        isPlanned: true,
+        isCooked: false
+      };
+
+      // Autosave to backend
+      const response = await api.post('/meals', mealData);
+      
+      // Replace optimistic update with real data
+      if (response?.data?.meal) {
+        setPlannedMeals(prev => ({
+          ...prev,
+          [dateKey]: prev[dateKey]?.map(meal => 
+            meal._id === tempMealId ? response.data.meal : meal
+          ) || []
+        }));
+      } else {
+        // If no proper response, keep the optimistic update but remove saving flag
+        setPlannedMeals(prev => ({
+          ...prev,
+          [dateKey]: prev[dateKey]?.map(meal => 
+            meal._id === tempMealId ? { ...meal, saving: false } : meal
+          ) || []
+        }));
+      }
+
+      // Show success
+      toast.success(`${selectedMeal.name} planned for ${date.toLocaleDateString()}`, { 
+        id: tempMealId 
+      });
+
+      // Refresh data from server to ensure consistency
+      await refreshPlannedMealsData();
+
     } catch (error) {
-      console.error('Error assigning meal:', error);
-      toast.error('Failed to assign meal');
+      console.error('Error planning meal:', error);
+      
+      // Revert optimistic update on failure
+      setPlannedMeals(prev => ({
+        ...prev,
+        [dateKey]: prev[dateKey]?.filter(meal => meal._id !== tempMealId) || []
+      }));
+      
+      toast.error('Failed to plan meal. Please try again.', { id: tempMealId });
+    } finally {
+      // Clear saving state
+      setSavingMeals(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(tempMealId);
+        return newSet;
+      });
     }
   };
 
-  const handleMealRemove = async (date, assignmentId) => {
+  const handleMealRemove = async (date, mealId) => {
+    const dateKey = formatDateKey(date);
+    const mealToRemove = plannedMeals[dateKey]?.find(meal => meal._id === mealId);
+    
+    if (!mealToRemove) {
+      toast.error('Meal not found');
+      return;
+    }
+
     try {
-      const dateKey = formatDateKey(date);
-      setMealAssignments(prev => ({
+      // Track removing state
+      setRemovingMeals(prev => new Set([...prev, mealId]));
+
+      // Show immediate feedback
+      toast.loading('Removing meal...', { id: `remove-${mealId}` });
+
+      // Optimistic update - remove from UI immediately
+      setPlannedMeals(prev => ({
         ...prev,
-        [dateKey]: prev[dateKey]?.filter(assignment => assignment._id !== assignmentId) || []
+        [dateKey]: prev[dateKey]?.filter(meal => meal._id !== mealId) || []
       }));
-      toast.success('Meal removed');
+
+      // Autosave to backend
+      await api.delete(`/meals/${mealId}`);
+      
+      toast.success('Meal removed from plan', { id: `remove-${mealId}` });
+
+      // Refresh data from server to ensure consistency
+      await refreshPlannedMealsData();
+
     } catch (error) {
       console.error('Error removing meal:', error);
-      toast.error('Failed to remove meal');
+      
+      // Revert optimistic update on failure
+      setPlannedMeals(prev => ({
+        ...prev,
+        [dateKey]: [...(prev[dateKey] || []), mealToRemove]
+      }));
+      
+      toast.error('Failed to remove meal. Please try again.', { id: `remove-${mealId}` });
+    } finally {
+      // Clear removing state
+      setRemovingMeals(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(mealId);
+        return newSet;
+      });
     }
   };
 
-  const handleNewMealCreated = (newMeal) => {
-    setMeals(prev => [newMeal, ...prev]);
-    
-    if (selectedDate) {
-      // Check for duplicate assignment
-      if (isMealAssignedToDate(selectedDate, newMeal._id)) {
-        toast.error(`${newMeal.name} is already assigned to ${selectedDate.toLocaleDateString()}`);
-        return;
+  // Helper function to refresh planned meals data from server
+  const refreshPlannedMealsData = async () => {
+    try {
+      const { startDate, endDate } = getViewDateRange();
+      const calendarResponse = await api.get('/meals/calendar', {
+        params: {
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0]
+        }
+      });
+      
+      setPlannedMeals(calendarResponse.data.mealsByDate || {});
+    } catch (error) {
+      console.error('Error refreshing planned meals:', error);
+      // Don't show error toast as this is a background refresh
+    }
+  };
+
+  const handleNewMealCreated = async (newMeal) => {
+    try {
+      // Add to meals list
+      setMeals(prev => [newMeal, ...prev]);
+      
+      // If a date was selected, also plan it for that date (already saved by modal)
+      if (selectedDate) {
+        const dateKey = formatDateKey(selectedDate);
+        
+        // Check if meal already exists in planned meals (may have been added by modal)
+        const existingMeal = plannedMeals[dateKey]?.find(meal => meal._id === newMeal._id);
+        
+        if (!existingMeal) {
+          setPlannedMeals(prev => ({
+            ...prev,
+            [dateKey]: [...(prev[dateKey] || []), newMeal]
+          }));
+        }
       }
-
-      const dateKey = formatDateKey(selectedDate);
-      const newAssignment = {
-        _id: `${newMeal._id}-${dateKey}-${Date.now()}`,
-        mealId: newMeal._id,
-        meal: newMeal,
-        date: dateKey,
-        mealType: newMeal.mealType
-      };
-
-      setMealAssignments(prev => ({
-        ...prev,
-        [dateKey]: [...(prev[dateKey] || []), newAssignment]
-      }));
+      
+      toast.success(`${newMeal.name} created and planned successfully`);
+      
+      // Refresh data from server to ensure consistency
+      await refreshPlannedMealsData();
+      
+    } catch (error) {
+      console.error('Error handling new meal:', error);
+      toast.error('Error updating meal lists');
     }
   };
 
@@ -332,18 +483,18 @@ const MealPlanner = () => {
     return colors[mealType] || 'bg-gray-100 text-gray-800';
   };
 
-  const getAssignedMeals = (date) => {
+  const getPlannedMeals = (date) => {
     const dateKey = formatDateKey(date);
-    return mealAssignments[dateKey] || [];
+    return plannedMeals[dateKey] || [];
   };
 
-  const isMealAssignedToDate = (date, mealId) => {
-    const assignedMeals = getAssignedMeals(date);
-    return assignedMeals.some(assignment => assignment.mealId === mealId);
+  const isMealAlreadyPlanned = (date, mealName, mealType) => {
+    const plannedForDate = getPlannedMeals(date);
+    return plannedForDate.some(meal => meal.name === mealName && meal.mealType === mealType);
   };
 
   const getAvailableMealsForDate = (date) => {
-    return meals.filter(meal => !isMealAssignedToDate(date, meal._id));
+    return meals.filter(meal => !isMealAlreadyPlanned(date, meal.name, meal.mealType));
   };
 
   const isToday = (date) => {
@@ -487,50 +638,73 @@ const MealPlanner = () => {
                   </button>
                 </div>
               ) : (
-                days.map((assignment, index) => (
-                  <div key={assignment._id} className="p-4 hover:bg-secondary-50 transition-colors">
+                days.map((meal, index) => (
+                  <div key={meal._id} className={`p-4 hover:bg-secondary-50 transition-colors ${
+                    meal.saving || savingMeals.has(meal._id) ? 'opacity-75' : ''
+                  } ${removingMeals.has(meal._id) ? 'opacity-50' : ''}`}>
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
+                          {(meal.saving || savingMeals.has(meal._id)) && (
+                            <Loader2 className="w-4 h-4 animate-spin text-primary-600" />
+                          )}
+                          {removingMeals.has(meal._id) && (
+                            <Loader2 className="w-4 h-4 animate-spin text-red-600" />
+                          )}
                           <div className="text-sm font-medium text-secondary-900">
-                            {assignment.dateObj.toLocaleDateString('en-US', { 
+                            {meal.dateObj.toLocaleDateString('en-US', { 
                               weekday: 'long', 
                               year: 'numeric', 
                               month: 'long', 
                               day: 'numeric' 
                             })}
                           </div>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getMealTypeColor(assignment.mealType)}`}>
-                            {assignment.mealType}
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getMealTypeColor(meal.mealType)}`}>
+                            {meal.mealType}
                           </span>
+                          {(meal.saving || savingMeals.has(meal._id)) && (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              Saving...
+                            </span>
+                          )}
+                          {removingMeals.has(meal._id) && (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              Removing...
+                            </span>
+                          )}
                         </div>
                         <div className="text-lg font-semibold text-secondary-900 mb-1">
-                          {assignment.meal.name}
+                          {meal.name}
                         </div>
-                        {assignment.meal.description && (
+                        {meal.description && (
                           <div className="text-sm text-secondary-600 mb-2">
-                            {assignment.meal.description}
+                            {meal.description}
                           </div>
                         )}
                         <div className="flex items-center gap-4 text-sm text-secondary-500">
-                          {assignment.meal.recipe?.prepTime && (
+                          {meal.recipe?.prepTime && (
                             <div className="flex items-center gap-1">
                               <Clock className="w-4 h-4" />
-                              {assignment.meal.recipe.prepTime} mins prep
+                              {meal.recipe.prepTime} mins prep
                             </div>
                           )}
-                          {assignment.meal.servings && (
+                          {meal.recipe?.servings && (
                             <div className="flex items-center gap-1">
                               <Users className="w-4 h-4" />
-                              {assignment.meal.servings} servings
+                              {meal.recipe.servings} servings
                             </div>
                           )}
                         </div>
                       </div>
                       <button
-                        onClick={() => handleMealRemove(assignment.dateObj, assignment._id)}
-                        className="p-2 text-secondary-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Remove meal"
+                        onClick={() => handleMealRemove(meal.dateObj, meal._id)}
+                        disabled={removingMeals.has(meal._id) || meal.saving || savingMeals.has(meal._id)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          removingMeals.has(meal._id) || meal.saving || savingMeals.has(meal._id)
+                            ? 'cursor-not-allowed text-secondary-300 bg-secondary-100'
+                            : 'text-secondary-400 hover:text-red-600 hover:bg-red-50'
+                        }`}
+                        title={removingMeals.has(meal._id) ? 'Removing...' : 'Remove meal'}
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
@@ -573,28 +747,42 @@ const MealPlanner = () => {
 
                       {/* Assigned Meals */}
                       <div className={`space-y-1 mb-2 ${viewMode === VIEW_MODES.DAILY ? 'space-y-2' : ''}`}>
-                        {getAssignedMeals(date).map((assignment) => (
+                        {getPlannedMeals(date).map((meal) => (
                           <div
-                            key={assignment._id}
+                            key={meal._id}
                             className="group relative"
                           >
-                            <div className={`px-2 py-1 rounded flex items-center justify-between ${getMealTypeColor(assignment.mealType)} ${
+                            <div className={`px-2 py-1 rounded flex items-center justify-between ${getMealTypeColor(meal.mealType)} ${
                               viewMode === VIEW_MODES.DAILY ? 'text-sm' : 'text-xs'
-                            }`}>
-                              <div className="flex-1 min-w-0">
-                                <div className="truncate" title={assignment.meal.name}>
-                                  {assignment.meal.name}
+                            } ${meal.saving ? 'opacity-75' : ''} ${removingMeals.has(meal._id) ? 'opacity-50' : ''}`}>
+                              <div className="flex-1 min-w-0 flex items-center gap-1">
+                                {(meal.saving || savingMeals.has(meal._id)) && (
+                                  <Loader2 className="w-3 h-3 animate-spin text-primary-600" />
+                                )}
+                                {removingMeals.has(meal._id) && (
+                                  <Loader2 className="w-3 h-3 animate-spin text-red-600" />
+                                )}
+                                <div className="truncate" title={meal.name}>
+                                  {meal.name}
                                 </div>
-                                {viewMode === VIEW_MODES.DAILY && assignment.meal.description && (
+                                {viewMode === VIEW_MODES.DAILY && meal.description && (
                                   <div className="text-xs opacity-75 truncate">
-                                    {assignment.meal.description}
+                                    {meal.description}
                                   </div>
                                 )}
                               </div>
                               <button
-                                onClick={() => handleMealRemove(date, assignment._id)}
-                                className="opacity-0 group-hover:opacity-100 ml-1 p-0.5 hover:bg-black hover:bg-opacity-10 rounded transition-opacity"
-                                title="Remove meal"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMealRemove(date, meal._id);
+                                }}
+                                disabled={removingMeals.has(meal._id) || meal.saving || savingMeals.has(meal._id)}
+                                className={`ml-1 p-0.5 hover:bg-black hover:bg-opacity-10 rounded transition-opacity ${
+                                  removingMeals.has(meal._id) || meal.saving || savingMeals.has(meal._id)
+                                    ? 'cursor-not-allowed opacity-50'
+                                    : 'opacity-0 group-hover:opacity-100 hover:text-red-600'
+                                }`}
+                                title={removingMeals.has(meal._id) ? 'Removing...' : 'Remove meal'}
                               >
                                 <Trash2 className={viewMode === VIEW_MODES.DAILY ? 'w-4 h-4' : 'w-3 h-3'} />
                               </button>
@@ -639,6 +827,7 @@ const MealPlanner = () => {
         onSave={handleNewMealCreated}
         mode="add"
         selectedDate={selectedDate}
+        isTemplate={false}
       />
     </div>
   );

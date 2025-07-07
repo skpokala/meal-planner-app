@@ -12,10 +12,15 @@ router.use(authenticateToken);
 // Get all meals with filters
 router.get('/', async (req, res) => {
   try {
-    const { date, mealType, assignedTo, isPlanned, isCooked } = req.query;
+    const { date, mealType, assignedTo, isPlanned, isCooked, templates } = req.query;
     
     // Build query
     const query = req.user.role === 'admin' ? {} : { createdBy: req.user._id };
+    
+    // Handle templates vs instances
+    if (templates !== undefined) {
+      query.isTemplate = templates === 'true';
+    }
     
     if (date) {
       const startDate = new Date(date);
@@ -40,10 +45,15 @@ router.get('/', async (req, res) => {
       query.isCooked = isCooked === 'true';
     }
 
+    // Different sorting for templates vs instances
+    const sortOptions = templates === 'true' 
+      ? { name: 1, mealType: 1 } // Sort templates by name
+      : { date: 1, mealType: 1 }; // Sort instances by date
+
     const meals = await Meal.find(query)
       .populate('assignedTo', 'firstName lastName fullName')
       .populate('createdBy', 'firstName lastName username')
-      .sort({ date: 1, mealType: 1 });
+      .sort(sortOptions);
 
     res.json({
       success: true,
@@ -55,6 +65,45 @@ router.get('/', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error while fetching meals'
+    });
+  }
+});
+
+// Get meal templates (for the Meals page)
+router.get('/templates', async (req, res) => {
+  try {
+    const { mealType, search } = req.query;
+    
+    // Build query for templates only
+    const query = req.user.role === 'admin' 
+      ? { isTemplate: true } 
+      : { isTemplate: true, createdBy: req.user._id };
+    
+    if (mealType) {
+      query.mealType = mealType;
+    }
+    
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const templates = await Meal.find(query)
+      .populate('createdBy', 'firstName lastName username')
+      .sort({ name: 1, mealType: 1 });
+
+    res.json({
+      success: true,
+      count: templates.length,
+      meals: templates
+    });
+  } catch (error) {
+    console.error('Get meal templates error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching meal templates'
     });
   }
 });
@@ -171,7 +220,8 @@ router.post('/', [
       assignedTo,
       tags,
       image,
-      notes
+      notes,
+      isTemplate
     } = req.body;
 
     // Validate assigned family members belong to the user
@@ -202,6 +252,7 @@ router.post('/', [
       tags: tags || [],
       image: image || '',
       notes: notes || '',
+      isTemplate: isTemplate || false,
       createdBy: req.user._id
     });
 
@@ -271,7 +322,7 @@ router.put('/:id', [
     const updateData = {};
     const allowedFields = [
       'name', 'description', 'mealType', 'date', 'ingredients', 'recipe',
-      'nutritionInfo', 'assignedTo', 'tags', 'image', 'isPlanned', 'isCooked',
+      'nutritionInfo', 'assignedTo', 'tags', 'image', 'isTemplate', 'isPlanned', 'isCooked',
       'rating', 'notes'
     ];
 
@@ -352,6 +403,16 @@ router.get('/stats/overview', async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
+    // Debug: Log today's date and some sample meals
+    console.log('DEBUG - Today\'s date for comparison:', today);
+    const sampleMeals = await Meal.find(query).limit(5).select('name date isPlanned');
+    console.log('DEBUG - Sample meals in database:', sampleMeals.map(m => ({ 
+      name: m.name, 
+      date: m.date, 
+      isPlanned: m.isPlanned,
+      isFuture: m.date >= today 
+    })));
+    
     const stats = await Meal.aggregate([
       { $match: query },
       {
@@ -361,7 +422,7 @@ router.get('/stats/overview', async (req, res) => {
           plannedMeals: { 
             $sum: { 
               $cond: [
-                { $and: ['$isPlanned', { $gte: ['$date', today] }] },
+                { $gte: ['$date', today] },
                 1, 
                 0
               ] 
@@ -372,6 +433,8 @@ router.get('/stats/overview', async (req, res) => {
         }
       }
     ]);
+    
+    console.log('DEBUG - Aggregation result:', stats[0]);
 
     const mealTypeStats = await Meal.aggregate([
       { $match: query },

@@ -103,6 +103,10 @@ const mealSchema = new mongoose.Schema({
     type: String, // URL to meal image
     default: ''
   },
+  isTemplate: {
+    type: Boolean,
+    default: false // false = planned instance, true = reusable template
+  },
   isPlanned: {
     type: Boolean,
     default: true

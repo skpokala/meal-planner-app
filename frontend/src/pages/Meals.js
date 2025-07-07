@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Plus, ChefHat, Clock, Users, Search, Filter, Star, Edit, Trash2 } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -16,7 +15,6 @@ const Meals = () => {
   const [mealModalOpen, setMealModalOpen] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState(null);
   const [modalMode, setModalMode] = useState('edit');
-  const navigate = useNavigate();
 
   const mealTypes = [
     { value: '', label: 'All Types' },
@@ -39,11 +37,11 @@ const Meals = () => {
 
   const fetchMeals = async () => {
     try {
-      const response = await api.get('/meals');
+      const response = await api.get('/meals/templates');
       setMeals(response.data.meals);
     } catch (error) {
-      console.error('Error fetching meals:', error);
-      toast.error('Failed to load meals');
+      console.error('Error fetching meal templates:', error);
+      toast.error('Failed to load meal templates');
     } finally {
       setLoading(false);
     }

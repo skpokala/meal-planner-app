@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const winston = require('winston');
+// const winston = require('winston');  // Temporarily commented out
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -12,19 +12,11 @@ const mealRoutes = require('./routes/meals');
 
 const app = express();
 
-// Logger configuration
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
-  ),
-  transports: [
-    new winston.transports.Console(),
-    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'logs/combined.log' })
-  ]
-});
+// Logger configuration - temporarily using console.log
+const logger = {
+  info: (message, ...args) => console.log('[INFO]', message, ...args),
+  error: (message, ...args) => console.error('[ERROR]', message, ...args)
+};
 
 // Security middleware
 app.use(helmet());
@@ -39,7 +31,7 @@ app.use('/api/', limiter);
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || 'http://localhost:3001',
   credentials: true
 }));
 

@@ -19,19 +19,20 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const [familyResponse, mealStatsResponse, mealsResponse] = await Promise.all([
+      const [familyResponse, mealStatsResponse, mealTemplatesResponse] = await Promise.all([
         api.get('/family-members'),
         api.get('/meals/stats/overview'),
-        api.get('/meals?limit=5')
+        api.get('/meals/templates')
       ]);
 
       setStats({
         familyMembers: familyResponse.data.count,
-        totalMeals: mealStatsResponse.data.stats.overview.totalMeals,
+        totalMeals: mealTemplatesResponse.data.count, // Count only templates (what users see in Meals page)
         plannedMeals: mealStatsResponse.data.stats.overview.plannedMeals,
       });
 
-      setRecentMeals(mealsResponse.data.meals.slice(0, 5));
+      // Show recent meal templates instead of instances
+      setRecentMeals(mealTemplatesResponse.data.meals.slice(0, 5));
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       toast.error('Failed to load dashboard data');
@@ -46,8 +47,8 @@ const Dashboard = () => {
 
   const handleMealCreated = async (newMeal) => {
     setMealModalOpen(false);
-    toast.success('Meal created successfully!');
-    // Refresh dashboard data to reflect new meal
+    toast.success('Meal template created successfully!');
+    // Refresh dashboard data to reflect new meal template
     await fetchDashboardData();
   };
 
@@ -155,14 +156,14 @@ const Dashboard = () => {
           <div className="card-header">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-secondary-900">
-                Recent Meals
+                Your Meal Templates
               </h3>
               <button
                 onClick={() => setMealModalOpen(true)}
                 className="btn-primary btn-sm"
               >
                 <Plus className="w-4 h-4 mr-1" />
-                Add Meal
+                Add Meal Template
               </button>
             </div>
           </div>
@@ -170,12 +171,12 @@ const Dashboard = () => {
             {recentMeals.length === 0 ? (
               <div className="text-center py-8">
                 <ChefHat className="w-12 h-12 text-secondary-400 mx-auto mb-4" />
-                <p className="text-secondary-600">No meals planned yet</p>
+                <p className="text-secondary-600">No meal templates created yet</p>
                 <button
                   onClick={() => setMealModalOpen(true)}
                   className="mt-4 btn-primary"
                 >
-                  Plan Your First Meal
+                  Create Your First Meal Template
                 </button>
               </div>
             ) : (
@@ -286,6 +287,7 @@ const Dashboard = () => {
           onClose={() => setMealModalOpen(false)}
           onMealCreated={handleMealCreated}
           mode="add"
+          isTemplate={true}
         />
       )}
     </div>

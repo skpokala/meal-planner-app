@@ -1,28 +1,32 @@
+# Use Node.js base image
 FROM node:18-alpine
 
-# Create app directory
+# Accept build arguments
+ARG REACT_APP_API_URL
+
+# Set working directory
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (use install instead of ci for flexibility)
+# Install dependencies
 RUN npm install
 
 # Copy source code
 COPY . .
 
-# Build the production application
-RUN CI=false npm run build
+# Set environment variable for build
+ENV REACT_APP_API_URL=${REACT_APP_API_URL}
 
-# Remove dev dependencies to reduce image size
-RUN npm prune --production && npm cache clean --force
+# Build the application (completely skip tests)
+RUN npm run build --production
+
+# Install serve globally to serve the build
+RUN npm install -g serve
 
 # Expose port
 EXPOSE 3000
 
-# Install serve for production serving
-RUN npm install -g serve
-
-# Start the application (serve the built files)
+# Start serve with the build folder
 CMD ["serve", "-s", "build", "-l", "3000"] 

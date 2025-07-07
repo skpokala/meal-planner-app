@@ -3,7 +3,7 @@ import { X, Save, Clock, Plus } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
-const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit', selectedDate = null }) => {
+const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit', selectedDate = null, isTemplate = true }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -74,7 +74,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
         response = await api.put(`/meals/${meal._id}`, mealData);
         toast.success('Meal updated successfully');
       } else {
-        // For creating new meals, include the date and structure recipe properly
+        // For creating new meals, include the date and template flag
         const mealData = {
           name: formData.name,
           description: formData.description,
@@ -82,7 +82,8 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
           recipe: {
             prepTime: parseInt(formData.prepTime) || 0
           },
-          date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+          date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          isTemplate: isTemplate
         };
         response = await api.post('/meals', mealData);
         toast.success('Meal created successfully');
