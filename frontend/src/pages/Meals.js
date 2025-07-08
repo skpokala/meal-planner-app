@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ChefHat, Clock, Users, Search, Filter, Star, Edit, Trash2 } from 'lucide-react';
+import { Plus, ChefHat, Clock, Search, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MealModal from '../components/MealModal';
@@ -9,39 +9,50 @@ const Meals = () => {
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMealType, setSelectedMealType] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
   const [sortBy, setSortBy] = useState('name');
-  const [sortOrder, setSortOrder] = useState('desc');
+  const [sortOrder, setSortOrder] = useState('asc');
   const [mealModalOpen, setMealModalOpen] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState(null);
   const [modalMode, setModalMode] = useState('edit');
 
-  const mealTypes = [
-    { value: '', label: 'All Types' },
-    { value: 'breakfast', label: 'Breakfast' },
-    { value: 'lunch', label: 'Lunch' },
-    { value: 'dinner', label: 'Dinner' },
-    { value: 'snack', label: 'Snack' },
-  ];
-
   const sortOptions = [
     { value: 'name', label: 'Name' },
-    { value: 'mealType', label: 'Meal Type' },
-    { value: 'rating', label: 'Rating' },
     { value: 'prepTime', label: 'Prep Time' },
+    { value: 'createdAt', label: 'Created Date' },
+  ];
+
+  const activeFilters = [
+    { value: 'all', label: 'All Meals' },
+    { value: 'active', label: 'Active Only' },
+    { value: 'inactive', label: 'Inactive Only' },
   ];
 
   useEffect(() => {
     fetchMeals();
   }, []);
 
+  // Add effect to refresh data when component becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchMeals();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const fetchMeals = async () => {
     try {
-      const response = await api.get('/meals/templates');
+      const response = await api.get('/meals');
       setMeals(response.data.meals);
     } catch (error) {
-      console.error('Error fetching meal templates:', error);
-      toast.error('Failed to load meal templates');
+      console.error('Error fetching meals:', error);
+      toast.error('Failed to load meals');
     } finally {
       setLoading(false);
     }
@@ -60,6 +71,17 @@ const Meals = () => {
     }
   };
 
+  const handleToggleActive = async (meal) => {
+    try {
+      await api.put(`/meals/${meal._id}`, { active: !meal.active });
+      toast.success(`Meal ${meal.active ? 'deactivated' : 'activated'} successfully`);
+      fetchMeals();
+    } catch (error) {
+      console.error('Error toggling meal status:', error);
+      toast.error('Failed to update meal status');
+    }
+  };
+
   const handleAddMeal = () => {
     setSelectedMeal(null);
     setModalMode('add');
@@ -73,43 +95,62 @@ const Meals = () => {
   };
 
   const handleCloseMealModal = () => {
-    setMealModalOpen(false);
-    setSelectedMeal(null);
-    setModalMode('edit');
-  };
-
-  const handleSaveMeal = (mealData) => {
-    if (modalMode === 'add') {
-      // Add new meal to the beginning of the array
-      setMeals(prevMeals => [mealData, ...prevMeals]);
-    } else {
-      // Update existing meal in the array
-      setMeals(prevMeals => 
-        prevMeals.map(meal => 
-          meal._id === mealData._id ? mealData : meal
-        )
-      );
+    console.log('Closing meal modal');
+    try {
+      setMealModalOpen(false);
+      setSelectedMeal(null);
+      setModalMode('edit');
+      console.log('Modal closed successfully');
+    } catch (error) {
+      console.error('Error closing modal:', error);
     }
   };
 
-  const getMealTypeColor = (mealType) => {
-    const colors = {
-      breakfast: 'bg-yellow-100 text-yellow-800',
-      lunch: 'bg-green-100 text-green-800',
-      dinner: 'bg-blue-100 text-blue-800',
-      snack: 'bg-purple-100 text-purple-800',
-    };
-    return colors[mealType] || 'bg-gray-100 text-gray-800';
+  const handleSaveMeal = (mealData) => {
+    console.log('handleSaveMeal called with:', { mealData, modalMode });
+    
+    try {
+      if (!mealData || !mealData._id) {
+        console.error('Invalid meal data received:', mealData);
+        toast.error('Error: Invalid meal data received');
+        return;
+      }
+
+      if (modalMode === 'add') {
+        console.log('Adding new meal to list');
+        // Add new meal to the beginning of the array
+        setMeals(prevMeals => {
+          console.log('Previous meals count:', prevMeals.length);
+          const newMeals = [mealData, ...prevMeals];
+          console.log('New meals count:', newMeals.length);
+          return newMeals;
+        });
+      } else {
+        console.log('Updating existing meal in list');
+        // Update existing meal in the array
+        setMeals(prevMeals => 
+          prevMeals.map(meal => 
+            meal._id === mealData._id ? mealData : meal
+          )
+        );
+      }
+      
+      console.log('Meal save completed successfully');
+      
+    } catch (error) {
+      console.error('Error handling meal save:', error);
+      toast.error('Failed to update meal list');
+    }
   };
-
-
 
   const filteredAndSortedMeals = meals
     .filter(meal => {
       const matchesSearch = meal.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            meal.description?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = selectedMealType === '' || meal.mealType === selectedMealType;
-      return matchesSearch && matchesType;
+      const matchesActive = activeFilter === 'all' || 
+                           (activeFilter === 'active' && meal.active) ||
+                           (activeFilter === 'inactive' && !meal.active);
+      return matchesSearch && matchesActive;
     })
     .sort((a, b) => {
       let aValue, bValue;
@@ -119,17 +160,13 @@ const Meals = () => {
           aValue = a.name.toLowerCase();
           bValue = b.name.toLowerCase();
           break;
-        case 'mealType':
-          aValue = a.mealType;
-          bValue = b.mealType;
+        case 'prepTime':
+          aValue = a.prepTime || 0;
+          bValue = b.prepTime || 0;
           break;
-        case 'rating':
-          aValue = a.rating || 0;
-          bValue = b.rating || 0;
-          break;
-              case 'prepTime':
-        aValue = a.recipe?.prepTime || 0;
-        bValue = b.recipe?.prepTime || 0;
+        case 'createdAt':
+          aValue = new Date(a.createdAt);
+          bValue = new Date(b.createdAt);
           break;
         default:
           aValue = a.name.toLowerCase();
@@ -152,8 +189,8 @@ const Meals = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-secondary-900">All Meals</h1>
-          <p className="text-secondary-600">Browse and manage all your saved meals</p>
+          <h1 className="text-2xl font-bold text-secondary-900">Meals</h1>
+          <p className="text-secondary-600">Manage your meal collection</p>
         </div>
         <button
           onClick={handleAddMeal}
@@ -180,17 +217,16 @@ const Meals = () => {
               />
             </div>
 
-            {/* Meal Type Filter */}
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 w-4 h-4" />
+            {/* Active Filter */}
+            <div>
               <select
-                value={selectedMealType}
-                onChange={(e) => setSelectedMealType(e.target.value)}
-                className="input pl-10 appearance-none"
+                value={activeFilter}
+                onChange={(e) => setActiveFilter(e.target.value)}
+                className="input"
               >
-                {mealTypes.map(type => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
+                {activeFilters.map(filter => (
+                  <option key={filter.value} value={filter.value}>
+                    {filter.label}
                   </option>
                 ))}
               </select>
@@ -218,15 +254,15 @@ const Meals = () => {
                 onChange={(e) => setSortOrder(e.target.value)}
                 className="input"
               >
-                <option value="desc">Descending</option>
                 <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
               </select>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Meals List */}
+      {/* Meals Table */}
       <div className="card">
         <div className="card-header">
           <h3 className="text-lg font-semibold text-secondary-900">
@@ -238,11 +274,11 @@ const Meals = () => {
             <div className="text-center py-12">
               <ChefHat className="w-16 h-16 text-secondary-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-secondary-900 mb-2">
-                {meals.length === 0 ? 'No meals saved yet' : 'No meals match your filters'}
+                {meals.length === 0 ? 'No meals added yet' : 'No meals match your filters'}
               </h3>
               <p className="text-secondary-600 mb-6">
                 {meals.length === 0 
-                  ? 'Start by planning your first meal' 
+                  ? 'Start by adding your first meal' 
                   : 'Try adjusting your search or filters'}
               </p>
               <button
@@ -250,82 +286,94 @@ const Meals = () => {
                 className="btn-primary"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Plan Your First Meal
+                Add Your First Meal
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAndSortedMeals.map((meal) => (
-                <div key={meal._id} className="border border-secondary-200 rounded-card p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between mb-3">
-                    <h4 className="font-semibold text-secondary-900 flex-1 pr-2">
-                      {meal.name}
-                    </h4>
-                    <span className={`badge ${getMealTypeColor(meal.mealType)} flex-shrink-0`}>
-                      {meal.mealType}
-                    </span>
-                  </div>
-                  
-                  {meal.description && (
-                    <p className="text-sm text-secondary-600 mb-3 line-clamp-2">
-                      {meal.description}
-                    </p>
-                  )}
-                  
-                  <div className="space-y-2 text-sm mb-4">
-                    {meal.recipe?.prepTime > 0 && (
-                      <div className="flex items-center text-secondary-600">
-                        <Clock className="w-4 h-4 mr-2" />
-                        {meal.recipe.prepTime} minutes prep
-                      </div>
-                    )}
-                    
-                    {meal.assignedTo && meal.assignedTo.length > 0 && (
-                      <div className="flex items-center text-secondary-600">
-                        <Users className="w-4 h-4 mr-2" />
-                        {meal.assignedTo.length} family member(s)
-                      </div>
-                    )}
-                    
-                    {meal.rating && (
-                      <div className="flex items-center text-secondary-600">
-                        <Star className="w-4 h-4 mr-2 text-yellow-400 fill-current" />
-                        {meal.rating}/5
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Status badges */}
-                  <div className="flex items-center space-x-2 mb-4">
-                    {meal.isPlanned && (
-                      <span className="badge bg-blue-100 text-blue-800">Planned</span>
-                    )}
-                    {meal.isCooked && (
-                      <span className="badge bg-green-100 text-green-800">Cooked</span>
-                    )}
-                  </div>
-                  
-                  {/* Actions */}
-                  <div className="flex items-center justify-between pt-3 border-t border-secondary-200">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEditMeal(meal)}
-                        className="p-2 text-secondary-600 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
-                        title="Edit meal"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteMeal(meal._id)}
-                        className="p-2 text-secondary-600 hover:text-error-600 hover:bg-error-50 rounded transition-colors"
-                        title="Delete meal"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-secondary-200">
+                <thead className="bg-secondary-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                      Description
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                      Prep Time
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-secondary-200">
+                  {filteredAndSortedMeals.map((meal) => (
+                    <tr key={meal._id} className="hover:bg-secondary-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-secondary-900">
+                          {meal.name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-secondary-600 max-w-xs truncate">
+                          {meal.description || 'No description'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-secondary-600 flex items-center">
+                          <Clock className="w-4 h-4 mr-1" />
+                          {meal.prepTime || 0} min
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => handleToggleActive(meal)}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            meal.active 
+                              ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                              : 'bg-red-100 text-red-800 hover:bg-red-200'
+                          } transition-colors cursor-pointer`}
+                        >
+                          {meal.active ? (
+                            <>
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Active
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="w-3 h-3 mr-1" />
+                              Inactive
+                            </>
+                          )}
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end space-x-2">
+                          <button
+                            onClick={() => handleEditMeal(meal)}
+                            className="text-primary-600 hover:text-primary-900 p-1 rounded hover:bg-primary-50 transition-colors"
+                            title="Edit meal"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteMeal(meal._id)}
+                            className="text-error-600 hover:text-error-900 p-1 rounded hover:bg-error-50 transition-colors"
+                            title="Delete meal"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

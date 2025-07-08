@@ -3,21 +3,14 @@ import { X, Save, Clock, Plus } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
-const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit', selectedDate = null, isTemplate = true }) => {
+const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit' }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    mealType: 'dinner',
     prepTime: '',
+    active: true,
   });
   const [loading, setLoading] = useState(false);
-
-  const mealTypes = [
-    { value: 'breakfast', label: 'Breakfast' },
-    { value: 'lunch', label: 'Lunch' },
-    { value: 'dinner', label: 'Dinner' },
-    { value: 'snack', label: 'Snack' },
-  ];
 
   const isEditMode = mode === 'edit';
   const isAddMode = mode === 'add';
@@ -28,26 +21,26 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
         setFormData({
           name: meal.name || '',
           description: meal.description || '',
-          mealType: meal.mealType || 'dinner',
-          prepTime: meal.recipe?.prepTime || '',
+          prepTime: meal.prepTime || '',
+          active: meal.active !== undefined ? meal.active : true,
         });
       } else if (isAddMode) {
         // Reset form for add mode
         setFormData({
           name: '',
           description: '',
-          mealType: 'dinner',
           prepTime: '',
+          active: true,
         });
       }
     }
   }, [meal, isOpen, mode, isEditMode, isAddMode]);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -65,38 +58,47 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
         const mealData = {
           name: formData.name,
           description: formData.description,
-          mealType: formData.mealType,
-          recipe: {
-            ...meal.recipe,
-            prepTime: parseInt(formData.prepTime) || 0
-          }
+          prepTime: parseInt(formData.prepTime) || 0,
+          active: formData.active
         };
         response = await api.put(`/meals/${meal._id}`, mealData);
         toast.success('Meal updated successfully');
       } else {
-        // For creating new meals, include the date and template flag
+        // For creating new meals
         const mealData = {
           name: formData.name,
           description: formData.description,
-          mealType: formData.mealType,
-          recipe: {
-            prepTime: parseInt(formData.prepTime) || 0
-          },
-          date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-          isTemplate: isTemplate
+          prepTime: parseInt(formData.prepTime) || 0,
+          active: formData.active
         };
         response = await api.post('/meals', mealData);
         toast.success('Meal created successfully');
       }
       
-      // Call the appropriate callback
-      if (onSave) {
-        onSave(response.data);
+      // Call the appropriate callback with proper data
+      const mealData = response.data.meal || response.data;
+      console.log('MealModal: About to call callbacks with data:', mealData);
+      
+      try {
+        if (onSave && typeof onSave === 'function') {
+          console.log('MealModal: Calling onSave callback');
+          onSave(mealData);
+          console.log('MealModal: onSave callback completed');
+        }
+        if (onMealCreated && typeof onMealCreated === 'function') {
+          console.log('MealModal: Calling onMealCreated callback');
+          onMealCreated(mealData);
+          console.log('MealModal: onMealCreated callback completed');
+        }
+      } catch (callbackError) {
+        console.error('Error in meal callback:', callbackError);
+        toast.error('Error occurred after saving meal');
+        // Still close the modal even if callbacks fail
       }
-      if (onMealCreated) {
-        onMealCreated(response.data);
-      }
+      
+      console.log('MealModal: About to close modal');
       onClose();
+      console.log('MealModal: Modal close completed');
     } catch (error) {
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} meal:`, error);
       toast.error(`Failed to ${isEditMode ? 'update' : 'create'} meal`);
@@ -168,27 +170,6 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
             />
           </div>
 
-          {/* Meal Type */}
-          <div>
-            <label htmlFor="mealType" className="block text-sm font-medium text-secondary-700 mb-1">
-              Meal Type
-            </label>
-            <select
-              id="mealType"
-              name="mealType"
-              value={formData.mealType}
-              onChange={handleInputChange}
-              className="input w-full"
-              disabled={loading}
-            >
-              {mealTypes.map(type => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
           {/* Prep Time */}
           <div>
             <label htmlFor="prepTime" className="block text-sm font-medium text-secondary-700 mb-1">
@@ -203,15 +184,32 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                 value={formData.prepTime}
                 onChange={handleInputChange}
                 className="input w-full pl-10"
-                placeholder="e.g., 30"
+                placeholder="0"
                 min="0"
                 disabled={loading}
               />
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end space-x-3 pt-4 border-t border-secondary-200">
+          {/* Active Status */}
+          <div>
+            <label className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                name="active"
+                checked={formData.active}
+                onChange={handleInputChange}
+                disabled={loading}
+                className="w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-sm font-medium text-secondary-700">
+                Active (available for meal planning)
+              </span>
+            </label>
+          </div>
+
+          {/* Submit Button */}
+          <div className="flex justify-end space-x-3 pt-4">
             <button
               type="button"
               onClick={handleClose}
@@ -223,20 +221,16 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary flex items-center"
+              className="btn-primary"
             >
               {loading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  {isEditMode ? 'Updating...' : 'Creating...'}
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Saving...
                 </>
               ) : (
                 <>
-                  {isEditMode ? (
-                    <Save className="w-4 h-4 mr-2" />
-                  ) : (
-                    <Plus className="w-4 h-4 mr-2" />
-                  )}
+                  <Save className="w-4 h-4 mr-2" />
                   {isEditMode ? 'Update Meal' : 'Create Meal'}
                 </>
               )}

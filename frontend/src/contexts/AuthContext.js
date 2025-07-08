@@ -43,11 +43,15 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
+      console.log('Starting login process...', { username, apiBaseURL: api.defaults.baseURL });
+      
       const response = await api.post('/auth/login', {
         username,
         password,
       });
 
+      console.log('Login response received:', response.data);
+      
       const { token, user } = response.data;
       
       // Store token in localStorage
@@ -59,8 +63,11 @@ export const AuthProvider = ({ children }) => {
       // Update user state
       setUser(user);
       
+      console.log('Login successful, user set:', user);
+      
       return response.data;
     } catch (error) {
+      console.error('Login error:', error);
       throw error;
     }
   };
@@ -74,6 +81,9 @@ export const AuthProvider = ({ children }) => {
     
     // Clear user state
     setUser(null);
+    
+    // Clear any cached data by forcing a page reload
+    window.location.href = '/login';
   };
 
   const updateProfile = async (profileData) => {

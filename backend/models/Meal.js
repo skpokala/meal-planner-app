@@ -12,15 +12,13 @@ const mealSchema = new mongoose.Schema({
     trim: true,
     maxlength: 500
   },
-  mealType: {
-    type: String,
-    required: true,
-    enum: ['breakfast', 'lunch', 'dinner', 'snack'],
-    default: 'dinner'
+  prepTime: {
+    type: Number, // in minutes
+    default: 0
   },
-  date: {
-    type: Date,
-    required: true
+  active: {
+    type: Boolean,
+    default: true
   },
   ingredients: [{
     name: {
@@ -40,10 +38,6 @@ const mealSchema = new mongoose.Schema({
     }
   }],
   recipe: {
-    prepTime: {
-      type: Number, // in minutes
-      default: 0
-    },
     cookTime: {
       type: Number, // in minutes
       default: 0
@@ -91,10 +85,6 @@ const mealSchema = new mongoose.Schema({
       default: 0
     }
   },
-  assignedTo: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'FamilyMember'
-  }],
   tags: [{
     type: String,
     trim: true
@@ -102,18 +92,6 @@ const mealSchema = new mongoose.Schema({
   image: {
     type: String, // URL to meal image
     default: ''
-  },
-  isTemplate: {
-    type: Boolean,
-    default: false // false = planned instance, true = reusable template
-  },
-  isPlanned: {
-    type: Boolean,
-    default: true
-  },
-  isCooked: {
-    type: Boolean,
-    default: false
   },
   rating: {
     type: Number,
@@ -149,21 +127,15 @@ mealSchema.pre('save', function(next) {
 
 // Virtual for total cooking time
 mealSchema.virtual('totalTime').get(function() {
-  return (this.recipe.prepTime || 0) + (this.recipe.cookTime || 0);
-});
-
-// Virtual for formatted date
-mealSchema.virtual('formattedDate').get(function() {
-  if (!this.date) return '';
-  return this.date.toLocaleDateString();
+  return (this.prepTime || 0) + (this.recipe.cookTime || 0);
 });
 
 // Ensure virtuals are included in JSON output
 mealSchema.set('toJSON', { virtuals: true });
 
 // Indexes for efficient querying
-mealSchema.index({ date: 1, mealType: 1 });
-mealSchema.index({ createdBy: 1, isPlanned: 1 });
-mealSchema.index({ assignedTo: 1 });
+mealSchema.index({ name: 1 });
+mealSchema.index({ active: 1 });
+mealSchema.index({ createdBy: 1 });
 
 module.exports = mongoose.model('Meal', mealSchema); 

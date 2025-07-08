@@ -6,17 +6,29 @@ const api = axios.create({
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
   },
   withCredentials: false,
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and cache busting
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Add cache busting for GET requests
+    if (config.method === 'get') {
+      config.params = {
+        ...config.params,
+        _t: Date.now() // Cache busting timestamp
+      };
+    }
+    
     return config;
   },
   (error) => {
@@ -31,9 +43,9 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid
+      // Token expired or invalid - let AuthContext handle the redirect
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Don't redirect here - let the AuthContext handle it
     }
     return Promise.reject(error);
   }

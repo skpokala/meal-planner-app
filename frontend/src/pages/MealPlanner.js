@@ -20,28 +20,38 @@ const MealPlanner = () => {
   const [loading, setLoading] = useState(true);
   const [mealModalOpen, setMealModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedMealType, setSelectedMealType] = useState('dinner');
   const [savingMeals, setSavingMeals] = useState(new Set());
   const [removingMeals, setRemovingMeals] = useState(new Set());
+
+  const mealTypes = [
+    { value: 'breakfast', label: 'Breakfast' },
+    { value: 'lunch', label: 'Lunch' },
+    { value: 'dinner', label: 'Dinner' },
+    { value: 'snack', label: 'Snack' }
+  ];
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       
-      // Fetch all available meals (templates)
-      const mealsResponse = await api.get('/meals/templates');
+      // Fetch all available meals (active only)
+      const mealsResponse = await api.get('/meals', { 
+        params: { active: true } 
+      });
       setMeals(mealsResponse.data.meals || []);
       
       // Fetch planned meals for current view period
       const { startDate, endDate } = getViewDateRange();
       
-      const calendarResponse = await api.get('/meals/calendar', {
+      const calendarResponse = await api.get('/meal-plans/calendar', {
         params: {
           startDate: startDate.toISOString().split('T')[0],
           endDate: endDate.toISOString().split('T')[0]
         }
       });
       
-      setPlannedMeals(calendarResponse.data.mealsByDate || {});
+      setPlannedMeals(calendarResponse.data.mealPlansByDate || {});
       
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -165,22 +175,22 @@ const MealPlanner = () => {
   };
 
   const getAllPlannedMeals = () => {
-    const allMeals = [];
+    const allMealPlans = [];
     
     // Collect all planned meals from all dates
-    Object.entries(plannedMeals).forEach(([dateKey, meals]) => {
-      meals.forEach(meal => {
-        allMeals.push({
-          ...meal,
+    Object.entries(plannedMeals).forEach(([dateKey, mealPlans]) => {
+      mealPlans.forEach(mealPlan => {
+        allMealPlans.push({
+          ...mealPlan,
           dateObj: new Date(dateKey)
         });
       });
     });
     
     // Sort by date
-    allMeals.sort((a, b) => a.dateObj - b.dateObj);
+    allMealPlans.sort((a, b) => a.dateObj - b.dateObj);
     
-    return allMeals;
+    return allMealPlans;
   };
 
   const navigateMonth = (direction) => {
@@ -215,13 +225,11 @@ const MealPlanner = () => {
       case VIEW_MODES.WEEKLY:
         navigateWeek(direction);
         break;
-      case VIEW_MODES.LIST:
-        // List view doesn't need navigation
-        break;
       case VIEW_MODES.MONTHLY:
-      default:
         navigateMonth(direction);
         break;
+      default:
+        navigateMonth(direction);
     }
   };
 
@@ -232,7 +240,7 @@ const MealPlanner = () => {
       case VIEW_MODES.WEEKLY:
         return formatWeekRange(currentDate);
       case VIEW_MODES.LIST:
-        return 'All Planned Meals';
+        return 'Meal Plan List';
       case VIEW_MODES.MONTHLY:
       default:
         return formatMonthYear(currentDate);
@@ -246,7 +254,6 @@ const MealPlanner = () => {
       case VIEW_MODES.WEEKLY:
         return getDaysInWeek(currentDate);
       case VIEW_MODES.LIST:
-        // For list view, we'll return all planned meals sorted by date
         return getAllPlannedMeals();
       case VIEW_MODES.MONTHLY:
       default:
@@ -254,14 +261,15 @@ const MealPlanner = () => {
     }
   };
 
-  const handleMealSelect = async (date, mealId) => {
+  const handleMealSelect = async (date, mealId, mealType) => {
     if (mealId === 'create-new') {
       setSelectedDate(date);
+      setSelectedMealType(mealType);
       setMealModalOpen(true);
       return;
     }
 
-    if (!mealId) return;
+    if (!mealId || !mealType) return;
 
     const dateKey = formatDateKey(date);
     const selectedMeal = meals.find(meal => meal._id === mealId);
@@ -272,83 +280,70 @@ const MealPlanner = () => {
     }
     
     // Check for duplicate assignment
-    const existingMeals = plannedMeals[dateKey] || [];
-    if (existingMeals.some(meal => meal.name === selectedMeal.name && meal.mealType === selectedMeal.mealType)) {
-      toast.error(`${selectedMeal.name} (${selectedMeal.mealType}) is already planned for ${date.toLocaleDateString()}`);
+    const existingMealPlans = plannedMeals[dateKey] || [];
+    if (existingMealPlans.some(plan => plan.meal._id === mealId && plan.mealType === mealType)) {
+      toast.error(`${selectedMeal.name} (${mealType}) is already planned for ${date.toLocaleDateString()}`);
       return;
     }
 
-    // Create temporary meal object for optimistic update
-    const tempMealId = `temp-${Date.now()}`;
-    const optimisticMeal = {
-      _id: tempMealId,
-      name: selectedMeal.name,
-      description: selectedMeal.description,
-      mealType: selectedMeal.mealType,
+    // Create temporary meal plan object for optimistic update
+    const tempMealPlanId = `temp-${Date.now()}`;
+    const optimisticMealPlan = {
+      _id: tempMealPlanId,
+      meal: selectedMeal,
+      mealType: mealType,
       date: date.toISOString(),
-      ingredients: selectedMeal.ingredients || [],
-      recipe: selectedMeal.recipe || {},
-      nutritionInfo: selectedMeal.nutritionInfo || {},
-      tags: selectedMeal.tags || [],
-      image: selectedMeal.image || '',
-      isPlanned: true,
+      assignedTo: [],
       isCooked: false,
       saving: true // Flag to show saving state
     };
 
     try {
-      // Optimistic update - add meal to UI immediately
+      // Optimistic update - add meal plan to UI immediately
       setPlannedMeals(prev => ({
         ...prev,
-        [dateKey]: [...(prev[dateKey] || []), optimisticMeal]
+        [dateKey]: [...(prev[dateKey] || []), optimisticMealPlan]
       }));
 
       // Track saving state
-      setSavingMeals(prev => new Set([...prev, tempMealId]));
+      setSavingMeals(prev => new Set([...prev, tempMealPlanId]));
 
       // Show immediate feedback
-      toast.loading('Planning meal...', { id: tempMealId });
+      toast.loading('Planning meal...', { id: tempMealPlanId });
 
-      // Prepare meal data for backend
-      const mealData = {
-        name: selectedMeal.name,
-        description: selectedMeal.description,
-        mealType: selectedMeal.mealType,
+      // Prepare meal plan data for backend
+      const mealPlanData = {
+        meal: selectedMeal._id,
+        mealType: mealType,
         date: date.toISOString(),
-        ingredients: selectedMeal.ingredients || [],
-        recipe: selectedMeal.recipe || {},
-        nutritionInfo: selectedMeal.nutritionInfo || {},
-        tags: selectedMeal.tags || [],
-        image: selectedMeal.image || '',
-        isTemplate: false, // This is a planned instance, not a template
-        isPlanned: true,
+        assignedTo: [],
         isCooked: false
       };
 
-      // Autosave to backend
-      const response = await api.post('/meals', mealData);
+      // Create meal plan
+      const response = await api.post('/meal-plans', mealPlanData);
       
       // Replace optimistic update with real data
-      if (response?.data?.meal) {
+      if (response?.data?.mealPlan) {
         setPlannedMeals(prev => ({
           ...prev,
-          [dateKey]: prev[dateKey]?.map(meal => 
-            meal._id === tempMealId ? response.data.meal : meal
+          [dateKey]: prev[dateKey]?.map(plan => 
+            plan._id === tempMealPlanId ? response.data.mealPlan : plan
           ) || []
         }));
       } else {
         // If no proper response, keep the optimistic update but remove saving flag
         setPlannedMeals(prev => ({
           ...prev,
-          [dateKey]: prev[dateKey]?.map(meal => 
-            meal._id === tempMealId ? { ...meal, saving: false } : meal
+          [dateKey]: prev[dateKey]?.map(plan => 
+            plan._id === tempMealPlanId ? { ...plan, saving: false } : plan
           ) || []
         }));
       }
 
       // Show success
       toast.success(`${selectedMeal.name} planned for ${date.toLocaleDateString()}`, { 
-        id: tempMealId 
+        id: tempMealPlanId 
       });
 
       // Refresh data from server to ensure consistency
@@ -360,65 +355,65 @@ const MealPlanner = () => {
       // Revert optimistic update on failure
       setPlannedMeals(prev => ({
         ...prev,
-        [dateKey]: prev[dateKey]?.filter(meal => meal._id !== tempMealId) || []
+        [dateKey]: prev[dateKey]?.filter(plan => plan._id !== tempMealPlanId) || []
       }));
       
-      toast.error('Failed to plan meal. Please try again.', { id: tempMealId });
+      toast.error('Failed to plan meal. Please try again.', { id: tempMealPlanId });
     } finally {
       // Clear saving state
       setSavingMeals(prev => {
         const newSet = new Set(prev);
-        newSet.delete(tempMealId);
+        newSet.delete(tempMealPlanId);
         return newSet;
       });
     }
   };
 
-  const handleMealRemove = async (date, mealId) => {
+  const handleMealRemove = async (date, mealPlanId) => {
     const dateKey = formatDateKey(date);
-    const mealToRemove = plannedMeals[dateKey]?.find(meal => meal._id === mealId);
+    const mealPlanToRemove = plannedMeals[dateKey]?.find(plan => plan._id === mealPlanId);
     
-    if (!mealToRemove) {
-      toast.error('Meal not found');
+    if (!mealPlanToRemove) {
+      toast.error('Meal plan not found');
       return;
     }
 
     try {
       // Track removing state
-      setRemovingMeals(prev => new Set([...prev, mealId]));
+      setRemovingMeals(prev => new Set([...prev, mealPlanId]));
 
       // Show immediate feedback
-      toast.loading('Removing meal...', { id: `remove-${mealId}` });
+      toast.loading('Removing meal...', { id: `remove-${mealPlanId}` });
 
       // Optimistic update - remove from UI immediately
       setPlannedMeals(prev => ({
         ...prev,
-        [dateKey]: prev[dateKey]?.filter(meal => meal._id !== mealId) || []
+        [dateKey]: prev[dateKey]?.filter(plan => plan._id !== mealPlanId) || []
       }));
 
-      // Autosave to backend
-      await api.delete(`/meals/${mealId}`);
+      // Remove meal plan from backend
+      await api.delete(`/meal-plans/${mealPlanId}`);
       
-      toast.success('Meal removed from plan', { id: `remove-${mealId}` });
+      toast.success('Meal removed from plan', { id: `remove-${mealPlanId}` });
 
       // Refresh data from server to ensure consistency
       await refreshPlannedMealsData();
 
     } catch (error) {
-      console.error('Error removing meal:', error);
+      console.error('Error removing meal plan:', error);
       
       // Revert optimistic update on failure
       setPlannedMeals(prev => ({
         ...prev,
-        [dateKey]: [...(prev[dateKey] || []), mealToRemove]
+        [dateKey]: [...(prev[dateKey] || []), mealPlanToRemove]
       }));
       
-      toast.error('Failed to remove meal. Please try again.', { id: `remove-${mealId}` });
+      toast.error('Failed to remove meal. Please try again.', { id: `remove-${mealPlanId}` });
     } finally {
       // Clear removing state
       setRemovingMeals(prev => {
         const newSet = new Set(prev);
-        newSet.delete(mealId);
+        newSet.delete(mealPlanId);
         return newSet;
       });
     }
@@ -428,14 +423,14 @@ const MealPlanner = () => {
   const refreshPlannedMealsData = async () => {
     try {
       const { startDate, endDate } = getViewDateRange();
-      const calendarResponse = await api.get('/meals/calendar', {
+      const calendarResponse = await api.get('/meal-plans/calendar', {
         params: {
           startDate: startDate.toISOString().split('T')[0],
           endDate: endDate.toISOString().split('T')[0]
         }
       });
       
-      setPlannedMeals(calendarResponse.data.mealsByDate || {});
+      setPlannedMeals(calendarResponse.data.mealPlansByDate || {});
     } catch (error) {
       console.error('Error refreshing planned meals:', error);
       // Don't show error toast as this is a background refresh
@@ -444,43 +439,67 @@ const MealPlanner = () => {
 
   const handleNewMealCreated = async (newMeal) => {
     try {
-      // Add to meals list
-      setMeals(prev => [newMeal, ...prev]);
+      if (!newMeal || !newMeal._id) {
+        console.error('Invalid meal data received:', newMeal);
+        toast.error('Error: Invalid meal data received');
+        return;
+      }
+
+      console.log('New meal created in MealPlanner:', newMeal);
       
-      // If a date was selected, also plan it for that date (already saved by modal)
-      if (selectedDate) {
-        const dateKey = formatDateKey(selectedDate);
+      // Add the new meal to the meals list
+      setMeals(prevMeals => {
+        console.log('Adding new meal to meals list');
+        return [newMeal, ...prevMeals];
+      });
+
+      // Now plan this meal for the selected date if we have one
+      if (selectedDate && selectedMealType) {
+        console.log('Auto-planning new meal for selected date:', selectedDate, selectedMealType);
         
-        // Check if meal already exists in planned meals (may have been added by modal)
-        const existingMeal = plannedMeals[dateKey]?.find(meal => meal._id === newMeal._id);
+        // Create meal plan for the new meal
+        const mealPlanData = {
+          meal: newMeal._id,
+          mealType: selectedMealType,
+          date: selectedDate.toISOString(),
+          assignedTo: [],
+          isCooked: false
+        };
+
+        const response = await api.post('/meal-plans', mealPlanData);
         
-        if (!existingMeal) {
+        if (response?.data?.mealPlan) {
+          const dateKey = formatDateKey(selectedDate);
           setPlannedMeals(prev => ({
             ...prev,
-            [dateKey]: [...(prev[dateKey] || []), newMeal]
+            [dateKey]: [...(prev[dateKey] || []), response.data.mealPlan]
           }));
+          
+          toast.success(`${newMeal.name} created and planned for ${selectedDate.toLocaleDateString()}`);
+        } else {
+          toast.success(`${newMeal.name} created successfully`);
         }
+        
+        // Refresh data to ensure consistency
+        await refreshPlannedMealsData();
+      } else {
+        toast.success(`${newMeal.name} created successfully`);
       }
       
-      toast.success(`${newMeal.name} created and planned successfully`);
-      
-      // Refresh data from server to ensure consistency
-      await refreshPlannedMealsData();
-      
     } catch (error) {
-      console.error('Error handling new meal:', error);
-      toast.error('Error updating meal lists');
+      console.error('Error handling new meal creation:', error);
+      toast.error('Meal created but failed to plan it. You can plan it manually.');
     }
   };
 
   const getMealTypeColor = (mealType) => {
     const colors = {
-      breakfast: 'bg-yellow-100 text-yellow-800',
-      lunch: 'bg-green-100 text-green-800',
-      dinner: 'bg-blue-100 text-blue-800',
-      snack: 'bg-purple-100 text-purple-800',
+      breakfast: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      lunch: 'bg-green-100 text-green-800 border-green-200',
+      dinner: 'bg-blue-100 text-blue-800 border-blue-200',
+      snack: 'bg-purple-100 text-purple-800 border-purple-200',
     };
-    return colors[mealType] || 'bg-gray-100 text-gray-800';
+    return colors[mealType] || 'bg-gray-100 text-gray-800 border-gray-200';
   };
 
   const getPlannedMeals = (date) => {
@@ -488,347 +507,432 @@ const MealPlanner = () => {
     return plannedMeals[dateKey] || [];
   };
 
-  const isMealAlreadyPlanned = (date, mealName, mealType) => {
-    const plannedForDate = getPlannedMeals(date);
-    return plannedForDate.some(meal => meal.name === mealName && meal.mealType === mealType);
+  const isMealAlreadyPlanned = (date, mealId, mealType) => {
+    const plans = getPlannedMeals(date);
+    return plans.some(plan => plan.meal._id === mealId && plan.mealType === mealType);
   };
 
   const getAvailableMealsForDate = (date) => {
-    return meals.filter(meal => !isMealAlreadyPlanned(date, meal.name, meal.mealType));
+    // Filter out meals that are already planned for this date and meal type
+    return meals.filter(meal => meal.active);
   };
 
   const isToday = (date) => {
-    if (!date) return false;
     const today = new Date();
-    return date.toDateString() === today.toDateString();
+    return date && date.toDateString() === today.toDateString();
+  };
+
+  const isPastDate = (date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date && date < today;
   };
 
   if (loading) {
     return <LoadingSpinner size="lg" text="Loading meal planner..." />;
   }
 
-  const days = getCurrentViewDays();
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
   return (
-    <div>
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-secondary-900">Meal Planner</h1>
-          <p className="text-secondary-600">Plan your family meals on the calendar</p>
+          <p className="text-secondary-600">Plan your meals for the week ahead</p>
         </div>
         
-        {/* View Toggle Buttons */}
-        <div className="flex bg-secondary-100 rounded-lg p-1">
-          <button
-            onClick={() => setViewMode(VIEW_MODES.MONTHLY)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              viewMode === VIEW_MODES.MONTHLY
-                ? 'bg-white text-primary-600 shadow-sm'
-                : 'text-secondary-600 hover:text-secondary-900'
-            }`}
-            title="Monthly View"
-          >
-            <Calendar className="w-4 h-4" />
-            Month
-          </button>
-          <button
-            onClick={() => setViewMode(VIEW_MODES.WEEKLY)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              viewMode === VIEW_MODES.WEEKLY
-                ? 'bg-white text-primary-600 shadow-sm'
-                : 'text-secondary-600 hover:text-secondary-900'
-            }`}
-            title="Weekly View"
-          >
-            <CalendarDays className="w-4 h-4" />
-            Week
-          </button>
-          <button
-            onClick={() => setViewMode(VIEW_MODES.DAILY)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              viewMode === VIEW_MODES.DAILY
-                ? 'bg-white text-primary-600 shadow-sm'
-                : 'text-secondary-600 hover:text-secondary-900'
-            }`}
-            title="Daily View"
-          >
-            <CalendarCheck className="w-4 h-4" />
-            Day
-          </button>
-          <button
-            onClick={() => setViewMode(VIEW_MODES.LIST)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              viewMode === VIEW_MODES.LIST
-                ? 'bg-white text-primary-600 shadow-sm'
-                : 'text-secondary-600 hover:text-secondary-900'
-            }`}
-            title="List View"
-          >
-            <List className="w-4 h-4" />
-            List
-          </button>
-        </div>
-      </div>
-
-      {/* Calendar Navigation */}
-      <div className="card mb-6">
-        <div className="card-body">
-          <div className="flex items-center justify-between">
-            {viewMode !== VIEW_MODES.LIST ? (
-              <>
-                <button
-                  onClick={() => navigate(-1)}
-                  className="p-2 hover:bg-secondary-100 rounded-lg transition-colors"
-                  title={`Previous ${viewMode}`}
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                
-                <h2 className="text-xl font-semibold text-secondary-900">
-                  {getViewTitle()}
-                </h2>
-                
-                <button
-                  onClick={() => navigate(1)}
-                  className="p-2 hover:bg-secondary-100 rounded-lg transition-colors"
-                  title={`Next ${viewMode}`}
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </>
-            ) : (
-              <h2 className="text-xl font-semibold text-secondary-900 mx-auto">
-                {getViewTitle()}
-              </h2>
-            )}
+        {/* View Mode Toggles */}
+        <div className="flex items-center space-x-2">
+          <div className="flex rounded-md shadow-sm">
+            <button
+              onClick={() => setViewMode(VIEW_MODES.MONTHLY)}
+              className={`px-3 py-2 text-sm font-medium rounded-l-md border ${
+                viewMode === VIEW_MODES.MONTHLY
+                  ? 'bg-primary-50 border-primary-200 text-primary-700'
+                  : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50'
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode(VIEW_MODES.WEEKLY)}
+              className={`px-3 py-2 text-sm font-medium border-t border-b ${
+                viewMode === VIEW_MODES.WEEKLY
+                  ? 'bg-primary-50 border-primary-200 text-primary-700'
+                  : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50'
+              }`}
+            >
+              <CalendarDays className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode(VIEW_MODES.DAILY)}
+              className={`px-3 py-2 text-sm font-medium border-t border-b ${
+                viewMode === VIEW_MODES.DAILY
+                  ? 'bg-primary-50 border-primary-200 text-primary-700'
+                  : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50'
+              }`}
+            >
+              <CalendarCheck className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode(VIEW_MODES.LIST)}
+              className={`px-3 py-2 text-sm font-medium rounded-r-md border ${
+                viewMode === VIEW_MODES.LIST
+                  ? 'bg-primary-50 border-primary-200 text-primary-700'
+                  : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50'
+              }`}
+            >
+              <List className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="card">
-        <div className="card-body p-0">
-          {/* Day Headers - only show for monthly and weekly views */}
-          {viewMode !== VIEW_MODES.DAILY && viewMode !== VIEW_MODES.LIST && (
-            <div className={`grid ${viewMode === VIEW_MODES.WEEKLY ? 'grid-cols-7' : 'grid-cols-7'} border-b border-secondary-200`}>
-              {dayNames.map(day => (
-                <div key={day} className="p-3 text-center font-medium text-secondary-600 border-r border-secondary-200 last:border-r-0">
-                  {day}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Calendar Days or List View */}
-          {viewMode === VIEW_MODES.LIST ? (
-            /* List View */
-            <div className="divide-y divide-secondary-200">
-              {days.length === 0 ? (
-                <div className="p-8 text-center">
-                  <Calendar className="w-12 h-12 text-secondary-400 mx-auto mb-3" />
-                  <h3 className="text-lg font-medium text-secondary-900 mb-2">No meals planned yet</h3>
-                  <p className="text-secondary-600 mb-4">Start planning your meals by switching to calendar view and adding meals to specific dates.</p>
-                  <button
-                    onClick={() => setViewMode(VIEW_MODES.MONTHLY)}
-                    className="btn-primary"
-                  >
-                    Go to Calendar View
-                  </button>
-                </div>
-              ) : (
-                days.map((meal, index) => (
-                  <div key={meal._id} className={`p-4 hover:bg-secondary-50 transition-colors ${
-                    meal.saving || savingMeals.has(meal._id) ? 'opacity-75' : ''
-                  } ${removingMeals.has(meal._id) ? 'opacity-50' : ''}`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          {(meal.saving || savingMeals.has(meal._id)) && (
-                            <Loader2 className="w-4 h-4 animate-spin text-primary-600" />
-                          )}
-                          {removingMeals.has(meal._id) && (
-                            <Loader2 className="w-4 h-4 animate-spin text-red-600" />
-                          )}
-                          <div className="text-sm font-medium text-secondary-900">
-                            {meal.dateObj.toLocaleDateString('en-US', { 
-                              weekday: 'long', 
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric' 
-                            })}
-                          </div>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getMealTypeColor(meal.mealType)}`}>
-                            {meal.mealType}
-                          </span>
-                          {(meal.saving || savingMeals.has(meal._id)) && (
-                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              Saving...
-                            </span>
-                          )}
-                          {removingMeals.has(meal._id) && (
-                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              Removing...
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-lg font-semibold text-secondary-900 mb-1">
-                          {meal.name}
-                        </div>
-                        {meal.description && (
-                          <div className="text-sm text-secondary-600 mb-2">
-                            {meal.description}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-4 text-sm text-secondary-500">
-                          {meal.recipe?.prepTime && (
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              {meal.recipe.prepTime} mins prep
-                            </div>
-                          )}
-                          {meal.recipe?.servings && (
-                            <div className="flex items-center gap-1">
-                              <Users className="w-4 h-4" />
-                              {meal.recipe.servings} servings
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleMealRemove(meal.dateObj, meal._id)}
-                        disabled={removingMeals.has(meal._id) || meal.saving || savingMeals.has(meal._id)}
-                        className={`p-2 rounded-lg transition-colors ${
-                          removingMeals.has(meal._id) || meal.saving || savingMeals.has(meal._id)
-                            ? 'cursor-not-allowed text-secondary-300 bg-secondary-100'
-                            : 'text-secondary-400 hover:text-red-600 hover:bg-red-50'
-                        }`}
-                        title={removingMeals.has(meal._id) ? 'Removing...' : 'Remove meal'}
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          ) : (
-            /* Calendar Grid */
-            <div className={`grid ${
-              viewMode === VIEW_MODES.DAILY 
-                ? 'grid-cols-1' 
-                : viewMode === VIEW_MODES.WEEKLY
-                ? 'grid-cols-7'
-                : 'grid-cols-7'
-            }`}>
-              {days.map((date, index) => (
-                <div
-                  key={index}
-                  className={`${
-                    viewMode === VIEW_MODES.DAILY 
-                      ? 'min-h-[400px]' 
-                      : 'min-h-[120px]'
-                  } border-r border-b border-secondary-200 last:border-r-0 p-2 ${
-                    !date ? 'bg-secondary-50' : ''
-                  } ${isToday(date) ? 'bg-primary-50' : ''}`}
-                >
-                  {date && (
-                    <>
-                      {/* Date Display */}
-                      <div className={`font-medium mb-2 ${
-                        isToday(date) ? 'text-primary-600' : 'text-secondary-900'
-                      } ${viewMode === VIEW_MODES.DAILY ? 'text-lg' : 'text-sm'}`}>
-                        {viewMode === VIEW_MODES.DAILY 
-                          ? date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
-                          : date.getDate()
-                        }
-                      </div>
-
-                      {/* Assigned Meals */}
-                      <div className={`space-y-1 mb-2 ${viewMode === VIEW_MODES.DAILY ? 'space-y-2' : ''}`}>
-                        {getPlannedMeals(date).map((meal) => (
-                          <div
-                            key={meal._id}
-                            className="group relative"
-                          >
-                            <div className={`px-2 py-1 rounded flex items-center justify-between ${getMealTypeColor(meal.mealType)} ${
-                              viewMode === VIEW_MODES.DAILY ? 'text-sm' : 'text-xs'
-                            } ${meal.saving ? 'opacity-75' : ''} ${removingMeals.has(meal._id) ? 'opacity-50' : ''}`}>
-                              <div className="flex-1 min-w-0 flex items-center gap-1">
-                                {(meal.saving || savingMeals.has(meal._id)) && (
-                                  <Loader2 className="w-3 h-3 animate-spin text-primary-600" />
-                                )}
-                                {removingMeals.has(meal._id) && (
-                                  <Loader2 className="w-3 h-3 animate-spin text-red-600" />
-                                )}
-                                <div className="truncate" title={meal.name}>
-                                  {meal.name}
-                                </div>
-                                {viewMode === VIEW_MODES.DAILY && meal.description && (
-                                  <div className="text-xs opacity-75 truncate">
-                                    {meal.description}
-                                  </div>
-                                )}
-                              </div>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleMealRemove(date, meal._id);
-                                }}
-                                disabled={removingMeals.has(meal._id) || meal.saving || savingMeals.has(meal._id)}
-                                className={`ml-1 p-0.5 hover:bg-black hover:bg-opacity-10 rounded transition-opacity ${
-                                  removingMeals.has(meal._id) || meal.saving || savingMeals.has(meal._id)
-                                    ? 'cursor-not-allowed opacity-50'
-                                    : 'opacity-0 group-hover:opacity-100 hover:text-red-600'
-                                }`}
-                                title={removingMeals.has(meal._id) ? 'Removing...' : 'Remove meal'}
-                              >
-                                <Trash2 className={viewMode === VIEW_MODES.DAILY ? 'w-4 h-4' : 'w-3 h-3'} />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Meal Selector Dropdown */}
-                      <select
-                        onChange={(e) => handleMealSelect(date, e.target.value)}
-                        value=""
-                        className={`w-full border-0 border-t border-secondary-200 bg-transparent px-2 py-1 hover:bg-secondary-50 focus:bg-white focus:border-primary-300 focus:outline-none appearance-none cursor-pointer ${
-                          viewMode === VIEW_MODES.DAILY ? 'text-sm' : 'text-xs'
-                        }`}
-                      >
-                        <option value="">Add meal...</option>
-                        {getAvailableMealsForDate(date).map((meal, mealIndex) => (
-                          <option key={`day-${index}-meal-${mealIndex}-${meal._id}`} value={meal._id}>
-                            {meal.name} ({meal.mealType})
-                          </option>
-                        ))}
-                        <option key={`day-${index}-create-new`} value="create-new">+ Create new meal</option>
-                      </select>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+      {/* Navigation */}
+      {viewMode !== VIEW_MODES.LIST && (
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          
+          <h2 className="text-lg font-semibold text-secondary-900">
+            {getViewTitle()}
+          </h2>
+          
+          <button
+            onClick={() => navigate(1)}
+            className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
         </div>
-      </div>
+      )}
+
+      {/* Content based on view mode */}
+      {viewMode === VIEW_MODES.LIST ? (
+        <ListViewComponent 
+          mealPlans={getAllPlannedMeals()}
+          onRemove={handleMealRemove}
+          removingMeals={removingMeals}
+          getMealTypeColor={getMealTypeColor}
+        />
+      ) : (
+        <CalendarViewComponent
+          viewMode={viewMode}
+          days={getCurrentViewDays()}
+          getPlannedMeals={getPlannedMeals}
+          meals={meals}
+          mealTypes={mealTypes}
+          onMealSelect={handleMealSelect}
+          onMealRemove={handleMealRemove}
+          isMealAlreadyPlanned={isMealAlreadyPlanned}
+          getMealTypeColor={getMealTypeColor}
+          isToday={isToday}
+          isPastDate={isPastDate}
+          savingMeals={savingMeals}
+          removingMeals={removingMeals}
+        />
+      )}
 
       {/* Meal Modal */}
       <MealModal
-        meal={null}
         isOpen={mealModalOpen}
         onClose={() => {
           setMealModalOpen(false);
           setSelectedDate(null);
+          setSelectedMealType('dinner');
         }}
-        onSave={handleNewMealCreated}
+        onMealCreated={handleNewMealCreated}
         mode="add"
-        selectedDate={selectedDate}
-        isTemplate={false}
       />
+    </div>
+  );
+};
+
+// List View Component
+const ListViewComponent = ({ mealPlans, onRemove, removingMeals, getMealTypeColor }) => {
+  if (mealPlans.length === 0) {
+    return (
+      <div className="card">
+        <div className="card-body text-center py-12">
+          <Calendar className="w-16 h-16 text-secondary-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-secondary-900 mb-2">No meals planned</h3>
+          <p className="text-secondary-600">Start planning your meals using the calendar view</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card">
+      <div className="card-header">
+        <h3 className="text-lg font-semibold text-secondary-900">
+          All Planned Meals ({mealPlans.length})
+        </h3>
+      </div>
+      <div className="card-body">
+        <div className="space-y-4">
+          {mealPlans.map((plan) => (
+            <div key={plan._id} className="flex items-center justify-between p-4 border border-secondary-200 rounded-card">
+              <div className="flex-1">
+                <div className="flex items-center space-x-3 mb-2">
+                  <h4 className="font-semibold text-secondary-900">
+                    {plan.meal?.name || 'Unknown Meal'}
+                  </h4>
+                  <span className={`badge ${getMealTypeColor(plan.mealType)}`}>
+                    {plan.mealType}
+                  </span>
+                  {plan.isCooked && (
+                    <span className="badge bg-green-100 text-green-800">Cooked</span>
+                  )}
+                </div>
+                <div className="flex items-center space-x-4 text-sm text-secondary-600">
+                  <span>{plan.dateObj.toLocaleDateString()}</span>
+                  {plan.meal?.prepTime > 0 && (
+                    <div className="flex items-center">
+                      <Clock className="w-4 h-4 mr-1" />
+                      {plan.meal.prepTime} min
+                    </div>
+                  )}
+                </div>
+                {plan.meal?.description && (
+                  <p className="text-sm text-secondary-600 mt-1">{plan.meal.description}</p>
+                )}
+              </div>
+              <button
+                onClick={() => onRemove(plan.dateObj, plan._id)}
+                disabled={removingMeals.has(plan._id)}
+                className="p-2 text-error-600 hover:text-error-900 hover:bg-error-50 rounded transition-colors disabled:opacity-50"
+                title="Remove from plan"
+              >
+                {removingMeals.has(plan._id) ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Calendar View Component
+const CalendarViewComponent = ({ 
+  viewMode, 
+  days, 
+  getPlannedMeals, 
+  meals, 
+  mealTypes,
+  onMealSelect, 
+  onMealRemove, 
+  isMealAlreadyPlanned, 
+  getMealTypeColor, 
+  isToday, 
+  isPastDate,
+  savingMeals,
+  removingMeals
+}) => {
+  const gridClasses = {
+    [VIEW_MODES.MONTHLY]: 'grid-cols-7',
+    [VIEW_MODES.WEEKLY]: 'grid-cols-7',
+    [VIEW_MODES.DAILY]: 'grid-cols-1'
+  };
+
+  return (
+    <div className="card">
+      <div className="card-body p-0">
+        {/* Day headers for monthly/weekly view */}
+        {(viewMode === VIEW_MODES.MONTHLY || viewMode === VIEW_MODES.WEEKLY) && (
+          <div className="grid grid-cols-7 border-b border-secondary-200">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <div key={day} className="p-3 text-center text-sm font-medium text-secondary-700 border-r border-secondary-200 last:border-r-0">
+                {day}
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Calendar grid */}
+        <div className={`grid ${gridClasses[viewMode]} gap-0`}>
+          {days.map((day, index) => (
+            <DayCell
+              key={day ? day.toISOString() : `empty-${index}`}
+              date={day}
+              plannedMeals={day ? getPlannedMeals(day) : []}
+              meals={meals}
+              mealTypes={mealTypes}
+              onMealSelect={onMealSelect}
+              onMealRemove={onMealRemove}
+              isMealAlreadyPlanned={isMealAlreadyPlanned}
+              getMealTypeColor={getMealTypeColor}
+              isToday={day ? isToday(day) : false}
+              isPastDate={day ? isPastDate(day) : false}
+              savingMeals={savingMeals}
+              removingMeals={removingMeals}
+              viewMode={viewMode}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Day Cell Component
+const DayCell = ({ 
+  date, 
+  plannedMeals, 
+  meals, 
+  mealTypes,
+  onMealSelect, 
+  onMealRemove, 
+  isMealAlreadyPlanned, 
+  getMealTypeColor, 
+  isToday, 
+  isPastDate,
+  savingMeals,
+  removingMeals,
+  viewMode
+}) => {
+  const [showMealSelector, setShowMealSelector] = useState(false);
+  const [selectedMealType, setSelectedMealType] = useState('dinner');
+
+  if (!date) {
+    return <div className="h-32 border-r border-b border-secondary-200"></div>;
+  }
+
+  const handleAddMeal = (mealType) => {
+    setSelectedMealType(mealType);
+    setShowMealSelector(true);
+  };
+
+  const handleMealSelection = (mealId) => {
+    onMealSelect(date, mealId, selectedMealType);
+    setShowMealSelector(false);
+  };
+
+  const availableMeals = meals.filter(meal => 
+    meal.active && !isMealAlreadyPlanned(date, meal._id, selectedMealType)
+  );
+
+  const cellHeight = viewMode === VIEW_MODES.DAILY ? 'min-h-96' : 'h-32';
+  
+  return (
+    <div className={`${cellHeight} border-r border-b border-secondary-200 last:border-r-0 p-2 ${
+      isToday ? 'bg-primary-50' : isPastDate ? 'bg-secondary-50' : 'bg-white'
+    } overflow-hidden relative`}>
+      {/* Date header */}
+      <div className="flex items-center justify-between mb-2">
+        <span className={`text-sm font-medium ${
+          isToday ? 'text-primary-700' : isPastDate ? 'text-secondary-500' : 'text-secondary-900'
+        }`}>
+          {date.getDate()}
+        </span>
+        
+        {/* Add meal dropdown */}
+        <div className="relative">
+          <select
+            value=""
+            onChange={(e) => e.target.value && handleAddMeal(e.target.value)}
+            className="text-xs border-0 bg-transparent text-secondary-500 cursor-pointer hover:text-secondary-700"
+            title="Add meal"
+          >
+            <option value="">+</option>
+            {mealTypes.map(type => (
+              <option key={type.value} value={type.value}>
+                Add {type.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Planned meals */}
+      <div className="space-y-1">
+        {plannedMeals.map((plan) => (
+          <div
+            key={plan._id}
+            className={`text-xs p-1 rounded border ${getMealTypeColor(plan.mealType)} relative group`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="truncate flex-1 pr-1">
+                {plan.meal?.name || 'Unknown Meal'}
+              </span>
+              {savingMeals.has(plan._id) ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : removingMeals.has(plan._id) ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <button
+                  onClick={() => onMealRemove(date, plan._id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-200 rounded"
+                  title="Remove meal"
+                >
+                  <Trash2 className="w-2.5 h-2.5" />
+                </button>
+              )}
+            </div>
+            {plan.meal?.prepTime > 0 && (
+              <div className="flex items-center mt-0.5 opacity-75">
+                <Clock className="w-2.5 h-2.5 mr-1" />
+                <span>{plan.meal.prepTime}m</span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Meal selector modal */}
+      {showMealSelector && (
+        <div className="absolute inset-0 bg-white border border-secondary-300 rounded shadow-lg z-10 p-2 overflow-y-auto">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-secondary-700">
+              Add {selectedMealType}
+            </span>
+            <button
+              onClick={() => setShowMealSelector(false)}
+              className="text-secondary-400 hover:text-secondary-600"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <div className="space-y-1">
+            <button
+              onClick={() => handleMealSelection('create-new')}
+              className="w-full text-left text-xs p-1 rounded hover:bg-primary-50 text-primary-600 border border-primary-200"
+            >
+              + Create New Meal
+            </button>
+            
+            {availableMeals.map((meal) => (
+              <button
+                key={meal._id}
+                onClick={() => handleMealSelection(meal._id)}
+                className="w-full text-left text-xs p-1 rounded hover:bg-secondary-50 border border-secondary-200 truncate"
+                title={meal.description}
+              >
+                {meal.name}
+                {meal.prepTime > 0 && (
+                  <span className="text-secondary-500 ml-1">({meal.prepTime}m)</span>
+                )}
+              </button>
+            ))}
+            
+            {availableMeals.length === 0 && (
+              <div className="text-xs text-secondary-500 text-center py-2">
+                No available meals
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

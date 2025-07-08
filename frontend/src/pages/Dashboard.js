@@ -1,55 +1,110 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Calendar, ChefHat, Plus, Clock, Star, Settings } from 'lucide-react';
+import { Users, Calendar, ChefHat, Plus, Clock, Settings, RefreshCw } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MealModal from '../components/MealModal';
 import toast from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard = () => {
+  const { user, loading: authLoading } = useAuth();
   const [stats, setStats] = useState({
     familyMembers: 0,
-    totalMeals: 0,
-    plannedMeals: 0,
+    activeMeals: 0,
+    futureMealPlans: 0,
   });
   const [recentMeals, setRecentMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mealModalOpen, setMealModalOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (showRefreshIndicator = false) => {
     try {
-      const [familyResponse, mealStatsResponse, mealTemplatesResponse] = await Promise.all([
+      if (showRefreshIndicator) {
+        setRefreshing(true);
+      }
+
+      const [familyResponse, mealsResponse, mealPlansResponse] = await Promise.all([
         api.get('/family-members'),
-        api.get('/meals/stats/overview'),
-        api.get('/meals/templates')
+        api.get('/meals', { params: { active: true } }),
+        api.get('/meal-plans', { params: { future: true } })
       ]);
 
       setStats({
-        familyMembers: familyResponse.data.count,
-        totalMeals: mealTemplatesResponse.data.count, // Count only templates (what users see in Meals page)
-        plannedMeals: mealStatsResponse.data.stats.overview.plannedMeals,
+        familyMembers: familyResponse.data.count || familyResponse.data.familyMembers?.length || 0,
+        activeMeals: mealsResponse.data.count || mealsResponse.data.meals?.length || 0,
+        futureMealPlans: mealPlansResponse.data.count || mealPlansResponse.data.mealPlans?.length || 0,
       });
 
-      // Show recent meal templates instead of instances
-      setRecentMeals(mealTemplatesResponse.data.meals.slice(0, 5));
+      // Show recent meals for display
+      setRecentMeals(mealsResponse.data.meals?.slice(0, 5) || []);
+      
+      if (showRefreshIndicator) {
+        toast.success('Dashboard data refreshed');
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       toast.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
+  const handleRefresh = () => {
+    fetchDashboardData(true);
+  };
+
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    // Only fetch dashboard data if user is authenticated and auth loading is complete
+    if (!authLoading && user) {
+      // Reset stats to ensure fresh data
+      setStats({
+        familyMembers: 0,
+        activeMeals: 0,
+        futureMealPlans: 0,
+      });
+      setRecentMeals([]);
+      setLoading(true);
+      fetchDashboardData();
+    } else if (!authLoading && !user) {
+      navigate('/login');
+    }
+  }, [authLoading, user, navigate]);
+
+  // Add effect to refresh data when component becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user && !authLoading) {
+        fetchDashboardData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user, authLoading]);
 
   const handleMealCreated = async (newMeal) => {
-    setMealModalOpen(false);
-    toast.success('Meal template created successfully!');
-    // Refresh dashboard data to reflect new meal template
-    await fetchDashboardData();
+    try {
+      setMealModalOpen(false);
+      
+      if (!newMeal || !newMeal._id) {
+        console.error('Invalid meal data received:', newMeal);
+        toast.error('Error: Invalid meal data received');
+        return;
+      }
+
+      toast.success('Meal created successfully!');
+      // Refresh dashboard data to reflect new meal
+      await fetchDashboardData();
+    } catch (error) {
+      console.error('Error handling meal creation:', error);
+      toast.error('Error updating dashboard');
+    }
   };
 
   const statCards = [
@@ -59,29 +114,30 @@ const Dashboard = () => {
       icon: Users,
       color: 'bg-primary-500',
       action: () => navigate('/family-members'),
+      description: 'Total family members'
     },
     {
-      title: 'Total Meals',
-      value: stats.totalMeals,
+      title: 'Active Meals',
+      value: stats.activeMeals,
       icon: ChefHat,
       color: 'bg-success-500',
       action: () => navigate('/meals'),
+      description: 'Available for planning'
     },
     {
-      title: 'Planned Meals',
-      value: stats.plannedMeals,
+      title: 'Future Meal Plans',
+      value: stats.futureMealPlans,
       icon: Calendar,
       color: 'bg-warning-500',
       action: () => navigate('/meal-planner'),
+      description: 'Saved for the future'
     },
   ];
 
   const formatDate = (dateString) => {
     try {
-      // Handle both ISO string and date string formats
       const date = new Date(dateString);
       
-      // Check if date is valid
       if (isNaN(date.getTime())) {
         return 'Invalid date';
       }
@@ -96,18 +152,12 @@ const Dashboard = () => {
     }
   };
 
-  const getMealTypeColor = (mealType) => {
-    const colors = {
-      breakfast: 'bg-yellow-100 text-yellow-800',
-      lunch: 'bg-green-100 text-green-800',
-      dinner: 'bg-blue-100 text-blue-800',
-      snack: 'bg-purple-100 text-purple-800',
-    };
-    return colors[mealType] || 'bg-gray-100 text-gray-800';
-  };
-
-  if (loading) {
+  if (authLoading || loading) {
     return <LoadingSpinner size="lg" text="Loading dashboard..." />;
+  }
+
+  if (!user) {
+    return <LoadingSpinner size="lg" text="Redirecting to login..." />;
   }
 
   return (
@@ -120,8 +170,8 @@ const Dashboard = () => {
         </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+      {/* Stats Grid - The 3 requested tiles */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
         {statCards.map((card, index) => {
           const Icon = card.icon;
           return (
@@ -139,6 +189,9 @@ const Dashboard = () => {
                     <p className="text-3xl font-bold text-secondary-900">
                       {card.value}
                     </p>
+                    <p className="text-xs text-secondary-500 mt-1">
+                      {card.description}
+                    </p>
                   </div>
                   <div className={`p-3 rounded-full ${card.color}`}>
                     <Icon className="w-6 h-6 text-white" />
@@ -150,20 +203,20 @@ const Dashboard = () => {
         })}
       </div>
 
-      {/* Recent Meals Section */}
+      {/* Recent Meals and Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <div className="card">
           <div className="card-header">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-secondary-900">
-                Your Meal Templates
+                Your Recent Meals
               </h3>
               <button
                 onClick={() => setMealModalOpen(true)}
                 className="btn-primary btn-sm"
               >
                 <Plus className="w-4 h-4 mr-1" />
-                Add Meal Template
+                Add Meal
               </button>
             </div>
           </div>
@@ -171,12 +224,12 @@ const Dashboard = () => {
             {recentMeals.length === 0 ? (
               <div className="text-center py-8">
                 <ChefHat className="w-12 h-12 text-secondary-400 mx-auto mb-4" />
-                <p className="text-secondary-600">No meal templates created yet</p>
+                <p className="text-secondary-600">No meals created yet</p>
                 <button
                   onClick={() => setMealModalOpen(true)}
                   className="mt-4 btn-primary"
                 >
-                  Create Your First Meal Template
+                  Create Your First Meal
                 </button>
               </div>
             ) : (
@@ -191,27 +244,26 @@ const Dashboard = () => {
                         {meal.name}
                       </h4>
                       <div className="flex items-center space-x-2 mt-1">
-                        <span className={`badge ${getMealTypeColor(meal.mealType)}`}>
-                          {meal.mealType}
+                        <span className={`badge ${meal.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                          {meal.active ? 'Active' : 'Inactive'}
                         </span>
-                        <span className="text-sm text-secondary-600">
-                          {formatDate(meal.date)}
-                        </span>
+                        {meal.createdAt && (
+                          <span className="text-sm text-secondary-600">
+                            {formatDate(meal.createdAt)}
+                          </span>
+                        )}
                       </div>
+                      {meal.description && (
+                        <p className="text-sm text-secondary-600 mt-1">
+                          {meal.description}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center space-x-2">
-                      {meal.rating && (
-                        <div className="flex items-center">
-                          <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                          <span className="text-sm text-secondary-600 ml-1">
-                            {meal.rating}
-                          </span>
-                        </div>
-                      )}
-                      {meal.recipe?.prepTime > 0 && (
+                      {meal.prepTime > 0 && (
                         <div className="flex items-center text-sm text-secondary-600">
                           <Clock className="w-4 h-4 mr-1" />
-                          {meal.recipe.prepTime}m prep
+                          {meal.prepTime}m prep
                         </div>
                       )}
                     </div>
@@ -247,31 +299,31 @@ const Dashboard = () => {
               </button>
 
               <button
-                onClick={() => navigate('/meal-planner')}
+                onClick={() => navigate('/meals')}
                 className="flex items-center p-4 bg-success-50 hover:bg-success-100 rounded-card transition-colors text-left"
               >
-                <Calendar className="w-6 h-6 text-success-600 mr-3" />
+                <ChefHat className="w-6 h-6 text-success-600 mr-3" />
                 <div>
                   <h4 className="font-medium text-secondary-900">
-                    Plan Meals
+                    Manage Meals
                   </h4>
                   <p className="text-sm text-secondary-600">
-                    Create and schedule family meals
+                    Create and edit your meal collection
                   </p>
                 </div>
               </button>
 
               <button
-                onClick={() => navigate('/settings')}
+                onClick={() => navigate('/meal-planner')}
                 className="flex items-center p-4 bg-warning-50 hover:bg-warning-100 rounded-card transition-colors text-left"
               >
-                <Settings className="w-6 h-6 text-warning-600 mr-3" />
+                <Calendar className="w-6 h-6 text-warning-600 mr-3" />
                 <div>
                   <h4 className="font-medium text-secondary-900">
-                    View Settings
+                    Plan Meals
                   </h4>
                   <p className="text-sm text-secondary-600">
-                    Configure app preferences
+                    Schedule meals for the future
                   </p>
                 </div>
               </button>
@@ -287,7 +339,6 @@ const Dashboard = () => {
           onClose={() => setMealModalOpen(false)}
           onMealCreated={handleMealCreated}
           mode="add"
-          isTemplate={true}
         />
       )}
     </div>

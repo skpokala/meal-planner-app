@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
+const mongoose = require('mongoose');
 const Meal = require('../models/Meal');
-const FamilyMember = require('../models/FamilyMember');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -12,48 +12,26 @@ router.use(authenticateToken);
 // Get all meals with filters
 router.get('/', async (req, res) => {
   try {
-    const { date, mealType, assignedTo, isPlanned, isCooked, templates } = req.query;
+    const { search, active } = req.query;
     
     // Build query
     const query = req.user.role === 'admin' ? {} : { createdBy: req.user._id };
     
-    // Handle templates vs instances
-    if (templates !== undefined) {
-      query.isTemplate = templates === 'true';
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { tags: { $regex: search, $options: 'i' } }
+      ];
     }
     
-    if (date) {
-      const startDate = new Date(date);
-      const endDate = new Date(date);
-      endDate.setHours(23, 59, 59, 999);
-      query.date = { $gte: startDate, $lte: endDate };
+    if (active !== undefined) {
+      query.active = active === 'true';
     }
-    
-    if (mealType) {
-      query.mealType = mealType;
-    }
-    
-    if (assignedTo) {
-      query.assignedTo = assignedTo;
-    }
-    
-    if (isPlanned !== undefined) {
-      query.isPlanned = isPlanned === 'true';
-    }
-    
-    if (isCooked !== undefined) {
-      query.isCooked = isCooked === 'true';
-    }
-
-    // Different sorting for templates vs instances
-    const sortOptions = templates === 'true' 
-      ? { name: 1, mealType: 1 } // Sort templates by name
-      : { date: 1, mealType: 1 }; // Sort instances by date
 
     const meals = await Meal.find(query)
-      .populate('assignedTo', 'firstName lastName fullName')
       .populate('createdBy', 'firstName lastName username')
-      .sort(sortOptions);
+      .sort({ name: 1 });
 
     res.json({
       success: true,
@@ -69,101 +47,22 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get meal templates (for the Meals page)
-router.get('/templates', async (req, res) => {
-  try {
-    const { mealType, search } = req.query;
-    
-    // Build query for templates only
-    const query = req.user.role === 'admin' 
-      ? { isTemplate: true } 
-      : { isTemplate: true, createdBy: req.user._id };
-    
-    if (mealType) {
-      query.mealType = mealType;
-    }
-    
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    const templates = await Meal.find(query)
-      .populate('createdBy', 'firstName lastName username')
-      .sort({ name: 1, mealType: 1 });
-
-    res.json({
-      success: true,
-      count: templates.length,
-      meals: templates
-    });
-  } catch (error) {
-    console.error('Get meal templates error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while fetching meal templates'
-    });
-  }
-});
-
-// Get meals for a specific date range
-router.get('/calendar', async (req, res) => {
-  try {
-    const { startDate, endDate } = req.query;
-    
-    if (!startDate || !endDate) {
-      return res.status(400).json({
-        success: false,
-        message: 'Start date and end date are required'
-      });
-    }
-
-    const query = req.user.role === 'admin' ? {} : { createdBy: req.user._id };
-    query.date = {
-      $gte: new Date(startDate),
-      $lte: new Date(endDate)
-    };
-
-    const meals = await Meal.find(query)
-      .populate('assignedTo', 'firstName lastName fullName')
-      .populate('createdBy', 'firstName lastName username')
-      .sort({ date: 1, mealType: 1 });
-
-    // Group meals by date
-    const mealsByDate = {};
-    meals.forEach(meal => {
-      const dateKey = meal.date.toISOString().split('T')[0];
-      if (!mealsByDate[dateKey]) {
-        mealsByDate[dateKey] = [];
-      }
-      mealsByDate[dateKey].push(meal);
-    });
-
-    res.json({
-      success: true,
-      count: meals.length,
-      mealsByDate
-    });
-  } catch (error) {
-    console.error('Get calendar meals error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while fetching calendar meals'
-    });
-  }
-});
-
 // Get single meal
 router.get('/:id', async (req, res) => {
   try {
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid meal ID'
+      });
+    }
+
     const query = req.user.role === 'admin' 
       ? { _id: req.params.id } 
       : { _id: req.params.id, createdBy: req.user._id };
     
     const meal = await Meal.findOne(query)
-      .populate('assignedTo', 'firstName lastName fullName')
       .populate('createdBy', 'firstName lastName username');
 
     if (!meal) {
@@ -188,12 +87,10 @@ router.get('/:id', async (req, res) => {
 
 // Create new meal
 router.post('/', [
-  body('name').trim().isLength({ min: 1 }).withMessage('Meal name is required'),
-  body('mealType').isIn(['breakfast', 'lunch', 'dinner', 'snack']).withMessage('Invalid meal type'),
-  body('date').isISO8601().withMessage('Valid date is required'),
+  body('name').trim().isLength({ min: 1 }).withMessage('Meal name is required').isLength({ max: 100 }).withMessage('Meal name must be less than 100 characters'),
+  body('prepTime').optional().isNumeric().withMessage('Prep time must be a number'),
+  body('active').optional().isBoolean().withMessage('Active must be a boolean'),
   body('ingredients').optional().isArray().withMessage('Ingredients must be an array'),
-  body('assignedTo').optional().isArray().withMessage('Assigned to must be an array'),
-  body('recipe.prepTime').optional().isNumeric().withMessage('Prep time must be a number'),
   body('recipe.cookTime').optional().isNumeric().withMessage('Cook time must be a number'),
   body('recipe.servings').optional().isNumeric().withMessage('Servings must be a number'),
   body('recipe.difficulty').optional().isIn(['easy', 'medium', 'hard']).withMessage('Invalid difficulty level')
@@ -212,54 +109,34 @@ router.post('/', [
     const {
       name,
       description,
-      mealType,
-      date,
+      prepTime,
+      active,
       ingredients,
       recipe,
       nutritionInfo,
-      assignedTo,
       tags,
       image,
-      notes,
-      isTemplate
+      notes
     } = req.body;
-
-    // Validate assigned family members belong to the user
-    if (assignedTo && assignedTo.length > 0) {
-      const familyMemberQuery = req.user.role === 'admin' 
-        ? { _id: { $in: assignedTo } }
-        : { _id: { $in: assignedTo }, createdBy: req.user._id };
-      
-      const validFamilyMembers = await FamilyMember.find(familyMemberQuery);
-      if (validFamilyMembers.length !== assignedTo.length) {
-        return res.status(400).json({
-          success: false,
-          message: 'Some assigned family members are invalid'
-        });
-      }
-    }
 
     // Create new meal
     const meal = new Meal({
       name,
       description: description || '',
-      mealType,
-      date: new Date(date),
+      prepTime: prepTime || 0,
+      active: active !== undefined ? active : true,
       ingredients: ingredients || [],
       recipe: recipe || {},
       nutritionInfo: nutritionInfo || {},
-      assignedTo: assignedTo || [],
       tags: tags || [],
       image: image || '',
       notes: notes || '',
-      isTemplate: isTemplate || false,
       createdBy: req.user._id
     });
 
     await meal.save();
 
     // Populate the references for response
-    await meal.populate('assignedTo', 'firstName lastName fullName');
     await meal.populate('createdBy', 'firstName lastName username');
 
     res.status(201).json({
@@ -269,6 +146,20 @@ router.post('/', [
     });
   } catch (error) {
     console.error('Create meal error:', error);
+    
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => ({
+        path: err.path,
+        msg: err.message
+      }));
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Server error while creating meal'
@@ -279,11 +170,9 @@ router.post('/', [
 // Update meal
 router.put('/:id', [
   body('name').optional().trim().isLength({ min: 1 }).withMessage('Meal name cannot be empty'),
-  body('mealType').optional().isIn(['breakfast', 'lunch', 'dinner', 'snack']).withMessage('Invalid meal type'),
-  body('date').optional().isISO8601().withMessage('Valid date is required'),
+  body('prepTime').optional().isNumeric().withMessage('Prep time must be a number'),
+  body('active').optional().isBoolean().withMessage('Active must be a boolean'),
   body('ingredients').optional().isArray().withMessage('Ingredients must be an array'),
-  body('assignedTo').optional().isArray().withMessage('Assigned to must be an array'),
-  body('recipe.prepTime').optional().isNumeric().withMessage('Prep time must be a number'),
   body('recipe.cookTime').optional().isNumeric().withMessage('Cook time must be a number'),
   body('recipe.servings').optional().isNumeric().withMessage('Servings must be a number'),
   body('recipe.difficulty').optional().isIn(['easy', 'medium', 'hard']).withMessage('Invalid difficulty level'),
@@ -304,36 +193,16 @@ router.put('/:id', [
       ? { _id: req.params.id } 
       : { _id: req.params.id, createdBy: req.user._id };
 
-    // Validate assigned family members if provided
-    if (req.body.assignedTo && req.body.assignedTo.length > 0) {
-      const familyMemberQuery = req.user.role === 'admin' 
-        ? { _id: { $in: req.body.assignedTo } }
-        : { _id: { $in: req.body.assignedTo }, createdBy: req.user._id };
-      
-      const validFamilyMembers = await FamilyMember.find(familyMemberQuery);
-      if (validFamilyMembers.length !== req.body.assignedTo.length) {
-        return res.status(400).json({
-          success: false,
-          message: 'Some assigned family members are invalid'
-        });
-      }
-    }
-
     const updateData = {};
     const allowedFields = [
-      'name', 'description', 'mealType', 'date', 'ingredients', 'recipe',
-      'nutritionInfo', 'assignedTo', 'tags', 'image', 'isTemplate', 'isPlanned', 'isCooked',
-      'rating', 'notes'
+      'name', 'description', 'prepTime', 'active', 'ingredients', 'recipe',
+      'nutritionInfo', 'tags', 'image', 'rating', 'notes'
     ];
 
     // Only update fields that are provided
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
-        if (field === 'date') {
-          updateData[field] = new Date(req.body[field]);
-        } else {
-          updateData[field] = req.body[field];
-        }
+        updateData[field] = req.body[field];
       }
     });
 
@@ -341,8 +210,7 @@ router.put('/:id', [
       query,
       updateData,
       { new: true, runValidators: true }
-    ).populate('assignedTo', 'firstName lastName fullName')
-     .populate('createdBy', 'firstName lastName username');
+    ).populate('createdBy', 'firstName lastName username');
 
     if (!meal) {
       return res.status(404).json({
@@ -399,73 +267,22 @@ router.get('/stats/overview', async (req, res) => {
   try {
     const query = req.user.role === 'admin' ? {} : { createdBy: req.user._id };
     
-    // Get today's date at midnight for future meal filtering
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Debug: Log today's date and some sample meals
-    console.log('DEBUG - Today\'s date for comparison:', today);
-    const sampleMeals = await Meal.find(query).limit(5).select('name date isPlanned');
-    console.log('DEBUG - Sample meals in database:', sampleMeals.map(m => ({ 
-      name: m.name, 
-      date: m.date, 
-      isPlanned: m.isPlanned,
-      isFuture: m.date >= today 
-    })));
-    
     const stats = await Meal.aggregate([
       { $match: query },
       {
         $group: {
           _id: null,
           totalMeals: { $sum: 1 },
-          plannedMeals: { 
-            $sum: { 
-              $cond: [
-                { $gte: ['$date', today] },
-                1, 
-                0
-              ] 
-            } 
-          },
-          cookedMeals: { $sum: { $cond: ['$isCooked', 1, 0] } },
-          averageRating: { $avg: '$rating' }
+          activeMeals: { $sum: { $cond: ['$active', 1, 0] } },
+          averageRating: { $avg: '$rating' },
+          averagePrepTime: { $avg: '$prepTime' }
         }
       }
-    ]);
-    
-    console.log('DEBUG - Aggregation result:', stats[0]);
-
-    const mealTypeStats = await Meal.aggregate([
-      { $match: query },
-      {
-        $group: {
-          _id: '$mealType',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-
-    const weeklyStats = await Meal.aggregate([
-      { $match: { ...query, date: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } },
-      {
-        $group: {
-          _id: {
-            $dateToString: { format: '%Y-%m-%d', date: '$date' }
-          },
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { '_id': 1 } }
     ]);
 
     res.json({
       success: true,
-      stats: {
-        overview: stats[0] || { totalMeals: 0, plannedMeals: 0, cookedMeals: 0, averageRating: 0 },
-        mealTypes: mealTypeStats,
-        weeklyMeals: weeklyStats
-      }
+      stats: stats[0] || { totalMeals: 0, activeMeals: 0, averageRating: 0, averagePrepTime: 0 }
     });
   } catch (error) {
     console.error('Get meal stats error:', error);

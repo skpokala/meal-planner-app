@@ -11,6 +11,7 @@ import Meals from './pages/Meals';
 import MealPlanner from './pages/MealPlanner';
 import Settings from './pages/Settings';
 import LoadingSpinner from './components/LoadingSpinner';
+import ErrorBoundary from './components/ErrorBoundary';
 import './index.css';
 
 // Protected Route Component
@@ -29,98 +30,112 @@ function AppRoutes() {
   const { user } = useAuth();
 
   return (
-    <Routes>
-      <Route
-        path="/login"
-        element={user ? <Navigate to="/dashboard" /> : <Login />}
-      />
-      <Route
-        path="/"
-        element={user ? <Navigate to="/dashboard" /> : <Navigate to="/login" />}
-      />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Dashboard />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/family-members"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <FamilyMembers />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/meals"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Meals />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/meal-planner"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <MealPlanner />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Settings />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-    </Routes>
+    <ErrorBoundary>
+      <Routes>
+        <Route
+          path="/login"
+          element={user ? <Navigate to="/dashboard" /> : <Login />}
+        />
+        <Route
+          path="/"
+          element={user ? <Navigate to="/dashboard" /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ErrorBoundary>
+                  <Dashboard />
+                </ErrorBoundary>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/family-members"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ErrorBoundary>
+                  <FamilyMembers />
+                </ErrorBoundary>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/meals"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ErrorBoundary>
+                  <Meals />
+                </ErrorBoundary>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/meal-planner"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ErrorBoundary>
+                  <MealPlanner />
+                </ErrorBoundary>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ErrorBoundary>
+                  <Settings />
+                </ErrorBoundary>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </ErrorBoundary>
   );
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="App">
-          <AppRoutes />
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#363636',
-                color: '#fff',
-              },
-              success: {
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <div className="App">
+            <AppRoutes />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
                 style: {
-                  background: '#22c55e',
+                  background: '#363636',
+                  color: '#fff',
                 },
-              },
-              error: {
-                style: {
-                  background: '#ef4444',
+                success: {
+                  style: {
+                    background: '#22c55e',
+                  },
                 },
-              },
-            }}
-          />
-        </div>
-      </Router>
-    </AuthProvider>
+                error: {
+                  style: {
+                    background: '#ef4444',
+                  },
+                },
+              }}
+            />
+          </div>
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
