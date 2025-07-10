@@ -316,7 +316,7 @@ const FamilyMembers = () => {
                     name="relationship"
                     value={formData.relationship}
                     onChange={handleInputChange}
-                    className="input"
+                    className="select"
                     required
                   >
                     <option value="parent">Parent</option>

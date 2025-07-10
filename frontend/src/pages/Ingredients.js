@@ -187,7 +187,7 @@ const Ingredients = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by name..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="input w-full"
             />
           </div>
           <div>
@@ -197,7 +197,7 @@ const Ingredients = () => {
             <select
               value={storeFilter}
               onChange={(e) => setStoreFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="select w-full"
             >
               <option value="">All Stores</option>
               {stores.map(store => (
@@ -208,13 +208,13 @@ const Ingredients = () => {
           <div className="flex items-end space-x-2">
             <button
               onClick={handleSearch}
-              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md transition-colors"
+              className="btn-success"
             >
               Search
             </button>
             <button
               onClick={handleClearFilters}
-              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition-colors"
+              className="btn-secondary"
             >
               Clear
             </button>
@@ -316,7 +316,7 @@ const Ingredients = () => {
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="input w-full"
                     placeholder="Enter ingredient name"
                   />
                 </div>
@@ -332,7 +332,7 @@ const Ingredients = () => {
                     value={formData.quantity}
                     onChange={(e) => setFormData({...formData, quantity: e.target.value})}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="input w-full"
                     placeholder="Enter quantity"
                   />
                 </div>
@@ -344,7 +344,7 @@ const Ingredients = () => {
                   <select
                     value={formData.unit}
                     onChange={(e) => setFormData({...formData, unit: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="select w-full"
                   >
                     {units.map(unit => (
                       <option key={unit.value} value={unit.value}>
@@ -363,7 +363,7 @@ const Ingredients = () => {
                     value={formData.store}
                     onChange={(e) => setFormData({...formData, store: e.target.value})}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="input w-full"
                     placeholder="Enter store name"
                   />
                 </div>
@@ -372,13 +372,13 @@ const Ingredients = () => {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 border border-gray-300 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                    className="btn-outline"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="btn-primary"
                   >
                     {editingIngredient ? 'Update' : 'Add'} Ingredient
                   </button>

@@ -61,11 +61,59 @@
   }
 
   .input {
-    @apply block w-full px-3 py-2 border border-secondary-300 rounded-card shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm;
+    @apply block w-full px-3 py-2 border border-secondary-300 rounded-card shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200;
   }
 
   .input-error {
     @apply input border-error-300 focus:ring-error-500 focus:border-error-500;
+  }
+
+  /* Modern Select Dropdown Styles */
+  .select {
+    @apply block w-full px-3 py-2 border border-secondary-300 rounded-card shadow-sm bg-white text-secondary-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200 cursor-pointer hover:border-secondary-400 hover:shadow-md;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+
+  .select:focus {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%233b82f6' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  }
+
+  .select:disabled {
+    @apply bg-secondary-50 text-secondary-500 cursor-not-allowed;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%9ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  }
+
+  .select-sm {
+    @apply select text-xs py-1.5 px-2;
+    background-size: 1.25em 1.25em;
+    padding-right: 2rem;
+  }
+
+  .select-lg {
+    @apply select text-base py-3 px-4;
+    background-size: 1.75em 1.75em;
+    padding-right: 3rem;
+  }
+
+  .select-error {
+    @apply select border-error-300 focus:ring-error-500 focus:border-error-500;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%fef2f2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  }
+
+  .select-error:focus {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%ef4444' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  }
+
+  /* Modern Select with Icon */
+  .select-with-icon {
+    @apply select pl-10;
   }
 
   .card {

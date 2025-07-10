@@ -840,7 +840,11 @@ const DayCell = ({
           <select
             value=""
             onChange={(e) => e.target.value && handleAddMeal(e.target.value)}
-            className="text-xs border-0 bg-transparent text-secondary-500 cursor-pointer hover:text-secondary-700"
+            className="text-xs border-0 bg-transparent text-secondary-500 cursor-pointer hover:text-secondary-700 focus:ring-0 focus:border-0 appearance-none"
+            style={{
+              backgroundImage: 'none',
+              paddingRight: '0.5rem'
+            }}
             title="Add meal"
           >
             <option value="">+</option>

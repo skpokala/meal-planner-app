@@ -267,7 +267,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                           value={ingredient.ingredient}
                           onChange={(e) => updateIngredient(index, 'ingredient', e.target.value)}
                           disabled={loading || loadingIngredients}
-                          className="input text-sm w-full"
+                          className="select select-sm w-full"
                         >
                           <option value="">Select ingredient...</option>
                           {availableIngredients.map(ing => (
@@ -304,7 +304,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                           value={ingredient.unit}
                           onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
                           disabled={loading}
-                          className="input text-sm w-full"
+                          className="select select-sm w-full"
                         >
                           <option value="">Unit</option>
                           <option value="lbs">lbs</option>

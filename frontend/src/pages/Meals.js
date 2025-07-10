@@ -222,7 +222,7 @@ const Meals = () => {
               <select
                 value={activeFilter}
                 onChange={(e) => setActiveFilter(e.target.value)}
-                className="input"
+                className="select"
               >
                 {activeFilters.map(filter => (
                   <option key={filter.value} value={filter.value}>
@@ -237,7 +237,7 @@ const Meals = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="input"
+                className="select"
               >
                 {sortOptions.map(option => (
                   <option key={option.value} value={option.value}>
@@ -252,7 +252,7 @@ const Meals = () => {
               <select
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value)}
-                className="input"
+                className="select"
               >
                 <option value="asc">Ascending</option>
                 <option value="desc">Descending</option>
