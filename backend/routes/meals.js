@@ -65,7 +65,14 @@ router.get('/:id', async (req, res) => {
     
     const meal = await Meal.findOne(query)
       .populate('createdBy', 'firstName lastName username')
-      .populate('ingredients.ingredient', 'name unit store');
+      .populate({
+        path: 'ingredients.ingredient',
+        select: 'name unit store',
+        populate: {
+          path: 'store',
+          select: 'name address'
+        }
+      });
 
     if (!meal) {
       return res.status(404).json({
@@ -143,7 +150,14 @@ router.post('/', [
 
     // Populate the references for response
     await meal.populate('createdBy', 'firstName lastName username');
-    await meal.populate('ingredients.ingredient', 'name unit store');
+    await meal.populate({
+      path: 'ingredients.ingredient',
+      select: 'name unit store',
+      populate: {
+        path: 'store',
+        select: 'name address'
+      }
+    });
 
     res.status(201).json({
       success: true,
@@ -220,7 +234,14 @@ router.put('/:id', [
       updateData,
       { new: true, runValidators: true }
     ).populate('createdBy', 'firstName lastName username')
-     .populate('ingredients.ingredient', 'name unit store');
+     .populate({
+       path: 'ingredients.ingredient',
+       select: 'name unit store',
+       populate: {
+         path: 'store',
+         select: 'name address'
+       }
+     });
 
     if (!meal) {
       return res.status(404).json({

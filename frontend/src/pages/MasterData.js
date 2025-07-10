@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Package } from 'lucide-react';
+import { Package, Store } from 'lucide-react';
 import Ingredients from './Ingredients';
+import Stores from './Stores';
 
 const MasterData = () => {
   const [activeTab, setActiveTab] = useState('ingredients');
@@ -11,6 +12,12 @@ const MasterData = () => {
       name: 'Ingredients',
       icon: Package,
       component: Ingredients
+    },
+    {
+      id: 'stores',
+      name: 'Stores',
+      icon: Store,
+      component: Stores
     }
     // Future tabs can be added here
     // { id: 'categories', name: 'Categories', icon: Tag, component: Categories },

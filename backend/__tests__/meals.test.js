@@ -3,6 +3,7 @@ const app = require('../app');
 const User = require('../models/User');
 const Meal = require('../models/Meal');
 const Ingredient = require('../models/Ingredient');
+const Store = require('../models/Store');
 
 describe('Meals API Endpoints', () => {
   let authToken;
@@ -368,17 +369,32 @@ describe('Meals API Endpoints', () => {
 
   describe('Meal Ingredients Integration', () => {
     let ingredientId1, ingredientId2;
+    let testStore;
 
     beforeEach(async () => {
-      // Clean up ingredients
+      // Clean up ingredients and stores
       await Ingredient.deleteMany({});
+      await Store.deleteMany({});
+
+      // Create test store
+      testStore = await Store.create({
+        name: 'Grocery Store',
+        address: {
+          street: '123 Main St',
+          city: 'Anytown',
+          state: 'CA',
+          zipCode: '12345',
+          country: 'USA'
+        },
+        createdBy: userId
+      });
 
       // Create test ingredients
       const ingredient1 = await Ingredient.create({
         name: 'Chicken Breast',
         quantity: 1,
         unit: 'lbs',
-        store: 'Grocery Store',
+        store: testStore._id,
         createdBy: userId
       });
       ingredientId1 = ingredient1._id;
@@ -387,7 +403,7 @@ describe('Meals API Endpoints', () => {
         name: 'Olive Oil',
         quantity: 500,
         unit: 'ml',
-        store: 'Grocery Store',
+        store: testStore._id,
         createdBy: userId
       });
       ingredientId2 = ingredient2._id;
@@ -610,7 +626,7 @@ describe('Meals API Endpoints', () => {
       expect(response.body.meal.ingredients).toHaveLength(1);
       expect(response.body.meal.ingredients[0].ingredient).toHaveProperty('name', 'Chicken Breast');
       expect(response.body.meal.ingredients[0].ingredient).toHaveProperty('unit', 'lbs');
-      expect(response.body.meal.ingredients[0].ingredient).toHaveProperty('store', 'Grocery Store');
+      expect(response.body.meal.ingredients[0].ingredient.store).toHaveProperty('name', 'Grocery Store');
       expect(response.body.meal.ingredients[0].quantity).toBe(2);
       expect(response.body.meal.ingredients[0].notes).toBe('Fresh chicken');
     });

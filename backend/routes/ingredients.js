@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const mongoose = require('mongoose');
 const Ingredient = require('../models/Ingredient');
+const Store = require('../models/Store');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -25,13 +26,30 @@ router.get('/', async (req, res) => {
       query.name = { $regex: search, $options: 'i' };
     }
     
-    // Filter by store
+    // Filter by store (ObjectId or store name)
     if (store) {
-      query.store = { $regex: store, $options: 'i' };
+      if (mongoose.Types.ObjectId.isValid(store)) {
+        // Direct ObjectId match
+        query.store = store;
+      } else {
+        // Find store by name first, then filter by ObjectId
+        const storeDoc = await Store.findOne({
+          name: { $regex: store, $options: 'i' },
+          createdBy: req.user._id,
+          isActive: true
+        });
+        if (storeDoc) {
+          query.store = storeDoc._id;
+        } else {
+          // If store name doesn't match any store, return empty results
+          query.store = new mongoose.Types.ObjectId(); // Non-existent ObjectId
+        }
+      }
     }
     
     const ingredients = await Ingredient.find(query)
       .populate('createdBy', 'firstName lastName username')
+      .populate('store', 'name address')
       .sort({ name: 1 });
     
     res.json({
@@ -48,17 +66,17 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get unique stores for dropdown (must be before /:id route)
+// Get available stores for dropdown (must be before /:id route)
 router.get('/stores/list', async (req, res) => {
   try {
-    const stores = await Ingredient.distinct('store', {
+    const stores = await Store.find({
       createdBy: req.user._id,
       isActive: true
-    });
+    }).select('name address').sort({ name: 1 });
     
     res.json({
       success: true,
-      stores: stores.sort()
+      stores
     });
   } catch (error) {
     console.error('Get stores error:', error);
@@ -83,7 +101,9 @@ router.get('/:id', async (req, res) => {
     const ingredient = await Ingredient.findOne({
       _id: req.params.id,
       createdBy: req.user._id
-    }).populate('createdBy', 'firstName lastName username');
+    })
+    .populate('createdBy', 'firstName lastName username')
+    .populate('store', 'name address');
     
     if (!ingredient) {
       return res.status(404).json({
@@ -110,7 +130,7 @@ router.post('/', [
   body('name').trim().isLength({ min: 1, max: 100 }).withMessage('Ingredient name is required and must be less than 100 characters'),
   body('quantity').isNumeric().withMessage('Quantity must be a number').isFloat({ min: 0 }).withMessage('Quantity must be positive'),
   body('unit').isIn(['lbs', 'oz', 'kg', 'g', 'count', 'cups', 'tbsp', 'tsp', 'ml', 'l']).withMessage('Invalid unit'),
-  body('store').trim().isLength({ min: 1, max: 100 }).withMessage('Store is required and must be less than 100 characters'),
+  body('store').isMongoId().withMessage('Valid store ID is required'),
   body('isActive').optional().isBoolean().withMessage('Active status must be boolean')
 ], async (req, res) => {
   try {
@@ -124,6 +144,20 @@ router.post('/', [
     }
     
     const { name, quantity, unit, store, isActive } = req.body;
+    
+    // Verify store exists and belongs to user
+    const storeExists = await Store.findOne({
+      _id: store,
+      createdBy: req.user._id,
+      isActive: true
+    });
+    
+    if (!storeExists) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store not found or inactive'
+      });
+    }
     
     // Check for duplicate ingredient name for this user
     const existingIngredient = await Ingredient.findOne({
@@ -151,7 +185,10 @@ router.post('/', [
     await ingredient.save();
     
     // Populate the created ingredient
-    await ingredient.populate('createdBy', 'firstName lastName username');
+    await ingredient.populate([
+      { path: 'createdBy', select: 'firstName lastName username' },
+      { path: 'store', select: 'name address' }
+    ]);
     
     res.status(201).json({
       success: true,
@@ -186,7 +223,7 @@ router.put('/:id', [
   body('name').optional().trim().isLength({ min: 1, max: 100 }).withMessage('Ingredient name must be less than 100 characters'),
   body('quantity').optional().isNumeric().withMessage('Quantity must be a number').isFloat({ min: 0 }).withMessage('Quantity must be positive'),
   body('unit').optional().isIn(['lbs', 'oz', 'kg', 'g', 'count', 'cups', 'tbsp', 'tsp', 'ml', 'l']).withMessage('Invalid unit'),
-  body('store').optional().trim().isLength({ min: 1, max: 100 }).withMessage('Store must be less than 100 characters'),
+  body('store').optional().isMongoId().withMessage('Valid store ID is required'),
   body('isActive').optional().isBoolean().withMessage('Active status must be boolean')
 ], async (req, res) => {
   try {
@@ -222,6 +259,22 @@ router.put('/:id', [
       });
     }
     
+    // If store is being updated, verify it exists and belongs to user
+    if (store) {
+      const storeExists = await Store.findOne({
+        _id: store,
+        createdBy: req.user._id,
+        isActive: true
+      });
+      
+      if (!storeExists) {
+        return res.status(400).json({
+          success: false,
+          message: 'Store not found or inactive'
+        });
+      }
+    }
+    
     // Check for duplicate name if name is being updated
     if (name && name.toLowerCase() !== ingredient.name.toLowerCase()) {
       const existingIngredient = await Ingredient.findOne({
@@ -249,7 +302,10 @@ router.put('/:id', [
     await ingredient.save();
     
     // Populate the updated ingredient
-    await ingredient.populate('createdBy', 'firstName lastName username');
+    await ingredient.populate([
+      { path: 'createdBy', select: 'firstName lastName username' },
+      { path: 'store', select: 'name address' }
+    ]);
     
     res.json({
       success: true,

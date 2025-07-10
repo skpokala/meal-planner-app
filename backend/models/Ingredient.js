@@ -21,10 +21,9 @@ const ingredientSchema = new mongoose.Schema({
     }
   },
   store: {
-    type: String,
-    required: [true, 'Store is required'],
-    trim: true,
-    maxlength: [100, 'Store name cannot exceed 100 characters']
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Store',
+    required: [true, 'Store is required']
   },
   isActive: {
     type: Boolean,
@@ -54,5 +53,6 @@ ingredientSchema.pre('save', function(next) {
 // Index for efficient querying
 ingredientSchema.index({ createdBy: 1, isActive: 1 });
 ingredientSchema.index({ name: 1, createdBy: 1 });
+ingredientSchema.index({ store: 1, createdBy: 1 });
 
 module.exports = mongoose.model('Ingredient', ingredientSchema); 

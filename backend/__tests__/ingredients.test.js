@@ -2,15 +2,19 @@ const request = require('supertest');
 const app = require('../app');
 const User = require('../models/User');
 const Ingredient = require('../models/Ingredient');
+const Store = require('../models/Store');
 
 describe('Ingredients API', () => {
   let authToken;
   let userId;
   let testIngredient;
+  let testStore;
+  let testStore2;
 
   beforeEach(async () => {
     // Clean up all data before each test
     await Ingredient.deleteMany({});
+    await Store.deleteMany({});
     await User.deleteMany({});
     
     // Create test user using the same approach as meal plans tests
@@ -39,12 +43,37 @@ describe('Ingredients API', () => {
 
     authToken = loginResponse.body.token;
     
-    // Create a test ingredient
+    // Create test stores
+    testStore = await Store.create({
+      name: 'Test Store',
+      address: {
+        street: '123 Main St',
+        city: 'Anytown',
+        state: 'CA',
+        zipCode: '12345',
+        country: 'USA'
+      },
+      createdBy: userId
+    });
+
+    testStore2 = await Store.create({
+      name: 'Store B',
+      address: {
+        street: '456 Oak Ave',
+        city: 'Testville',
+        state: 'NY',
+        zipCode: '67890',
+        country: 'USA'
+      },
+      createdBy: userId
+    });
+    
+    // Create a test ingredient with Store ObjectId reference
     testIngredient = new Ingredient({
       name: 'Test Ingredient',
       quantity: 2.5,
       unit: 'lbs',
-      store: 'Test Store',
+      store: testStore._id,
       createdBy: userId
     });
     await testIngredient.save();
@@ -54,6 +83,7 @@ describe('Ingredients API', () => {
     // Clean up
     await User.deleteMany({});
     await Ingredient.deleteMany({});
+    await Store.deleteMany({});
   });
 
   describe('GET /api/ingredients', () => {
@@ -66,6 +96,7 @@ describe('Ingredients API', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.ingredients).toHaveLength(1);
       expect(response.body.ingredients[0].name).toBe('Test Ingredient');
+      expect(response.body.ingredients[0].store.name).toBe('Test Store');
       expect(response.body.count).toBe(1);
     });
 
@@ -75,7 +106,7 @@ describe('Ingredients API', () => {
         name: 'Another Item',
         quantity: 1,
         unit: 'kg',
-        store: 'Test Store',
+        store: testStore._id,
         createdBy: userId
       });
       await ingredient2.save();
@@ -95,18 +126,18 @@ describe('Ingredients API', () => {
         name: 'Store Item',
         quantity: 1,
         unit: 'kg',
-        store: 'Different Store',
+        store: testStore2._id,
         createdBy: userId
       });
       await ingredient2.save();
 
       const response = await request(app)
-        .get('/api/ingredients?store=Different')
+        .get('/api/ingredients?store=Store B')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.ingredients).toHaveLength(1);
-      expect(response.body.ingredients[0].store).toBe('Different Store');
+      expect(response.body.ingredients[0].store.name).toBe('Store B');
     });
 
     it('should filter by active status', async () => {
@@ -115,7 +146,7 @@ describe('Ingredients API', () => {
         name: 'Inactive Item',
         quantity: 1,
         unit: 'kg',
-        store: 'Test Store',
+        store: testStore._id,
         isActive: false,
         createdBy: userId
       });
@@ -149,7 +180,7 @@ describe('Ingredients API', () => {
       expect(response.body.ingredient.name).toBe('Test Ingredient');
       expect(response.body.ingredient.quantity).toBe(2.5);
       expect(response.body.ingredient.unit).toBe('lbs');
-      expect(response.body.ingredient.store).toBe('Test Store');
+      expect(response.body.ingredient.store.name).toBe('Test Store');
     });
 
     it('should return 404 for non-existent ingredient', async () => {
@@ -180,7 +211,7 @@ describe('Ingredients API', () => {
         name: 'New Ingredient',
         quantity: 1.5,
         unit: 'kg',
-        store: 'New Store'
+        store: testStore._id.toString()
       };
 
       const response = await request(app)
@@ -193,7 +224,7 @@ describe('Ingredients API', () => {
       expect(response.body.ingredient.name).toBe('New Ingredient');
       expect(response.body.ingredient.quantity).toBe(1.5);
       expect(response.body.ingredient.unit).toBe('kg');
-      expect(response.body.ingredient.store).toBe('New Store');
+      expect(response.body.ingredient.store.name).toBe('Test Store');
       expect(response.body.ingredient.isActive).toBe(true);
     });
 
@@ -218,7 +249,7 @@ describe('Ingredients API', () => {
           name: longName,
           quantity: 1,
           unit: 'lbs',
-          store: 'Test Store'
+          store: testStore._id.toString()
         });
 
       expect(response.status).toBe(400);
@@ -233,7 +264,7 @@ describe('Ingredients API', () => {
           name: 'Test Item',
           quantity: -1,
           unit: 'lbs',
-          store: 'Test Store'
+          store: testStore._id.toString()
         });
 
       expect(response.status).toBe(400);
@@ -248,11 +279,28 @@ describe('Ingredients API', () => {
           name: 'Test Item',
           quantity: 1,
           unit: 'invalid-unit',
-          store: 'Test Store'
+          store: testStore._id.toString()
         });
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
+    });
+
+    it('should validate store exists', async () => {
+      const fakeStoreId = '507f1f77bcf86cd799439011';
+      const response = await request(app)
+        .post('/api/ingredients')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          name: 'Test Item',
+          quantity: 1,
+          unit: 'lbs',
+          store: fakeStoreId
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Store not found or inactive');
     });
 
     it('should prevent duplicate ingredient names', async () => {
@@ -263,7 +311,7 @@ describe('Ingredients API', () => {
           name: 'Test Ingredient', // Same as existing
           quantity: 1,
           unit: 'lbs',
-          store: 'Test Store'
+          store: testStore._id.toString()
         });
 
       expect(response.status).toBe(400);
@@ -278,7 +326,7 @@ describe('Ingredients API', () => {
         name: 'Updated Ingredient',
         quantity: 3.0,
         unit: 'kg',
-        store: 'Updated Store'
+        store: testStore2._id.toString()
       };
 
       const response = await request(app)
@@ -291,7 +339,7 @@ describe('Ingredients API', () => {
       expect(response.body.ingredient.name).toBe('Updated Ingredient');
       expect(response.body.ingredient.quantity).toBe(3.0);
       expect(response.body.ingredient.unit).toBe('kg');
-      expect(response.body.ingredient.store).toBe('Updated Store');
+      expect(response.body.ingredient.store.name).toBe('Store B');
     });
 
     it('should return 404 for non-existent ingredient', async () => {
@@ -317,6 +365,20 @@ describe('Ingredients API', () => {
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
+    });
+
+    it('should validate store exists when updating', async () => {
+      const fakeStoreId = '507f1f77bcf86cd799439011';
+      const response = await request(app)
+        .put(`/api/ingredients/${testIngredient._id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          store: fakeStoreId
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Store not found or inactive');
     });
   });
 
@@ -348,25 +410,19 @@ describe('Ingredients API', () => {
   });
 
   describe('GET /api/ingredients/stores/list', () => {
-    it('should get unique stores list', async () => {
-      // Create ingredients with different stores
-      const ingredient2 = new Ingredient({
-        name: 'Item 2',
-        quantity: 1,
-        unit: 'kg',
-        store: 'Store B',
+    it('should get stores list from Store model', async () => {
+      // Create additional store
+      const store3 = await Store.create({
+        name: 'Store A',
+        address: {
+          street: '789 Pine St',
+          city: 'Somewhere',
+          state: 'TX',
+          zipCode: '54321',
+          country: 'USA'
+        },
         createdBy: userId
       });
-      await ingredient2.save();
-
-      const ingredient3 = new Ingredient({
-        name: 'Item 3',
-        quantity: 1,
-        unit: 'kg',
-        store: 'Store A',
-        createdBy: userId
-      });
-      await ingredient3.save();
 
       const response = await request(app)
         .get('/api/ingredients/stores/list')
@@ -374,33 +430,41 @@ describe('Ingredients API', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.stores).toContain('Test Store');
-      expect(response.body.stores).toContain('Store A');
-      expect(response.body.stores).toContain('Store B');
+      expect(response.body.stores).toHaveLength(3);
       expect(response.body.stores).toEqual(expect.arrayContaining([
-        'Store A', 'Store B', 'Test Store'
+        expect.objectContaining({ name: 'Store A' }),
+        expect.objectContaining({ name: 'Store B' }),
+        expect.objectContaining({ name: 'Test Store' })
       ]));
     });
 
-    it('should only return stores for active ingredients', async () => {
-      // Create inactive ingredient
-      const ingredient2 = new Ingredient({
-        name: 'Inactive Item',
-        quantity: 1,
-        unit: 'kg',
-        store: 'Inactive Store',
+    it('should only return active stores', async () => {
+      // Create inactive store
+      const inactiveStore = await Store.create({
+        name: 'Inactive Store',
+        address: {
+          street: '999 Closed St',
+          city: 'Nowhere',
+          state: 'FL',
+          zipCode: '99999',
+          country: 'USA'
+        },
         isActive: false,
         createdBy: userId
       });
-      await ingredient2.save();
 
       const response = await request(app)
         .get('/api/ingredients/stores/list')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.stores).not.toContain('Inactive Store');
-      expect(response.body.stores).toContain('Test Store');
+      expect(response.body.stores).not.toContain(
+        expect.objectContaining({ name: 'Inactive Store' })
+      );
+      expect(response.body.stores).toEqual(expect.arrayContaining([
+        expect.objectContaining({ name: 'Store B' }),
+        expect.objectContaining({ name: 'Test Store' })
+      ]));
     });
   });
 }); 
