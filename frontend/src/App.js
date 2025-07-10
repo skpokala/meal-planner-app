@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import FamilyMembers from './pages/FamilyMembers';
 import Meals from './pages/Meals';
 import MealPlanner from './pages/MealPlanner';
+import MasterData from './pages/MasterData';
 import Settings from './pages/Settings';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -83,6 +84,18 @@ function AppRoutes() {
               <Layout>
                 <ErrorBoundary>
                   <MealPlanner />
+                </ErrorBoundary>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/master-data"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ErrorBoundary>
+                  <MasterData />
                 </ErrorBoundary>
               </Layout>
             </ProtectedRoute>

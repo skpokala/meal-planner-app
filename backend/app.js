@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth');
 const familyMemberRoutes = require('./routes/familyMembers');
 const mealRoutes = require('./routes/meals');
 const mealPlanRoutes = require('./routes/mealPlans');
+const ingredientRoutes = require('./routes/ingredients');
 
 const app = express();
 
@@ -54,6 +55,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/family-members', familyMemberRoutes);
 app.use('/api/meals', mealRoutes);
 app.use('/api/meal-plans', mealPlanRoutes);
+app.use('/api/ingredients', ingredientRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

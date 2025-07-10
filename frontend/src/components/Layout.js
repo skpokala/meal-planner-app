@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChefHat,
+  Database,
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
@@ -30,6 +31,7 @@ const Layout = ({ children }) => {
     { name: 'Family Members', href: '/family-members', icon: Users },
     { name: 'Meals', href: '/meals', icon: ChefHat },
     { name: 'Meal Planner', href: '/meal-planner', icon: Calendar },
+    { name: 'Master Data', href: '/master-data', icon: Database },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
