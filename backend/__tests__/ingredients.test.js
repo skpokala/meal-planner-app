@@ -8,20 +8,20 @@ describe('Ingredients API', () => {
   let userId;
   let testIngredient;
 
-  beforeAll(async () => {
-    // Create test user with hashed password
-    const bcrypt = require('bcryptjs');
-    const hashedPassword = await bcrypt.hash('testpassword', 10);
+  beforeEach(async () => {
+    // Clean up all data before each test
+    await Ingredient.deleteMany({});
+    await User.deleteMany({});
     
-    const user = new User({
+    // Create test user using the same approach as meal plans tests
+    const user = await User.create({
       username: 'testuser',
-      email: 'test@example.com',
-      password: hashedPassword,
       firstName: 'Test',
       lastName: 'User',
+      email: 'test@example.com',
+      password: 'password',
       role: 'user'
     });
-    await user.save();
     userId = user._id;
 
     // Login to get token
@@ -29,17 +29,15 @@ describe('Ingredients API', () => {
       .post('/api/auth/login')
       .send({
         username: 'testuser',
-        password: 'testpassword'
+        password: 'password'
       });
 
-    expect(loginResponse.status).toBe(200);
-    expect(loginResponse.body.success).toBe(true);
-    authToken = loginResponse.body.token;
-  });
+    if (loginResponse.status !== 200) {
+      console.error('Login failed:', loginResponse.body);
+      throw new Error(`Login failed with status ${loginResponse.status}`);
+    }
 
-  beforeEach(async () => {
-    // Clean up ingredients before each test
-    await Ingredient.deleteMany({});
+    authToken = loginResponse.body.token;
     
     // Create a test ingredient
     testIngredient = new Ingredient({
@@ -208,7 +206,7 @@ describe('Ingredients API', () => {
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Validation failed');
-      expect(response.body.errors).toHaveLength(4); // name, quantity, unit, store
+      expect(response.body.errors).toHaveLength(5); // name, quantity (2 errors), unit, store
     });
 
     it('should validate ingredient name length', async () => {
