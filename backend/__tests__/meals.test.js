@@ -167,6 +167,50 @@ describe('Meals API Endpoints', () => {
       );
     });
 
+    it('should prevent duplicate meal names', async () => {
+      // First, create a meal
+      await Meal.create({
+        name: 'Duplicate Test Meal',
+        createdBy: userId
+      });
+
+      // Try to create another meal with the same name
+      const mealData = {
+        name: 'Duplicate Test Meal'
+      };
+
+      const response = await request(app)
+        .post('/api/meals')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(mealData)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message', 'A meal with this name already exists');
+    });
+
+    it('should prevent duplicate meal names (case insensitive)', async () => {
+      // First, create a meal
+      await Meal.create({
+        name: 'Case Test Meal',
+        createdBy: userId
+      });
+
+      // Try to create another meal with the same name but different case
+      const mealData = {
+        name: 'CASE TEST MEAL'
+      };
+
+      const response = await request(app)
+        .post('/api/meals')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(mealData)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message', 'A meal with this name already exists');
+    });
+
     it('should require authentication', async () => {
       const response = await request(app)
         .post('/api/meals')
@@ -274,6 +318,35 @@ describe('Meals API Endpoints', () => {
 
       expect(response.body.meal.name).toBe('Original Meal'); // Unchanged
       expect(response.body.meal.prepTime).toBe(60); // Updated
+    });
+
+    it('should prevent duplicate meal names when updating', async () => {
+      // Create another meal with a different name
+      const anotherMeal = await Meal.create({
+        name: 'Another Meal',
+        createdBy: userId
+      });
+
+      // Try to update the first meal to have the same name as the second
+      const response = await request(app)
+        .put(`/api/meals/${mealId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: 'Another Meal' })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message', 'A meal with this name already exists');
+    });
+
+    it('should allow updating meal with same name (no change)', async () => {
+      const response = await request(app)
+        .put(`/api/meals/${mealId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: 'Original Meal', description: 'Updated description' })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body.meal.description).toBe('Updated description');
     });
 
     it('should return 404 for non-existent meal', async () => {

@@ -131,6 +131,20 @@ router.post('/', [
       notes
     } = req.body;
 
+    // Check for duplicate meal name for this user
+    const existingMeal = await Meal.findOne({
+      name: { $regex: new RegExp(`^${name}$`, 'i') },
+      createdBy: req.user._id,
+      active: true
+    });
+
+    if (existingMeal) {
+      return res.status(400).json({
+        success: false,
+        message: 'A meal with this name already exists'
+      });
+    }
+
     // Create new meal
     const meal = new Meal({
       name,
@@ -228,6 +242,23 @@ router.put('/:id', [
         updateData[field] = req.body[field];
       }
     });
+
+    // Check for duplicate meal name if name is being updated
+    if (req.body.name) {
+      const existingMeal = await Meal.findOne({
+        name: { $regex: new RegExp(`^${req.body.name}$`, 'i') },
+        createdBy: req.user._id,
+        active: true,
+        _id: { $ne: req.params.id } // Exclude current meal from duplicate check
+      });
+
+      if (existingMeal) {
+        return res.status(400).json({
+          success: false,
+          message: 'A meal with this name already exists'
+        });
+      }
+    }
 
     const meal = await Meal.findOneAndUpdate(
       query,
