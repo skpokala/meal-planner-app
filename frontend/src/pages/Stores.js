@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
+import AddressAutocomplete from '../components/AddressAutocomplete';
 import { Plus, Edit, Trash2, Search, MapPin, Store as StoreIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -22,6 +23,7 @@ const Stores = () => {
       country: 'USA'
     }
   });
+  const [addressSearchValue, setAddressSearchValue] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -104,6 +106,9 @@ const Stores = () => {
         country: store.address.country || 'USA'
       }
     });
+    // Set the address search value to the full address for editing
+    const fullAddress = `${store.address.street}, ${store.address.city}, ${store.address.state} ${store.address.zipCode}`;
+    setAddressSearchValue(fullAddress);
     setShowModal(true);
   };
 
@@ -139,6 +144,7 @@ const Stores = () => {
         country: 'USA'
       }
     });
+    setAddressSearchValue('');
     setEditingStore(null);
     setShowModal(false);
   };
@@ -163,6 +169,20 @@ const Stores = () => {
         address: { ...prev.address, [field]: value }
       }));
     }
+  };
+
+  const handleAddressSelect = (suggestion) => {
+    setFormData(prev => ({
+      ...prev,
+      address: {
+        street: suggestion.address.street,
+        city: suggestion.address.city,
+        state: suggestion.address.state,
+        zipCode: suggestion.address.zipCode,
+        country: suggestion.address.country
+      }
+    }));
+    toast.success('Address auto-filled from suggestion');
   };
 
   if (loading && stores.length === 0) {
@@ -330,15 +350,23 @@ const Stores = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Street Address *
+                    Address * <span className="text-xs text-gray-500">(Search for address suggestions)</span>
                   </label>
+                  <AddressAutocomplete
+                    value={addressSearchValue}
+                    onChange={setAddressSearchValue}
+                    onAddressSelect={handleAddressSelect}
+                    placeholder="Start typing an address..."
+                    required
+                    className="mb-2"
+                  />
                   <input
                     type="text"
                     value={formData.address.street}
                     onChange={(e) => handleInputChange('street', e.target.value)}
                     required
                     className="input w-full"
-                    placeholder="Enter street address"
+                    placeholder="Street address (auto-filled or enter manually)"
                     maxLength={100}
                   />
                 </div>
