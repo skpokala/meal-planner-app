@@ -21,20 +21,26 @@ const mealSchema = new mongoose.Schema({
     default: true
   },
   ingredients: [{
-    name: {
-      type: String,
-      required: true,
-      trim: true
+    ingredient: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Ingredient',
+      required: false // Optional - meal can exist without ingredients
     },
     quantity: {
-      type: String,
-      required: true,
-      trim: true
+      type: Number,
+      required: false, // Optional - quantity can be empty
+      min: 0
     },
     unit: {
       type: String,
-      required: true,
+      required: false, // Optional - unit can be empty
+      enum: ['lbs', 'oz', 'kg', 'g', 'count', 'cups', 'tbsp', 'tsp', 'ml', 'l'],
       trim: true
+    },
+    notes: {
+      type: String,
+      trim: true,
+      maxlength: 200 // Optional notes for this ingredient in the meal
     }
   }],
   recipe: {

@@ -31,6 +31,7 @@ router.get('/', async (req, res) => {
 
     const meals = await Meal.find(query)
       .populate('createdBy', 'firstName lastName username')
+      .populate('ingredients.ingredient', 'name unit store')
       .sort({ name: 1 });
 
     res.json({
@@ -63,7 +64,8 @@ router.get('/:id', async (req, res) => {
       : { _id: req.params.id, createdBy: req.user._id };
     
     const meal = await Meal.findOne(query)
-      .populate('createdBy', 'firstName lastName username');
+      .populate('createdBy', 'firstName lastName username')
+      .populate('ingredients.ingredient', 'name unit store');
 
     if (!meal) {
       return res.status(404).json({
@@ -91,6 +93,9 @@ router.post('/', [
   body('prepTime').optional().isNumeric().withMessage('Prep time must be a number'),
   body('active').optional().isBoolean().withMessage('Active must be a boolean'),
   body('ingredients').optional().isArray().withMessage('Ingredients must be an array'),
+  body('ingredients.*.ingredient').optional().isMongoId().withMessage('Invalid ingredient ID'),
+  body('ingredients.*.quantity').optional().isNumeric().withMessage('Quantity must be a number'),
+  body('ingredients.*.unit').optional().isIn(['lbs', 'oz', 'kg', 'g', 'count', 'cups', 'tbsp', 'tsp', 'ml', 'l']).withMessage('Invalid unit'),
   body('recipe.cookTime').optional().isNumeric().withMessage('Cook time must be a number'),
   body('recipe.servings').optional().isNumeric().withMessage('Servings must be a number'),
   body('recipe.difficulty').optional().isIn(['easy', 'medium', 'hard']).withMessage('Invalid difficulty level')
@@ -138,6 +143,7 @@ router.post('/', [
 
     // Populate the references for response
     await meal.populate('createdBy', 'firstName lastName username');
+    await meal.populate('ingredients.ingredient', 'name unit store');
 
     res.status(201).json({
       success: true,
@@ -173,6 +179,9 @@ router.put('/:id', [
   body('prepTime').optional().isNumeric().withMessage('Prep time must be a number'),
   body('active').optional().isBoolean().withMessage('Active must be a boolean'),
   body('ingredients').optional().isArray().withMessage('Ingredients must be an array'),
+  body('ingredients.*.ingredient').optional().isMongoId().withMessage('Invalid ingredient ID'),
+  body('ingredients.*.quantity').optional().isNumeric().withMessage('Quantity must be a number'),
+  body('ingredients.*.unit').optional().isIn(['lbs', 'oz', 'kg', 'g', 'count', 'cups', 'tbsp', 'tsp', 'ml', 'l']).withMessage('Invalid unit'),
   body('recipe.cookTime').optional().isNumeric().withMessage('Cook time must be a number'),
   body('recipe.servings').optional().isNumeric().withMessage('Servings must be a number'),
   body('recipe.difficulty').optional().isIn(['easy', 'medium', 'hard']).withMessage('Invalid difficulty level'),
@@ -210,7 +219,8 @@ router.put('/:id', [
       query,
       updateData,
       { new: true, runValidators: true }
-    ).populate('createdBy', 'firstName lastName username');
+    ).populate('createdBy', 'firstName lastName username')
+     .populate('ingredients.ingredient', 'name unit store');
 
     if (!meal) {
       return res.status(404).json({

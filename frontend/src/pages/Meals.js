@@ -301,6 +301,9 @@ const Meals = () => {
                       Description
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                      Ingredients
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
                       Prep Time
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
@@ -322,6 +325,33 @@ const Meals = () => {
                       <td className="px-6 py-4">
                         <div className="text-sm text-secondary-600 max-w-xs truncate">
                           {meal.description || 'No description'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-secondary-600">
+                          {meal.ingredients && meal.ingredients.length > 0 ? (
+                            <div className="space-y-1">
+                              {meal.ingredients.slice(0, 2).map((ingredient, index) => (
+                                <div key={index} className="flex items-center space-x-1">
+                                  <span className="font-medium">
+                                    {ingredient.ingredient?.name || 'Unknown'}
+                                  </span>
+                                  {ingredient.quantity && (
+                                    <span className="text-xs text-secondary-500">
+                                      ({ingredient.quantity} {ingredient.unit})
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                              {meal.ingredients.length > 2 && (
+                                <div className="text-xs text-secondary-500">
+                                  +{meal.ingredients.length - 2} more
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-secondary-400 italic">No ingredients</span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

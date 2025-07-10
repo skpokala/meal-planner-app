@@ -2,6 +2,7 @@ const request = require('supertest');
 const app = require('../app');
 const User = require('../models/User');
 const Meal = require('../models/Meal');
+const Ingredient = require('../models/Ingredient');
 
 describe('Meals API Endpoints', () => {
   let authToken;
@@ -363,13 +364,53 @@ describe('Meals API Endpoints', () => {
 
       expect(response.body).toHaveProperty('errors');
     });
+  });
 
-    it('should allow ingredients array', async () => {
+  describe('Meal Ingredients Integration', () => {
+    let ingredientId1, ingredientId2;
+
+    beforeEach(async () => {
+      // Clean up ingredients
+      await Ingredient.deleteMany({});
+
+      // Create test ingredients
+      const ingredient1 = await Ingredient.create({
+        name: 'Chicken Breast',
+        quantity: 1,
+        unit: 'lbs',
+        store: 'Grocery Store',
+        createdBy: userId
+      });
+      ingredientId1 = ingredient1._id;
+
+      const ingredient2 = await Ingredient.create({
+        name: 'Olive Oil',
+        quantity: 500,
+        unit: 'ml',
+        store: 'Grocery Store',
+        createdBy: userId
+      });
+      ingredientId2 = ingredient2._id;
+    });
+
+    it('should create meal with ingredients from master data', async () => {
       const mealData = {
-        name: 'Meal with Ingredients',
+        name: 'Grilled Chicken',
+        description: 'Delicious grilled chicken',
+        prepTime: 30,
         ingredients: [
-          { name: 'Pasta', quantity: '200', unit: 'g' },
-          { name: 'Tomatoes', quantity: '3', unit: 'pieces' }
+          {
+            ingredient: ingredientId1,
+            quantity: 2,
+            unit: 'lbs',
+            notes: 'Boneless, skinless'
+          },
+          {
+            ingredient: ingredientId2,
+            quantity: 50,
+            unit: 'ml',
+            notes: 'Extra virgin'
+          }
         ]
       };
 
@@ -379,8 +420,260 @@ describe('Meals API Endpoints', () => {
         .send(mealData)
         .expect(201);
 
+      expect(response.body.success).toBe(true);
       expect(response.body.meal.ingredients).toHaveLength(2);
-      expect(response.body.meal.ingredients[0].name).toBe('Pasta');
+      expect(response.body.meal.ingredients[0].ingredient._id).toBe(ingredientId1.toString());
+      expect(response.body.meal.ingredients[0].quantity).toBe(2);
+      expect(response.body.meal.ingredients[0].unit).toBe('lbs');
+      expect(response.body.meal.ingredients[0].notes).toBe('Boneless, skinless');
+      expect(response.body.meal.ingredients[0].ingredient.name).toBe('Chicken Breast');
+    });
+
+    it('should create meal with optional ingredient fields', async () => {
+      const mealData = {
+        name: 'Simple Meal',
+        ingredients: [
+          {
+            ingredient: ingredientId1
+            // No quantity, unit, or notes - all optional
+          }
+        ]
+      };
+
+      const response = await request(app)
+        .post('/api/meals')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(mealData)
+        .expect(201);
+
+      expect(response.body.meal.ingredients).toHaveLength(1);
+      expect(response.body.meal.ingredients[0].ingredient._id).toBe(ingredientId1.toString());
+      expect(response.body.meal.ingredients[0].quantity).toBeUndefined();
+      expect(response.body.meal.ingredients[0].unit).toBeUndefined();
+      expect(response.body.meal.ingredients[0].notes).toBeUndefined();
+    });
+
+    it('should create meal without ingredients', async () => {
+      const mealData = {
+        name: 'Ingredient-less Meal',
+        description: 'A meal without ingredients'
+      };
+
+      const response = await request(app)
+        .post('/api/meals')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(mealData)
+        .expect(201);
+
+      expect(response.body.meal.ingredients).toEqual([]);
+    });
+
+    it('should update meal ingredients', async () => {
+      // First create a meal
+      const meal = await Meal.create({
+        name: 'Original Meal',
+        ingredients: [{
+          ingredient: ingredientId1,
+          quantity: 1,
+          unit: 'lbs'
+        }],
+        createdBy: userId
+      });
+
+      const updateData = {
+        ingredients: [
+          {
+            ingredient: ingredientId2,
+            quantity: 100,
+            unit: 'ml',
+            notes: 'For cooking'
+          }
+        ]
+      };
+
+      const response = await request(app)
+        .put(`/api/meals/${meal._id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(updateData)
+        .expect(200);
+
+      expect(response.body.meal.ingredients).toHaveLength(1);
+      expect(response.body.meal.ingredients[0].ingredient._id).toBe(ingredientId2.toString());
+      expect(response.body.meal.ingredients[0].quantity).toBe(100);
+      expect(response.body.meal.ingredients[0].notes).toBe('For cooking');
+    });
+
+    it('should validate ingredient ID format', async () => {
+      const mealData = {
+        name: 'Invalid Ingredient Meal',
+        ingredients: [
+          {
+            ingredient: 'invalid-id',
+            quantity: 1,
+            unit: 'lbs'
+          }
+        ]
+      };
+
+      const response = await request(app)
+        .post('/api/meals')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(mealData)
+        .expect(400);
+
+      expect(response.body.errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: 'ingredients[0].ingredient',
+            msg: 'Invalid ingredient ID'
+          })
+        ])
+      );
+    });
+
+    it('should validate ingredient quantity is numeric', async () => {
+      const mealData = {
+        name: 'Invalid Quantity Meal',
+        ingredients: [
+          {
+            ingredient: ingredientId1,
+            quantity: 'not-a-number',
+            unit: 'lbs'
+          }
+        ]
+      };
+
+      const response = await request(app)
+        .post('/api/meals')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(mealData)
+        .expect(400);
+
+      expect(response.body.errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: 'ingredients[0].quantity',
+            msg: 'Quantity must be a number'
+          })
+        ])
+      );
+    });
+
+    it('should validate ingredient unit enum', async () => {
+      const mealData = {
+        name: 'Invalid Unit Meal',
+        ingredients: [
+          {
+            ingredient: ingredientId1,
+            quantity: 1,
+            unit: 'invalid-unit'
+          }
+        ]
+      };
+
+      const response = await request(app)
+        .post('/api/meals')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(mealData)
+        .expect(400);
+
+      expect(response.body.errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: 'ingredients[0].unit',
+            msg: 'Invalid unit'
+          })
+        ])
+      );
+    });
+
+    it('should populate ingredient details in GET requests', async () => {
+      // Create meal with ingredients
+      const meal = await Meal.create({
+        name: 'Populated Meal',
+        ingredients: [
+          {
+            ingredient: ingredientId1,
+            quantity: 2,
+            unit: 'lbs',
+            notes: 'Fresh chicken'
+          }
+        ],
+        createdBy: userId
+      });
+
+      const response = await request(app)
+        .get(`/api/meals/${meal._id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.meal.ingredients).toHaveLength(1);
+      expect(response.body.meal.ingredients[0].ingredient).toHaveProperty('name', 'Chicken Breast');
+      expect(response.body.meal.ingredients[0].ingredient).toHaveProperty('unit', 'lbs');
+      expect(response.body.meal.ingredients[0].ingredient).toHaveProperty('store', 'Grocery Store');
+      expect(response.body.meal.ingredients[0].quantity).toBe(2);
+      expect(response.body.meal.ingredients[0].notes).toBe('Fresh chicken');
+    });
+
+    it('should handle non-existent ingredient references gracefully', async () => {
+      const fakeIngredientId = '507f1f77bcf86cd799439011';
+      
+      const mealData = {
+        name: 'Meal with Non-existent Ingredient',
+        ingredients: [
+          {
+            ingredient: fakeIngredientId,
+            quantity: 1,
+            unit: 'lbs'
+          }
+        ]
+      };
+
+      // This should still create the meal, but the ingredient reference will be null when populated
+      const response = await request(app)
+        .post('/api/meals')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(mealData)
+        .expect(201);
+
+      expect(response.body.meal.ingredients).toHaveLength(1);
+      expect(response.body.meal.ingredients[0].ingredient).toBe(null); // Populated but ingredient doesn't exist
+    });
+
+    it('should handle ingredients with missing ingredient reference', async () => {
+      const mealData = {
+        name: 'Meal with Mixed Ingredients',
+        ingredients: [
+          {
+            ingredient: ingredientId1,
+            quantity: 1,
+            unit: 'lbs'
+          },
+          {
+            // Ingredient with missing reference - should still be saved
+            quantity: 2,
+            unit: 'kg'
+          },
+          {
+            ingredient: ingredientId2,
+            quantity: 50,
+            unit: 'ml'
+          }
+        ]
+      };
+
+      const response = await request(app)
+        .post('/api/meals')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(mealData)
+        .expect(201);
+
+      // All ingredients should be saved, even those without ingredient reference
+      expect(response.body.meal.ingredients).toHaveLength(3);
+      expect(response.body.meal.ingredients[0].ingredient._id).toBe(ingredientId1.toString());
+      expect(response.body.meal.ingredients[1].ingredient).toBeUndefined(); // No ingredient reference
+      expect(response.body.meal.ingredients[1].quantity).toBe(2);
+      expect(response.body.meal.ingredients[2].ingredient._id).toBe(ingredientId2.toString());
     });
   });
 }); 
