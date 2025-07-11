@@ -15,29 +15,17 @@ beforeAll(async () => {
   // Check if we're in CI environment with external MongoDB
   if (process.env.CI && process.env.MONGODB_URI) {
     mongoUri = process.env.MONGODB_URI;
-    console.log('Using provided MongoDB URI for CI tests');
+    console.log('Using provided MongoDB URI for CI tests:', mongoUri);
   } else {
     // Create in-memory MongoDB instance (for local development)
-    // Use more conservative settings for CI
-    const mongoOptions = process.env.CI ? {
-      binary: {
-        downloadDir: '/tmp/mongodb-binaries',
-        version: '6.0.4',
-      },
-      instance: {
-        dbName: 'test-meal-planner',
-        port: 27017,
-        storageEngine: 'wiredTiger',
-      },
-    } : {};
-    
-    mongoServer = await MongoMemoryServer.create(mongoOptions);
+    console.log('Creating MongoDB Memory Server for local tests');
+    mongoServer = await MongoMemoryServer.create();
     mongoUri = mongoServer.getUri();
     console.log('Using MongoDB Memory Server for local tests');
   }
 
   // Connect to the database with retry logic
-  const maxRetries = 3;
+  const maxRetries = 5;
   let retries = 0;
   
   while (retries < maxRetries) {
@@ -45,10 +33,13 @@ beforeAll(async () => {
       await mongoose.connect(mongoUri, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 10000, // 10 seconds
+        serverSelectionTimeoutMS: 15000, // 15 seconds
         socketTimeoutMS: 45000, // 45 seconds
         maxPoolSize: 10,
         minPoolSize: 1,
+        connectTimeoutMS: 30000, // 30 seconds
+        bufferMaxEntries: 0,
+        bufferCommands: false,
       });
       console.log('Successfully connected to MongoDB');
       break;
@@ -58,41 +49,52 @@ beforeAll(async () => {
       if (retries >= maxRetries) {
         throw error;
       }
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+      const delay = Math.min(1000 * Math.pow(2, retries), 10000); // Exponential backoff, max 10s
+      console.log(`Waiting ${delay}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
-}, 60000); // 60 second timeout for setup
+}, 90000); // 90 second timeout for setup
 
 // Clean up after each test
 afterEach(async () => {
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    const collection = collections[key];
-    await collection.deleteMany({});
+  if (mongoose.connection.readyState === 1) {
+    const collections = mongoose.connection.collections;
+    for (const key in collections) {
+      const collection = collections[key];
+      await collection.deleteMany({});
+    }
   }
 });
 
 // Cleanup after all tests
 afterAll(async () => {
-  await mongoose.disconnect();
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect();
+  }
   // Only stop mongoServer if it was created (not using external MongoDB)
   if (mongoServer) {
     await mongoServer.stop();
   }
 }, 30000); // 30 second timeout for cleanup
 
-// Mock console methods to reduce test noise
+// Mock console methods to reduce test noise (but keep important logs)
 const originalConsole = { ...console };
 
 beforeAll(() => {
-  console.log = jest.fn();
-  console.info = jest.fn();
-  console.warn = jest.fn();
-  console.error = jest.fn();
+  // Only mock in non-CI environments to see CI logs
+  if (!process.env.CI) {
+    console.log = jest.fn();
+    console.info = jest.fn();
+    console.warn = jest.fn();
+    console.error = jest.fn();
+  }
 });
 
 afterAll(() => {
-  Object.assign(console, originalConsole);
+  if (!process.env.CI) {
+    Object.assign(console, originalConsole);
+  }
 });
 
 // Mock JWT secret for tests (only if not already set)
@@ -102,5 +104,6 @@ if (!process.env.JWT_SECRET) {
 process.env.NODE_ENV = 'test';
 
 // Global test timeout - increase for CI
-const testTimeout = process.env.CI ? 60000 : 30000; // 60s for CI, 30s for local
-jest.setTimeout(testTimeout); 
+const testTimeout = process.env.CI ? 90000 : 30000; // 90s for CI, 30s for local
+jest.setTimeout(testTimeout);
+console.log(`Test timeout set to: ${testTimeout}ms (CI: ${!!process.env.CI})`); 
