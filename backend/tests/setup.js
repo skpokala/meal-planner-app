@@ -38,8 +38,6 @@ beforeAll(async () => {
         maxPoolSize: 10,
         minPoolSize: 1,
         connectTimeoutMS: 30000, // 30 seconds
-        bufferMaxEntries: 0,
-        bufferCommands: false,
       });
       console.log('Successfully connected to MongoDB');
       break;

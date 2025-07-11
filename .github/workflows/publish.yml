@@ -21,11 +21,13 @@ jobs:
         image: mongo:6.0
         ports:
           - 27017:27017
+        env:
+          MONGO_INITDB_DATABASE: test-meal-planner
         options: >-
-          --health-cmd "mongosh --eval 'db.runCommand(\"ping\").ok' --quiet"
+          --health-cmd "mongo --quiet --eval 'quit(db.runCommand({ ping: 1 }).ok ? 0 : 2)'"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
     
     steps:
     - name: Checkout code
@@ -52,6 +54,14 @@ jobs:
     - name: Install backend dependencies
       working-directory: ./backend
       run: npm ci
+    
+    - name: Wait for MongoDB and test connection
+      run: |
+        echo "Waiting for MongoDB to be ready..."
+        timeout 30 bash -c 'until mongo --host localhost:27017 --eval "print(\"MongoDB is ready\")" >/dev/null 2>&1; do sleep 1; done'
+        echo "MongoDB is ready!"
+        mongo --host localhost:27017 --eval "db.runCommand({ ping: 1 })"
+        echo "MongoDB ping successful"
     
     - name: Run backend tests
       working-directory: ./backend
