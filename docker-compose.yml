@@ -10,6 +10,12 @@ services:
     volumes:
       - mongo-data:/data/db
       - ./backend/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "27017"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - meal-planner-network
 
@@ -20,7 +26,8 @@ services:
     container_name: meal-planner-backend
     restart: unless-stopped
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     environment:
       - MONGODB_URI=mongodb://mongo:27017/meal_planner
       - MONGODB_DATABASE=meal_planner
