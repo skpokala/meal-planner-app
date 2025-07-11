@@ -48,11 +48,11 @@ services:
       - MONGO_INITDB_DATABASE=meal-planner
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "27017"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   mongo_data:
