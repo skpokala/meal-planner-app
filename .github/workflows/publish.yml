@@ -23,11 +23,6 @@ jobs:
           - 27017:27017
         env:
           MONGO_INITDB_DATABASE: test-meal-planner
-        options: >-
-          --health-cmd "mongo --quiet --eval 'quit(db.runCommand({ ping: 1 }).ok ? 0 : 2)'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
     
     steps:
     - name: Checkout code
@@ -58,10 +53,12 @@ jobs:
     - name: Wait for MongoDB and test connection
       run: |
         echo "Waiting for MongoDB to be ready..."
-        timeout 30 bash -c 'until mongo --host localhost:27017 --eval "print(\"MongoDB is ready\")" >/dev/null 2>&1; do sleep 1; done'
-        echo "MongoDB is ready!"
-        mongo --host localhost:27017 --eval "db.runCommand({ ping: 1 })"
-        echo "MongoDB ping successful"
+        # Wait for MongoDB port to be available
+        timeout 60 bash -c 'until nc -z localhost 27017; do sleep 2; done'
+        echo "MongoDB port is accessible!"
+        # Give MongoDB a few more seconds to fully initialize
+        sleep 5
+        echo "MongoDB should be ready for connections"
     
     - name: Run backend tests
       working-directory: ./backend
