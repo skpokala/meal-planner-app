@@ -161,11 +161,39 @@ npm run test:full
 
 ## 🚀 Deployment
 
-The application is configured for deployment with:
-- Production-optimized Docker images
-- Environment-based configuration
-- Health checks and monitoring
-- Automated CI/CD pipeline
+### Docker Images (GHCR)
+
+The application is available as Docker images on GitHub Container Registry:
+
+- **Frontend**: `ghcr.io/skpokala/meal-planner-app-frontend:latest`
+- **Backend**: `ghcr.io/skpokala/meal-planner-app-backend:latest`
+
+### Quick Deployment
+
+```bash
+# One-command deployment
+export JWT_SECRET="your-secure-jwt-secret-$(openssl rand -hex 32)"
+curl -O https://raw.githubusercontent.com/skpokala/meal-planner-app/main/docker-compose.prod.yml
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+🎉 **Access the app at**: http://localhost:3000
+
+### Deployment Options
+
+1. **Docker Compose** (Recommended) - See [DEPLOYMENT.md](DEPLOYMENT.md)
+2. **Individual Containers** - Custom networking
+3. **Kubernetes** - Production-scale deployments
+
+### Features
+
+- 📦 **Multi-arch images** (amd64, arm64)
+- 🔒 **Security-hardened** containers
+- 📊 **Health checks** and monitoring
+- 🔄 **Automated updates** via GitHub Actions
+- 💾 **Persistent data** with Docker volumes
+
+For complete deployment instructions, see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
 ## 🤝 Contributing
 

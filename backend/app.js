@@ -60,10 +60,57 @@ app.use('/api/ingredients', ingredientRoutes);
 app.use('/api/stores', storeRoutes);
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+  try {
+    // Check database connectivity
+    let dbStatus = 'disconnected';
+    if (process.env.NODE_ENV !== 'test') {
+      dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+      
+      // Ping database
+      if (dbStatus === 'connected') {
+        await mongoose.connection.db.admin().ping();
+      }
+    } else {
+      dbStatus = 'test-mode';
+    }
+    
+    res.status(200).json({ 
+      status: 'OK', 
+      message: 'Meal Planner API is running',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      database: dbStatus,
+      uptime: process.uptime(),
+      memory: process.memoryUsage()
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'ERROR',
+      message: 'Health check failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Simple health check for load balancers
+app.get('/health', async (req, res) => {
+  try {
+    if (process.env.NODE_ENV !== 'test') {
+      await mongoose.connection.db.admin().ping();
+    }
+    res.status(200).send('OK');
+  } catch (error) {
+    res.status(503).send('ERROR');
+  }
+});
+
+// Root health check
+app.get('/', (req, res) => {
   res.status(200).json({ 
-    status: 'OK', 
     message: 'Meal Planner API is running',
+    status: 'OK',
     timestamp: new Date().toISOString()
   });
 });

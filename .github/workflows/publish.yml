@@ -1,0 +1,342 @@
+name: Build and Publish to GHCR
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*.*.*' ]
+  release:
+    types: [ published ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+        cache-dependency-path: |
+          frontend/package-lock.json
+          backend/package-lock.json
+    
+    - name: Install frontend dependencies
+      working-directory: ./frontend
+      run: npm ci
+    
+    - name: Run frontend tests
+      working-directory: ./frontend
+      run: npm run test:ci
+    
+    - name: Install backend dependencies
+      working-directory: ./backend
+      run: npm ci
+    
+    - name: Run backend tests
+      working-directory: ./backend
+      run: npm run test:coverage
+      env:
+        NODE_ENV: test
+        JWT_SECRET: test-jwt-secret-for-ci
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    strategy:
+      matrix:
+        service: [frontend, backend]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./${{ matrix.service }}
+        file: ./${{ matrix.service }}/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        platforms: linux/amd64,linux/arm64
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Generate artifact attestation
+      uses: actions/attest-build-provenance@v1
+      with:
+        subject-name: ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}
+        subject-digest: ${{ steps.build.outputs.digest }}
+        push-to-registry: true
+
+  publish-compose:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata for compose
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.IMAGE_PREFIX }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+    
+    - name: Create production docker-compose.yml
+      run: |
+        cat > docker-compose.prod.yml << 'EOF'
+        version: '3.8'
+        
+        services:
+          frontend:
+            image: ${{ env.IMAGE_PREFIX }}-frontend:${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
+            ports:
+              - "3000:3000"
+            environment:
+              - NODE_ENV=production
+            depends_on:
+              - backend
+            restart: unless-stopped
+          
+          backend:
+            image: ${{ env.IMAGE_PREFIX }}-backend:${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
+            ports:
+              - "5000:5000"
+            environment:
+              - NODE_ENV=production
+              - MONGODB_URI=mongodb://mongo:27017/meal-planner
+              - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-here}
+            depends_on:
+              - mongo
+            restart: unless-stopped
+          
+          mongo:
+            image: mongo:7.0
+            ports:
+              - "27017:27017"
+            volumes:
+              - mongo_data:/data/db
+              - ./backend/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+            environment:
+              - MONGO_INITDB_DATABASE=meal-planner
+            restart: unless-stopped
+        
+        volumes:
+          mongo_data:
+        
+        networks:
+          default:
+            name: meal-planner-network
+        EOF
+    
+    - name: Create deployment README
+      run: |
+        cat > DEPLOYMENT.md << 'EOF'
+        # Meal Planner App - Docker Deployment
+        
+        ## Quick Start
+        
+        ### Using Docker Compose (Recommended)
+        
+        1. Download the production compose file:
+        ```bash
+        curl -O https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.prod.yml
+        ```
+        
+        2. Set environment variables:
+        ```bash
+        export JWT_SECRET="your-secure-jwt-secret-here"
+        ```
+        
+        3. Start the application:
+        ```bash
+        docker-compose -f docker-compose.prod.yml up -d
+        ```
+        
+        4. Access the application:
+        - Frontend: http://localhost:3000
+        - Backend API: http://localhost:5000
+        
+        ### Using Individual Containers
+        
+        ```bash
+        # Start MongoDB
+        docker run -d --name meal-planner-mongo \
+          -p 27017:27017 \
+          -v mongo_data:/data/db \
+          mongo:7.0
+        
+        # Start Backend
+        docker run -d --name meal-planner-backend \
+          -p 5000:5000 \
+          -e NODE_ENV=production \
+          -e MONGODB_URI=mongodb://meal-planner-mongo:27017/meal-planner \
+          -e JWT_SECRET=your-jwt-secret-here \
+          --link meal-planner-mongo:mongo \
+          ${{ env.IMAGE_PREFIX }}-backend:latest
+        
+        # Start Frontend
+        docker run -d --name meal-planner-frontend \
+          -p 3000:3000 \
+          -e NODE_ENV=production \
+          --link meal-planner-backend:backend \
+          ${{ env.IMAGE_PREFIX }}-frontend:latest
+        ```
+        
+        ## Environment Variables
+        
+        ### Backend
+        - `NODE_ENV`: Set to `production`
+        - `MONGODB_URI`: MongoDB connection string
+        - `JWT_SECRET`: Secret key for JWT tokens (required)
+        - `PORT`: Server port (default: 5000)
+        
+        ### Frontend
+        - `NODE_ENV`: Set to `production`
+        - `REACT_APP_API_URL`: Backend API URL (default: http://localhost:5000)
+        
+        ## Health Checks
+        
+        - Backend: `GET /health`
+        - Frontend: `GET /` (returns React app)
+        
+        ## Default Credentials
+        
+        - Username: `admin`
+        - Password: `password`
+        
+        **⚠️ Important: Change the default admin password after first login!**
+        
+        ## Volumes
+        
+        - `mongo_data`: MongoDB data persistence
+        
+        ## Ports
+        
+        - `3000`: Frontend (React app)
+        - `5000`: Backend (API server)
+        - `27017`: MongoDB (if exposed)
+        
+        ## Updates
+        
+        To update to the latest version:
+        
+        ```bash
+        docker-compose -f docker-compose.prod.yml pull
+        docker-compose -f docker-compose.prod.yml up -d
+        ```
+        
+        ## Support
+        
+        For issues and support, visit: https://github.com/${{ github.repository }}/issues
+        EOF
+    
+    - name: Upload deployment files as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: deployment-files
+        path: |
+          docker-compose.prod.yml
+          DEPLOYMENT.md
+        retention-days: 90
+
+  create-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-and-push, publish-compose]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download deployment files
+      uses: actions/download-artifact@v4
+      with:
+        name: deployment-files
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          docker-compose.prod.yml
+          DEPLOYMENT.md
+        generate_release_notes: true
+        body: |
+          ## Docker Images
+          
+          This release includes the following Docker images published to GitHub Container Registry:
+          
+          - **Frontend**: `${{ env.IMAGE_PREFIX }}-frontend:${{ github.ref_name }}`
+          - **Backend**: `${{ env.IMAGE_PREFIX }}-backend:${{ github.ref_name }}`
+          
+          ## Quick Deployment
+          
+          ```bash
+          # Download and start the application
+          curl -O https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/docker-compose.prod.yml
+          export JWT_SECRET="your-secure-jwt-secret-here"
+          docker-compose -f docker-compose.prod.yml up -d
+          ```
+          
+          ## What's Changed
+          
+          See the full changelog and deployment instructions in the attached files.
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
