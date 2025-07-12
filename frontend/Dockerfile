@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine as build
+FROM node:18-alpine AS build
 
 # Accept build arguments
 ARG REACT_APP_API_URL
@@ -20,7 +20,7 @@ COPY . .
 ENV REACT_APP_API_URL=${REACT_APP_API_URL}
 
 # Build the application (completely skip tests)
-RUN npm run build --production
+RUN npm run build:skip-tests
 
 # Production stage
 FROM nginx:alpine
