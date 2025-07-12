@@ -165,6 +165,25 @@ git push --no-verify
 
 For complete versioning details, see **[VERSIONING.md](VERSIONING.md)**.
 
+## 📦 Container Registry
+
+The application is **automatically published to GitHub Container Registry (GHCR)** with every push:
+
+- **🚀 Auto-publishing**: Docker images built and published automatically
+- **🏷️ Version tagging**: Images tagged with both `latest` and version numbers
+- **🌐 Multi-platform**: Supports `linux/amd64` and `linux/arm64`
+- **📋 Easy deployment**: Production-ready Docker images available immediately
+
+### Quick Deployment
+```bash
+# Download and start latest version
+curl -O https://raw.githubusercontent.com/skpokala/meal-planner-app/main/docker-compose.prod.yml
+export JWT_SECRET="your-secure-jwt-secret-$(openssl rand -hex 32)"
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+For complete GHCR publishing details, see **[GHCR_PUBLISHING.md](GHCR_PUBLISHING.md)**.
+
 ## 🔒 Security
 
 - 🛡️ **Production Dependencies**: 0 vulnerabilities
