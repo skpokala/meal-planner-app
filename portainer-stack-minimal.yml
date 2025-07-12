@@ -8,7 +8,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - REACT_APP_API_URL=http://localhost:5000
+      - REACT_APP_API_URL=http://YOUR_SERVER_IP:5000/api
     depends_on:
       - meal-planner-backend
     restart: unless-stopped
@@ -28,15 +28,15 @@ services:
       - "5000:5000"
     environment:
       - NODE_ENV=production
-      - MONGODB_URI=mongodb://meal-planner-mongo:27017/meal-planner
+      - MONGODB_URI=mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-password123}@meal-planner-mongo:27017/meal_planner?authSource=admin
       - JWT_SECRET=${JWT_SECRET:-meal-planner-jwt-secret-change-this-in-production}
       - PORT=5000
-      - CORS_ORIGIN=http://localhost:3000
+      - FRONTEND_URL=http://YOUR_SERVER_IP:3000
     depends_on:
       - meal-planner-mongo
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3

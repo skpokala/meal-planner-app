@@ -63,10 +63,10 @@ services:
       - "5000:5000"
     environment:
       - NODE_ENV=production
-      - MONGODB_URI=mongodb://meal-planner-mongo:27017/meal-planner
+      - MONGODB_URI=mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-password123}@meal-planner-mongo:27017/meal_planner?authSource=admin
       - JWT_SECRET=${JWT_SECRET:-meal-planner-jwt-secret-change-this-in-production}
       - PORT=5000
-      - CORS_ORIGIN=http://localhost:3000
+      - FRONTEND_URL=http://YOUR_SERVER_IP:3000
     depends_on:
       meal-planner-mongo:
         condition: service_healthy
@@ -229,6 +229,59 @@ To scale the backend for higher load:
 
 ### Common Issues
 
+#### **LOGIN FAILS - CORS/Network Issues (MOST COMMON)**
+
+**Symptoms:**
+- Login form appears but fails when submitting credentials
+- Browser console shows CORS errors
+- Network errors when trying to reach API
+
+**Root Cause:**
+The default configuration uses `localhost` URLs which don't work in containerized deployments.
+
+**Fix:**
+1. **Replace YOUR_SERVER_IP in the stack configuration**
+   ```yaml
+   # In your Portainer stack, replace:
+   - REACT_APP_API_URL=http://YOUR_SERVER_IP:5000/api
+   - FRONTEND_URL=http://YOUR_SERVER_IP:3000
+   
+   # With your actual server IP, for example:
+   - REACT_APP_API_URL=http://192.168.1.100:5000/api
+   - FRONTEND_URL=http://192.168.1.100:3000
+   ```
+
+2. **Alternative: Use environment variables in Portainer**
+   - Go to your stack in Portainer
+   - Click "Editor" 
+   - In the "Environment variables" section, add:
+     ```
+     SERVER_IP=192.168.1.100
+     ```
+   - Then update your stack configuration to use:
+     ```yaml
+     environment:
+       - REACT_APP_API_URL=http://${SERVER_IP}:5000/api
+       - FRONTEND_URL=http://${SERVER_IP}:3000
+     ```
+
+3. **Update the stack**
+   - Click "Update the stack"
+   - Wait for containers to restart
+
+**Default Login Credentials:**
+- **Username**: `admin`
+- **Password**: `password`
+
+#### **How to Find Your Server IP**
+```bash
+# On your server, run:
+ip addr show | grep inet
+
+# Or for external IP:
+curl ifconfig.me
+```
+
 #### Services Won't Start
 1. Check **Logs** for error messages
 2. Verify environment variables are set correctly
@@ -238,17 +291,54 @@ To scale the backend for higher load:
 1. Check if containers are healthy
 2. Verify firewall settings allow access to ports
 3. Check Docker network connectivity
+4. **Ensure you're using the correct server IP address**
 
 #### Database Connection Issues
+
+**Error**: `MongoServerError: Command find requires authentication`
+
+**Root Cause**: MongoDB is configured with authentication but the connection string doesn't include credentials.
+
+**Fix**: Update your MongoDB URI to include authentication:
+```yaml
+# Wrong (missing auth):
+- MONGODB_URI=mongodb://meal-planner-mongo:27017/meal_planner
+
+# Correct (with auth):
+- MONGODB_URI=mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-password123}@meal-planner-mongo:27017/meal_planner?authSource=admin
+```
+
+**Other checks:**
 1. Verify MongoDB container is healthy
 2. Check MongoDB logs for authentication errors
 3. Ensure `MONGO_ROOT_PASSWORD` matches between services
+
+#### **Step-by-Step Login Fix**
+
+1. **Access your Portainer instance**
+2. **Navigate to Stacks → meal-planner-app**
+3. **Click "Editor"**
+4. **Replace all instances of `YOUR_SERVER_IP` with your actual server IP**
+5. **Click "Update the stack"**
+6. **Wait for services to restart (2-3 minutes)**
+7. **Access the app at `http://YOUR_SERVER_IP:3000`**
+8. **Login with:**
+   - Username: `admin`
+   - Password: `password`
 
 ### Getting Help
 - Check container logs in Portainer
 - Review health check status
 - Verify environment variables are properly set
-- Ensure all required ports are open
+- **Most importantly: Ensure server IP addresses are correct**
+
+### Production Security Checklist
+After fixing the login issue, update these for production:
+- [ ] Change JWT_SECRET to a strong random string
+- [ ] Update MONGO_ROOT_PASSWORD
+- [ ] Change admin password after first login
+- [ ] Enable HTTPS if possible
+- [ ] Update firewall rules as needed
 
 ## 📝 Advanced Configuration
 
