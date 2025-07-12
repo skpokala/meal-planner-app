@@ -6,6 +6,7 @@ on:
     tags: [ 'v*.*.*' ]
   release:
     types: [ published ]
+  workflow_dispatch:  # Allow manual triggering
 
 env:
   REGISTRY: ghcr.io
@@ -98,6 +99,13 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     
+    - name: Read version from package.json
+      id: package-version
+      run: |
+        VERSION=$(node -p "require('./package.json').version")
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "Package version: ${VERSION}"
+
     - name: Extract metadata
       id: meta
       uses: docker/metadata-action@v5
@@ -111,6 +119,8 @@ jobs:
           type=semver,pattern={{major}}
           type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=v${{ steps.package-version.outputs.version }}
+          type=raw,value=${{ steps.package-version.outputs.version }}
     
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
@@ -123,6 +133,18 @@ jobs:
         platforms: linux/amd64,linux/arm64
         cache-from: type=gha
         cache-to: type=gha,mode=max
+        build-args: |
+          REACT_APP_VERSION=${{ steps.package-version.outputs.version }}
+    
+    - name: Image publication summary
+      run: |
+        echo "🎉 Successfully published to GHCR:"
+        echo "📦 Image: ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}"
+        echo "🏷️ Version: ${{ steps.package-version.outputs.version }}"
+        echo "🔗 Registry: ${{ env.REGISTRY }}"
+        echo ""
+        echo "Available tags:"
+        echo "${{ steps.meta.outputs.tags }}" | tr ',' '\n' | sed 's/^/  - /'
 
   publish-compose:
     needs: build-and-push
@@ -313,6 +335,43 @@ jobs:
           docker-compose.prod.yml
           DEPLOYMENT.md
         retention-days: 90
+
+  create-version-tag:
+    if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip ci]')
+    needs: [build-and-push, publish-compose]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Read version from package.json
+      id: package-version
+      run: |
+        VERSION=$(node -p "require('./package.json').version")
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "Package version: ${VERSION}"
+    
+    - name: Check if tag exists
+      id: tag-exists
+      run: |
+        if git rev-parse "v${{ steps.package-version.outputs.version }}" >/dev/null 2>&1; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create version tag
+      if: steps.tag-exists.outputs.exists == 'false'
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git tag -a "v${{ steps.package-version.outputs.version }}" -m "Release v${{ steps.package-version.outputs.version }}"
+        git push origin "v${{ steps.package-version.outputs.version }}"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   create-release:
     if: startsWith(github.ref, 'refs/tags/v')
