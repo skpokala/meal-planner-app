@@ -15,6 +15,7 @@
     "docker:clean": "docker compose down && docker compose -f docker-compose.test.yml down",
     "install:all": "cd frontend && npm ci && cd ../backend && npm ci",
     "dev:frontend": "cd frontend && npm start",
+    "dev:frontend:fresh": "cd frontend && REACT_APP_VERSION=$(node -p \"require('../package.json').version\") npm start",
     "dev:backend": "cd backend && npm run dev",
     "dev:docker": "docker compose up",
     "lint:fix": "cd frontend && npm run lint --fix 2>/dev/null || true",
