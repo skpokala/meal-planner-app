@@ -4,21 +4,35 @@ import axios from 'axios';
 const getApiUrl = () => {
   // First check if there's a runtime configuration
   if (window.API_URL) {
+    console.log('Using runtime API URL:', window.API_URL);
     return window.API_URL;
   }
   
   // Then check build-time environment variable
   if (process.env.REACT_APP_API_URL) {
+    console.log('Using build-time API URL:', process.env.REACT_APP_API_URL);
     return process.env.REACT_APP_API_URL;
   }
   
-  // For containerized deployments, use relative URLs (nginx proxy)
-  // This works because nginx proxies /api/ to the backend
+  // For production domains with HTTPS, check if we have an external reverse proxy
   if (window.location.hostname !== 'localhost') {
+    const currentUrl = `${window.location.protocol}//${window.location.hostname}`;
+    
+    // For HTTPS domains, first try relative URLs (if external proxy is configured)
+    if (window.location.protocol === 'https:') {
+      console.log('HTTPS domain detected. Current location:', currentUrl);
+      console.log('Attempting to use relative URLs (/api) - ensure your reverse proxy forwards /api requests to backend');
+      console.log('If this fails, set window.API_URL in browser console or configure external reverse proxy');
+      return '/api';
+    }
+    
+    // For HTTP domains or containerized deployments, use relative URLs
+    console.log('HTTP domain detected, using relative URLs for nginx proxy');
     return '/api';
   }
   
   // Default fallback for local development
+  console.log('Local development detected, using localhost:5000');
   return 'http://localhost:5000/api';
 };
 
