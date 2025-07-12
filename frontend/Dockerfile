@@ -34,8 +34,12 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # Copy built app from build stage
 COPY --from=build /app/build /usr/share/nginx/html
 
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Expose port
 EXPOSE 3000
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"] 
+# Use custom entrypoint for runtime configuration
+ENTRYPOINT ["/entrypoint.sh"] 

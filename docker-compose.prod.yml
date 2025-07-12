@@ -7,7 +7,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - REACT_APP_API_URL=http://localhost:5000/api
+      # API URL is automatically detected (uses nginx proxy)
     depends_on:
       - meal-planner-backend
     restart: unless-stopped

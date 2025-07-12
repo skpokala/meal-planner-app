@@ -36,6 +36,12 @@ const getAllowedOrigins = () => {
     const frontendUrls = process.env.FRONTEND_URL ? 
       process.env.FRONTEND_URL.split(',').map(url => url.trim()) : 
       ['http://localhost:3000'];
+    
+    // Handle wildcard origin for containerized deployments
+    if (frontendUrls.includes('*')) {
+      return true; // Allow all origins
+    }
+    
     return frontendUrls;
   } else {
     // Development origins

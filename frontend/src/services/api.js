@@ -1,8 +1,30 @@
 import axios from 'axios';
 
+// Runtime API URL configuration
+const getApiUrl = () => {
+  // First check if there's a runtime configuration
+  if (window.API_URL) {
+    return window.API_URL;
+  }
+  
+  // Then check build-time environment variable
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // For containerized deployments, use relative URLs (nginx proxy)
+  // This works because nginx proxies /api/ to the backend
+  if (window.location.hostname !== 'localhost') {
+    return '/api';
+  }
+  
+  // Default fallback for local development
+  return 'http://localhost:5000/api';
+};
+
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+  baseURL: getApiUrl(),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

@@ -7,8 +7,8 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      # Use the external host IP or domain name - update this with your actual server IP/domain
-      - REACT_APP_API_URL=http://${HOST_IP:-localhost}:5000/api
+      # Optional: Override API URL if needed (defaults to nginx proxy)
+      # - API_URL=http://${HOST_IP:-localhost}:5000/api
     depends_on:
       - meal-planner-backend
     restart: unless-stopped
@@ -30,8 +30,8 @@ services:
       - MONGODB_URI=mongodb://meal-planner-mongo:27017/meal-planner
       - JWT_SECRET=${JWT_SECRET:-meal-planner-jwt-secret-change-this-in-production}
       - PORT=5000
-      # Allow requests from the host IP and common localhost variants
-      - FRONTEND_URL=http://${HOST_IP:-localhost}:3000,http://localhost:3000,http://127.0.0.1:3000
+      # Allow requests from any origin for containerized deployments
+      - FRONTEND_URL=*
     depends_on:
       - meal-planner-mongo
     restart: unless-stopped
@@ -68,4 +68,4 @@ volumes:
 
 networks:
   meal-planner-network:
-    driver: bridge 
+    driver: bridge
