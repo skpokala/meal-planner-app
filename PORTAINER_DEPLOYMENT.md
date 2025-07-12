@@ -1,6 +1,20 @@
 # Portainer Deployment Guide
 
-## 🚀 Quick Fix for CORS Issues
+## 🚀 Quick Fix for Common Issues
+
+### Issue 1: "host not found in upstream" nginx error
+
+If you're getting nginx errors like `host not found in upstream "meal-planner-backend"`, this means the service names in your Docker compose don't match the nginx configuration.
+
+**Quick Fix:**
+1. Ensure your Docker compose uses these exact service names:
+   - `frontend` - for the frontend service
+   - `meal-planner-backend` - for the backend service  
+   - `meal-planner-mongo` - for the MongoDB service
+
+2. Use the updated configuration files provided below
+
+### Issue 2: CORS Errors
 
 If you're getting "XMLHttpRequest cannot load due to access control checks" errors, follow these steps:
 
@@ -72,28 +86,28 @@ services:
       - NODE_ENV=production
       - REACT_APP_API_URL=http://YOUR_SERVER_IP:5000/api
     depends_on:
-      - backend
+      - meal-planner-backend
     restart: unless-stopped
     networks:
       - meal-planner-network
 
-  backend:
+  meal-planner-backend:
     image: ghcr.io/skpokala/meal-planner-app-backend:latest
     ports:
       - "5000:5000"
     environment:
       - NODE_ENV=production
-      - MONGODB_URI=mongodb://mongo:27017/meal-planner
+      - MONGODB_URI=mongodb://meal-planner-mongo:27017/meal-planner
       - JWT_SECRET=your-secure-jwt-secret-here
       - PORT=5000
       - FRONTEND_URL=http://YOUR_SERVER_IP:3000
     depends_on:
-      - mongo
+      - meal-planner-mongo
     restart: unless-stopped
     networks:
       - meal-planner-network
 
-  mongo:
+  meal-planner-mongo:
     image: mongo:7.0
     ports:
       - "27017:27017"
@@ -151,15 +165,24 @@ After deployment:
 
 ### Common Issues and Solutions:
 
-1. **CORS Error**: 
+1. **"host not found in upstream" nginx error**:
+   - This means your Docker compose service names don't match nginx configuration
+   - Ensure you use these exact service names:
+     - `frontend` (for the frontend service)
+     - `meal-planner-backend` (for the backend service)
+     - `meal-planner-mongo` (for the MongoDB service)
+   - Use the updated configuration provided in this guide
+
+2. **CORS Error**: 
    - Ensure `FRONTEND_URL` in backend matches your actual frontend URL
    - Check that `REACT_APP_API_URL` in frontend points to the correct backend URL
 
-2. **Cannot connect to MongoDB**:
+3. **Cannot connect to MongoDB**:
    - Ensure MongoDB container is running
    - Check MongoDB connection string in backend environment
+   - Verify MongoDB service name is `meal-planner-mongo` in connection string
 
-3. **Images not found**:
+4. **Images not found**:
    - Ensure Portainer can access ghcr.io
    - Try pulling images manually: `docker pull ghcr.io/skpokala/meal-planner-app-frontend:latest`
 
@@ -175,9 +198,12 @@ curl http://YOUR_SERVER_IP:5000/api/health
 # Check frontend
 curl http://YOUR_SERVER_IP:3000
 
-# Check logs
-docker logs meal-planner-backend
-docker logs meal-planner-frontend
+# Check logs (container names may vary based on your stack name)
+docker logs meal-planner-app-meal-planner-backend-1
+docker logs meal-planner-app-frontend-1
+
+# Or use Portainer's UI to view logs:
+# Go to Containers → Click container name → Logs tab
 ```
 
 ## 🔄 Updating the Application
