@@ -164,7 +164,7 @@ const Dashboard = () => {
     <div>
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-card text-white p-6">
-        <h1 className="text-3xl font-bold mb-2">Welcome back!</h1>
+        <h1 className="text-3xl font-bold mb-2 text-white">Welcome back!</h1>
         <p className="text-primary-100">
           Here's an overview of your family's meal planning activities.
         </p>
