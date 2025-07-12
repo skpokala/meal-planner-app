@@ -18,10 +18,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.meal-planner-frontend.rule=Host(`meal-planner.local`)"
-      - "traefik.http.services.meal-planner-frontend.loadbalancer.server.port=3000"
     networks:
       - meal-planner-network
 
@@ -45,10 +41,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.meal-planner-backend.rule=Host(`meal-planner-api.local`)"
-      - "traefik.http.services.meal-planner-backend.loadbalancer.server.port=5000"
     networks:
       - meal-planner-network
 
@@ -66,36 +58,8 @@ services:
       - meal-planner-mongo-config:/data/configdb
     restart: unless-stopped
     command: ["mongod", "--bind_ip_all"]
-    labels:
-      - "traefik.enable=false"
     networks:
       - meal-planner-network
-
-  # Optional: MongoDB Express for database management
-  # Uncomment the section below if you want a web-based MongoDB admin interface
-  # and ensure port 8082 is available on your system
-  #
-  # meal-planner-mongo-express:
-  #   image: mongo-express:latest
-  #   container_name: meal-planner-mongo-express
-  #   ports:
-  #     - "8082:8081"  # Changed from 8081 to 8082 to avoid port conflicts
-  #   environment:
-  #     - ME_CONFIG_MONGODB_SERVER=meal-planner-mongo
-  #     - ME_CONFIG_MONGODB_PORT=27017
-  #     - ME_CONFIG_MONGODB_ADMINUSERNAME=${MONGO_ROOT_USER:-admin}
-  #     - ME_CONFIG_MONGODB_ADMINPASSWORD=${MONGO_ROOT_PASSWORD:-password123}
-  #     - ME_CONFIG_BASICAUTH_USERNAME=${MONGO_EXPRESS_USER:-admin}
-  #     - ME_CONFIG_BASICAUTH_PASSWORD=${MONGO_EXPRESS_PASSWORD:-admin123}
-  #   depends_on:
-  #     - meal-planner-mongo
-  #   restart: unless-stopped
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.routers.meal-planner-mongo-express.rule=Host(`meal-planner-db.local`)"
-  #     - "traefik.http.services.meal-planner-mongo-express.loadbalancer.server.port=8081"
-  #   networks:
-  #     - meal-planner-network
 
 volumes:
   meal-planner-mongo-data:
