@@ -144,6 +144,27 @@ npm run test:full
 - **MongoDB Memory Server** for testing
 - **Comprehensive security auditing**
 
+## 🔢 Versioning
+
+The application features **automatic version increment** with every git push:
+
+- **🚀 Auto-increment**: Patch version (e.g., 1.1.0 → 1.1.1) increments automatically
+- **📦 Git Hook**: Pre-push hook handles version bumping seamlessly
+- **🎯 Smart Detection**: Only increments when there are actual commits to push
+- **🔄 Auto-commit**: Version changes are committed automatically
+- **📱 Live Display**: Version shown at bottom of application
+
+### Manual Version Management
+```bash
+# Update to specific version
+npm run version:update 1.2.0
+
+# Push without version increment (if needed)
+git push --no-verify
+```
+
+For complete versioning details, see **[VERSIONING.md](VERSIONING.md)**.
+
 ## 🔒 Security
 
 - 🛡️ **Production Dependencies**: 0 vulnerabilities

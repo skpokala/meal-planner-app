@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import ThemeToggle from './ThemeToggle';
+import Version from './Version';
 import {
   Home,
   Users,
@@ -171,21 +172,9 @@ const Layout = ({ children }) => {
             </div>
           </nav>
 
-          {/* User info at bottom */}
+          {/* Version info at bottom */}
           <div className="border-t border-secondary-200 dark:border-secondary-700 p-4 flex-shrink-0">
-            <div className={`flex items-center text-sm text-secondary-600 dark:text-secondary-400 min-w-0 ${sidebarCollapsed ? 'justify-center' : ''}`}>
-              <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <User className="w-4 h-4 text-primary-600" />
-              </div>
-              {!sidebarCollapsed && (
-                <div className="ml-3 min-w-0 flex-1">
-                  <p className="font-medium text-secondary-900 dark:text-secondary-100 truncate">
-                    {user?.firstName} {user?.lastName}
-                  </p>
-                  <p className="text-xs text-secondary-500 dark:text-secondary-400 truncate capitalize">{user?.role}</p>
-                </div>
-              )}
-            </div>
+            <Version sidebarCollapsed={sidebarCollapsed} />
           </div>
         </div>
       </div>
