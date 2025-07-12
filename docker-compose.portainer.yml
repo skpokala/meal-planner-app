@@ -7,16 +7,19 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - REACT_APP_API_URL=http://localhost:5000/api
+      # Use the external host IP or domain name - update this with your actual server IP/domain
+      - REACT_APP_API_URL=http://${HOST_IP:-localhost}:5000/api
     depends_on:
       - backend
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - meal-planner-network
 
   backend:
     image: ghcr.io/skpokala/meal-planner-app-backend:latest
@@ -25,19 +28,21 @@ services:
     environment:
       - NODE_ENV=production
       - MONGODB_URI=mongodb://mongo:27017/meal-planner
-      - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-here}
+      - JWT_SECRET=${JWT_SECRET:-meal-planner-jwt-secret-change-this-in-production}
       - PORT=5000
-      - FRONTEND_URL=http://localhost:3000
+      # Allow requests from the host IP and common localhost variants
+      - FRONTEND_URL=http://${HOST_IP:-localhost}:3000,http://localhost:3000,http://127.0.0.1:3000
     depends_on:
-      mongo:
-        condition: service_healthy
+      - mongo
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - meal-planner-network
 
   mongo:
     image: mongo:7.0
@@ -45,7 +50,6 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
-      - ./backend/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
     environment:
       - MONGO_INITDB_DATABASE=meal-planner
     restart: unless-stopped
@@ -55,12 +59,13 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - meal-planner-network
 
 volumes:
   mongo_data:
     driver: local
 
 networks:
-  default:
-    name: meal-planner-network
+  meal-planner-network:
     driver: bridge 

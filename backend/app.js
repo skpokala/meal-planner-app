@@ -30,10 +30,21 @@ if (process.env.NODE_ENV !== 'test') {
 app.use(helmet());
 
 // CORS configuration
+const getAllowedOrigins = () => {
+  if (process.env.NODE_ENV === 'production') {
+    // In production, parse comma-separated FRONTEND_URL environment variable
+    const frontendUrls = process.env.FRONTEND_URL ? 
+      process.env.FRONTEND_URL.split(',').map(url => url.trim()) : 
+      ['http://localhost:3000'];
+    return frontendUrls;
+  } else {
+    // Development origins
+    return ['http://localhost:3000', 'http://localhost:3001'];
+  }
+};
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL 
-    : ['http://localhost:3000', 'http://localhost:3001'],
+  origin: getAllowedOrigins(),
   credentials: true
 }));
 
