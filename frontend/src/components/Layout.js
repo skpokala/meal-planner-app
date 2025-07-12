@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import ThemeToggle from './ThemeToggle';
 import {
   Home,
   Users,
@@ -68,7 +69,7 @@ const Layout = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-secondary-50">
+    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -79,7 +80,7 @@ const Layout = ({ children }) => {
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 bg-white shadow-card-lg transform transition-all duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 bg-white dark:bg-secondary-800 shadow-card-lg transform transition-all duration-300 ease-in-out lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } ${
           sidebarCollapsed ? 'w-16' : 'w-64'
@@ -87,7 +88,7 @@ const Layout = ({ children }) => {
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className={`flex items-center h-16 px-4 border-b border-secondary-200 flex-shrink-0 ${
+          <div className={`flex items-center h-16 px-4 border-b border-secondary-200 dark:border-secondary-700 flex-shrink-0 ${
             sidebarCollapsed ? 'justify-center' : 'justify-between'
           }`}>
             {sidebarCollapsed ? (
@@ -117,7 +118,7 @@ const Layout = ({ children }) => {
                   <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Calendar className="w-5 h-5 text-white" />
                   </div>
-                  <span className="ml-3 text-lg font-semibold text-secondary-900 truncate">
+                  <span className="ml-3 text-lg font-semibold text-secondary-900 dark:text-secondary-100 truncate">
                     Meal Planner
                   </span>
                 </div>
@@ -155,8 +156,8 @@ const Layout = ({ children }) => {
                     }}
                     className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-card transition-colors ${
                       isActive
-                        ? 'bg-primary-50 text-primary-700'
-                        : 'text-secondary-700 hover:bg-secondary-50 hover:text-secondary-900'
+                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                        : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700 hover:text-secondary-900 dark:hover:text-secondary-100'
                     } ${
                       sidebarCollapsed ? 'justify-center' : ''
                     }`}
@@ -171,17 +172,17 @@ const Layout = ({ children }) => {
           </nav>
 
           {/* User info at bottom */}
-          <div className="border-t border-secondary-200 p-4 flex-shrink-0">
-            <div className={`flex items-center text-sm text-secondary-600 min-w-0 ${sidebarCollapsed ? 'justify-center' : ''}`}>
+          <div className="border-t border-secondary-200 dark:border-secondary-700 p-4 flex-shrink-0">
+            <div className={`flex items-center text-sm text-secondary-600 dark:text-secondary-400 min-w-0 ${sidebarCollapsed ? 'justify-center' : ''}`}>
               <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <User className="w-4 h-4 text-primary-600" />
               </div>
               {!sidebarCollapsed && (
                 <div className="ml-3 min-w-0 flex-1">
-                  <p className="font-medium text-secondary-900 truncate">
+                  <p className="font-medium text-secondary-900 dark:text-secondary-100 truncate">
                     {user?.firstName} {user?.lastName}
                   </p>
-                  <p className="text-xs text-secondary-500 truncate capitalize">{user?.role}</p>
+                  <p className="text-xs text-secondary-500 dark:text-secondary-400 truncate capitalize">{user?.role}</p>
                 </div>
               )}
             </div>
@@ -192,51 +193,54 @@ const Layout = ({ children }) => {
       {/* Main content */}
       <div className={`flex flex-col min-h-screen transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
         {/* Top bar */}
-        <div className="bg-white border-b border-secondary-200 sticky top-0 z-30">
+        <div className="bg-white dark:bg-secondary-800 border-b border-secondary-200 dark:border-secondary-700 sticky top-0 z-30">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6">
             <div className="flex items-center min-w-0 flex-1">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden text-secondary-500 hover:text-secondary-700 mr-3"
+                className="lg:hidden text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-300 mr-3"
               >
                 <Menu className="w-6 h-6" />
               </button>
-              <h1 className="text-xl font-semibold text-secondary-900 truncate">
+              <h1 className="text-xl font-semibold text-secondary-900 dark:text-secondary-100 truncate">
                 {navigation.find(item => isActivePath(item.href))?.name || 'Dashboard'}
               </h1>
             </div>
 
-            {/* User menu */}
-            <div className="relative flex-shrink-0">
-              <button
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center p-2 text-sm text-secondary-700 hover:text-secondary-900 hover:bg-secondary-50 rounded-card transition-colors"
-              >
-                <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                  <User className="w-4 h-4 text-primary-600" />
-                </div>
-                <span className="ml-2 hidden sm:block font-medium">
-                  {user?.firstName} {user?.lastName}
-                </span>
-                <ChevronDown className="w-4 h-4 ml-1 text-secondary-400" />
-              </button>
+            {/* Theme toggle and User menu */}
+            <div className="flex items-center space-x-2">
+              <ThemeToggle variant="simple" />
+              
+              <div className="relative flex-shrink-0">
+                                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center p-2 text-sm text-secondary-700 dark:text-secondary-300 hover:text-secondary-900 dark:hover:text-secondary-100 hover:bg-secondary-50 dark:hover:bg-secondary-700 rounded-card transition-colors"
+                >
+                  <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/20 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                  </div>
+                  <span className="ml-2 hidden sm:block font-medium">
+                    {user?.firstName} {user?.lastName}
+                  </span>
+                  <ChevronDown className="w-4 h-4 ml-1 text-secondary-400 dark:text-secondary-500" />
+                </button>
 
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-card shadow-card-lg border border-secondary-200 z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-secondary-800 rounded-card shadow-card-lg border border-secondary-200 dark:border-secondary-700 z-50">
                   <div className="py-1">
                     <button
                       onClick={() => {
                         navigate('/settings');
                         setUserMenuOpen(false);
                       }}
-                      className="w-full flex items-center px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50 transition-colors"
+                      className="w-full flex items-center px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors"
                     >
                       <Settings className="w-4 h-4 mr-3" />
                       Settings
                     </button>
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50 transition-colors"
+                      className="w-full flex items-center px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors"
                     >
                       <LogOut className="w-4 h-4 mr-3" />
                       Sign Out
@@ -244,6 +248,7 @@ const Layout = ({ children }) => {
                   </div>
                 </div>
               )}
+              </div>
             </div>
           </div>
         </div>

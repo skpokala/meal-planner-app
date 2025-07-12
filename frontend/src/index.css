@@ -5,22 +5,139 @@
 /* Import Inter font */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* Theme CSS Custom Properties */
+:root {
+  /* Light theme colors */
+  --color-primary-50: 240 247 255;
+  --color-primary-100: 224 239 255;
+  --color-primary-200: 185 222 255;
+  --color-primary-300: 124 196 255;
+  --color-primary-400: 54 167 255;
+  --color-primary-500: 12 140 233;
+  --color-primary-600: 0 102 204;
+  --color-primary-700: 0 82 163;
+  --color-primary-800: 0 69 138;
+  --color-primary-900: 0 61 122;
+
+  --color-secondary-50: 248 250 252;
+  --color-secondary-100: 241 245 249;
+  --color-secondary-200: 226 232 240;
+  --color-secondary-300: 203 213 225;
+  --color-secondary-400: 148 163 184;
+  --color-secondary-500: 100 116 139;
+  --color-secondary-600: 71 85 105;
+  --color-secondary-700: 51 65 85;
+  --color-secondary-800: 30 41 59;
+  --color-secondary-900: 15 23 42;
+
+  --color-success-50: 240 253 244;
+  --color-success-100: 220 252 231;
+  --color-success-200: 187 247 208;
+  --color-success-300: 134 239 172;
+  --color-success-400: 74 222 128;
+  --color-success-500: 34 197 94;
+  --color-success-600: 22 163 74;
+  --color-success-700: 21 128 61;
+  --color-success-800: 22 101 52;
+  --color-success-900: 20 83 45;
+
+  --color-warning-50: 255 251 235;
+  --color-warning-100: 254 243 199;
+  --color-warning-200: 253 230 138;
+  --color-warning-300: 252 211 77;
+  --color-warning-400: 251 191 36;
+  --color-warning-500: 245 158 11;
+  --color-warning-600: 217 119 6;
+  --color-warning-700: 180 83 9;
+  --color-warning-800: 146 64 14;
+  --color-warning-900: 120 53 15;
+
+  --color-error-50: 254 242 242;
+  --color-error-100: 254 226 226;
+  --color-error-200: 254 202 202;
+  --color-error-300: 252 165 165;
+  --color-error-400: 248 113 113;
+  --color-error-500: 239 68 68;
+  --color-error-600: 220 38 38;
+  --color-error-700: 185 28 28;
+  --color-error-800: 153 27 27;
+  --color-error-900: 127 29 29;
+}
+
+/* Dark theme colors */
+.dark {
+  --color-primary-50: 23 37 84;
+  --color-primary-100: 30 58 138;
+  --color-primary-200: 37 99 235;
+  --color-primary-300: 59 130 246;
+  --color-primary-400: 96 165 250;
+  --color-primary-500: 129 140 248;
+  --color-primary-600: 165 180 252;
+  --color-primary-700: 196 181 253;
+  --color-primary-800: 221 214 254;
+  --color-primary-900: 238 242 255;
+
+  --color-secondary-50: 2 6 23;
+  --color-secondary-100: 15 23 42;
+  --color-secondary-200: 30 41 59;
+  --color-secondary-300: 51 65 85;
+  --color-secondary-400: 71 85 105;
+  --color-secondary-500: 100 116 139;
+  --color-secondary-600: 148 163 184;
+  --color-secondary-700: 203 213 225;
+  --color-secondary-800: 226 232 240;
+  --color-secondary-900: 248 250 252;
+
+  --color-success-50: 20 83 45;
+  --color-success-100: 22 101 52;
+  --color-success-200: 21 128 61;
+  --color-success-300: 22 163 74;
+  --color-success-400: 34 197 94;
+  --color-success-500: 74 222 128;
+  --color-success-600: 134 239 172;
+  --color-success-700: 187 247 208;
+  --color-success-800: 220 252 231;
+  --color-success-900: 240 253 244;
+
+  --color-warning-50: 120 53 15;
+  --color-warning-100: 146 64 14;
+  --color-warning-200: 180 83 9;
+  --color-warning-300: 217 119 6;
+  --color-warning-400: 245 158 11;
+  --color-warning-500: 251 191 36;
+  --color-warning-600: 252 211 77;
+  --color-warning-700: 253 230 138;
+  --color-warning-800: 254 243 199;
+  --color-warning-900: 255 251 235;
+
+  --color-error-50: 127 29 29;
+  --color-error-100: 153 27 27;
+  --color-error-200: 185 28 28;
+  --color-error-300: 220 38 38;
+  --color-error-400: 239 68 68;
+  --color-error-500: 248 113 113;
+  --color-error-600: 252 165 165;
+  --color-error-700: 254 202 202;
+  --color-error-800: 254 226 226;
+  --color-error-900: 254 242 242;
+}
+
 /* Custom scrollbar styles */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: rgb(var(--color-secondary-100));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: rgb(var(--color-secondary-300));
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: rgb(var(--color-secondary-400));
 }
 
 /* Custom component styles */
@@ -61,16 +178,16 @@
   }
 
   .input {
-    @apply block w-full px-3 py-2 border border-secondary-300 rounded-card shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200;
+    @apply block w-full px-3 py-2 border border-secondary-300 dark:border-secondary-600 rounded-card shadow-sm placeholder-secondary-400 dark:placeholder-secondary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200 bg-white dark:bg-secondary-900 text-secondary-900 dark:text-secondary-100;
   }
 
   .input-error {
-    @apply input border-error-300 focus:ring-error-500 focus:border-error-500;
+    @apply input border-error-300 dark:border-error-600 focus:ring-error-500 focus:border-error-500;
   }
 
   /* Modern Select Dropdown Styles */
   .select {
-    @apply block w-full px-3 py-2 border border-secondary-300 rounded-card shadow-sm bg-white text-secondary-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200 cursor-pointer hover:border-secondary-400 hover:shadow-md;
+    @apply block w-full px-3 py-2 border border-secondary-300 dark:border-secondary-600 rounded-card shadow-sm bg-white dark:bg-secondary-900 text-secondary-900 dark:text-secondary-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200 cursor-pointer hover:border-secondary-400 dark:hover:border-secondary-500 hover:shadow-md;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
     background-position: right 0.5rem center;
     background-repeat: no-repeat;
@@ -86,7 +203,7 @@
   }
 
   .select:disabled {
-    @apply bg-secondary-50 text-secondary-500 cursor-not-allowed;
+    @apply bg-secondary-50 dark:bg-secondary-800 text-secondary-500 dark:text-secondary-400 cursor-not-allowed;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%9ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
   }
 
@@ -117,11 +234,11 @@
   }
 
   .card {
-    @apply bg-white rounded-card shadow-card border border-secondary-200;
+    @apply bg-white dark:bg-secondary-800 rounded-card shadow-card border border-secondary-200 dark:border-secondary-700;
   }
 
   .card-header {
-    @apply px-6 py-4 border-b border-secondary-200;
+    @apply px-6 py-4 border-b border-secondary-200 dark:border-secondary-700;
   }
 
   .card-body {
@@ -129,7 +246,7 @@
   }
 
   .card-footer {
-    @apply px-6 py-4 border-t border-secondary-200;
+    @apply px-6 py-4 border-t border-secondary-200 dark:border-secondary-700;
   }
 
   .nav-link {
@@ -165,27 +282,27 @@
   }
 
   .table {
-    @apply min-w-full divide-y divide-secondary-200;
+    @apply min-w-full divide-y divide-secondary-200 dark:divide-secondary-700;
   }
 
   .table-header {
-    @apply bg-secondary-50;
+    @apply bg-secondary-50 dark:bg-secondary-900;
   }
 
   .table-header th {
-    @apply px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider;
+    @apply px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider;
   }
 
   .table-body {
-    @apply bg-white divide-y divide-secondary-200;
+    @apply bg-white dark:bg-secondary-800 divide-y divide-secondary-200 dark:divide-secondary-700;
   }
 
   .table-body td {
-    @apply px-6 py-4 whitespace-nowrap text-sm text-secondary-900;
+    @apply px-6 py-4 whitespace-nowrap text-sm text-secondary-900 dark:text-secondary-100;
   }
 
   .table-body tr:hover {
-    @apply bg-secondary-50;
+    @apply bg-secondary-50 dark:bg-secondary-700;
   }
 }
 
@@ -196,26 +313,26 @@
 
 /* Calendar custom styles */
 .react-calendar {
-  @apply bg-white border border-secondary-200 rounded-card shadow-card;
+  @apply bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded-card shadow-card;
 }
 
 .react-calendar__tile {
-  @apply hover:bg-primary-50 focus:bg-primary-100 transition-colors;
+  @apply hover:bg-primary-50 dark:hover:bg-primary-900/20 focus:bg-primary-100 dark:focus:bg-primary-900/30 transition-colors text-secondary-900 dark:text-secondary-100;
 }
 
 .react-calendar__tile--active {
-  @apply bg-primary-600 text-white;
+  @apply bg-primary-600 dark:bg-primary-500 text-white;
 }
 
 .react-calendar__tile--hasActive {
-  @apply bg-primary-100;
+  @apply bg-primary-100 dark:bg-primary-900/20;
 }
 
 /* Modal styles */
 .modal-overlay {
-  @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
+  @apply fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70 flex items-center justify-center z-50;
 }
 
 .modal-content {
-  @apply bg-white rounded-card shadow-card-lg max-w-lg w-full m-4 max-h-screen overflow-y-auto;
+  @apply bg-white dark:bg-secondary-800 rounded-card shadow-card-lg max-w-lg w-full m-4 max-h-screen overflow-y-auto border border-secondary-200 dark:border-secondary-700;
 } 
