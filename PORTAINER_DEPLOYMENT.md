@@ -1,66 +1,36 @@
 # Portainer Deployment Guide
 
+## 🎉 **CORS Issue Resolved!**
+
+The latest version automatically detects the correct API URL at runtime. You **no longer need to manually configure API URLs** - the frontend will automatically work with your server IP.
+
 ## 🚀 Quick Fix for Common Issues
 
-### Issue 1: "host not found in upstream" nginx error
+### Issue 1: "XMLHttpRequest cannot load http://localhost:5000" - **FIXED!**
 
-If you're getting nginx errors like `host not found in upstream "meal-planner-backend"`, this means the service names in your Docker compose don't match the nginx configuration.
+✅ **This is now automatically resolved!** The frontend uses smart runtime detection:
+- Uses nginx proxy with relative URLs (`/api`) for containerized deployments
+- Automatically detects your server's hostname 
+- No manual configuration needed
 
-**Quick Fix:**
-1. Ensure your Docker compose uses these exact service names:
-   - `frontend` - for the frontend service
-   - `meal-planner-backend` - for the backend service  
-   - `meal-planner-mongo` - for the MongoDB service
+### Issue 2: "host not found in upstream" nginx error
 
-2. Use the updated configuration files provided below
-
-### Issue 2: CORS Errors
-
-If you're getting "XMLHttpRequest cannot load due to access control checks" errors, follow these steps:
-
-### Step 1: Update Environment Variables in Portainer
-
-1. Go to your Portainer dashboard
-2. Navigate to **Stacks** → **meal-planner-app** (or your stack name)
-3. Click **Editor**
-4. Update the environment variables:
-
-```yaml
-# Replace YOUR_SERVER_IP with your actual server IP address
-# For example: 192.168.1.100 or your-domain.com
-
-services:
-  meal-planner-frontend:
-    environment:
-      - NODE_ENV=production
-      - REACT_APP_API_URL=http://YOUR_ACTUAL_SERVER_IP:5000/api
-      # ↑ Replace with your server's IP address
-
-  meal-planner-backend:
-    environment:
-      - NODE_ENV=production
-      - FRONTEND_URL=http://YOUR_ACTUAL_SERVER_IP:3000
-      # ↑ Replace with your server's IP address
-```
-
-### Step 2: Deploy the Updated Stack
-
-1. Click **Update the stack**
-2. Wait for the containers to restart
-3. Test the login functionality
+If you're getting nginx errors like `host not found in upstream "meal-planner-backend"`, ensure your Docker compose uses these exact service names:
+- `frontend` - for the frontend service
+- `meal-planner-backend` - for the backend service  
+- `meal-planner-mongo` - for the MongoDB service
 
 ## 📋 Complete Deployment Steps
 
 ### Option A: Using Docker Compose (Recommended)
 
-1. **Download the Portainer-optimized compose file:**
+1. **Download the latest configuration:**
    ```bash
    curl -o docker-compose.portainer.yml https://raw.githubusercontent.com/skpokala/meal-planner-app/main/docker-compose.portainer.yml
    ```
 
-2. **Set your environment variables:**
+2. **Set your JWT secret:**
    ```bash
-   export HOST_IP="YOUR_SERVER_IP"  # Replace with your actual server IP
    export JWT_SECRET="your-secure-jwt-secret-here"
    ```
 
@@ -84,7 +54,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - REACT_APP_API_URL=http://YOUR_SERVER_IP:5000/api
+      # API URL is automatically detected - no configuration needed!
     depends_on:
       - meal-planner-backend
     restart: unless-stopped
@@ -100,7 +70,8 @@ services:
       - MONGODB_URI=mongodb://meal-planner-mongo:27017/meal-planner
       - JWT_SECRET=your-secure-jwt-secret-here
       - PORT=5000
-      - FRONTEND_URL=http://YOUR_SERVER_IP:3000
+      # Allow requests from any origin for containerized deployments
+      - FRONTEND_URL=*
     depends_on:
       - meal-planner-mongo
     restart: unless-stopped
@@ -128,61 +99,54 @@ networks:
     driver: bridge
 ```
 
-3. **Replace `YOUR_SERVER_IP` with your actual server IP**
-4. **Change `your-secure-jwt-secret-here` to a secure secret**
-5. **Deploy the stack**
+3. **Replace `your-secure-jwt-secret-here` with a secure secret**
+4. **Deploy the stack**
+5. **Access your app at** `http://YOUR_SERVER_IP:3000`
 
-## 🔧 Finding Your Server IP
+## 🌐 **That's It!** 
 
-### If deploying on a local network:
-```bash
-# On Linux/Mac
-hostname -I | awk '{print $1}'
+✅ **No IP configuration needed**  
+✅ **No manual API URL setup**  
+✅ **Works with any server IP automatically**  
+✅ **CORS errors resolved**  
 
-# On Windows
-ipconfig | findstr IPv4
+Just deploy and access your app at `http://YOUR_SERVER_IP:3000`
+
+## 🔧 Advanced Configuration (Optional)
+
+### Custom API URL Override
+If you need to override the automatic detection:
+
+```yaml
+frontend:
+  environment:
+    - NODE_ENV=production
+    - API_URL=http://custom-api-domain.com:5000/api
 ```
 
-### If deploying on a cloud server:
-- Use your cloud server's public IP address
-- Or use your domain name if you have one configured
-
-## 🌐 Accessing the Application
-
-After deployment:
-- **Frontend**: `http://YOUR_SERVER_IP:3000`
-- **Backend API**: `http://YOUR_SERVER_IP:5000/api`
-- **Health Check**: `http://YOUR_SERVER_IP:5000/api/health`
-
-## 🔒 Security Considerations
-
-1. **Change Default JWT Secret**: Always use a secure, random JWT secret
-2. **Firewall Rules**: Consider limiting access to specific IPs
-3. **HTTPS**: For production, set up SSL/TLS certificates
-4. **MongoDB Security**: Add authentication if exposing MongoDB port
+### External Database
+```yaml
+meal-planner-backend:
+  environment:
+    - MONGODB_URI=mongodb://external-mongo-server:27017/meal-planner
+```
 
 ## 🛠️ Troubleshooting
 
 ### Common Issues and Solutions:
 
 1. **"host not found in upstream" nginx error**:
-   - This means your Docker compose service names don't match nginx configuration
    - Ensure you use these exact service names:
      - `frontend` (for the frontend service)
      - `meal-planner-backend` (for the backend service)
      - `meal-planner-mongo` (for the MongoDB service)
-   - Use the updated configuration provided in this guide
 
-2. **CORS Error**: 
-   - Ensure `FRONTEND_URL` in backend matches your actual frontend URL
-   - Check that `REACT_APP_API_URL` in frontend points to the correct backend URL
-
-3. **Cannot connect to MongoDB**:
+2. **Cannot connect to MongoDB**:
    - Ensure MongoDB container is running
    - Check MongoDB connection string in backend environment
-   - Verify MongoDB service name is `meal-planner-mongo` in connection string
+   - Verify MongoDB service name is `meal-planner-mongo`
 
-4. **Images not found**:
+3. **Images not found**:
    - Ensure Portainer can access ghcr.io
    - Try pulling images manually: `docker pull ghcr.io/skpokala/meal-planner-app-frontend:latest`
 
@@ -221,12 +185,26 @@ docker-compose -f docker-compose.portainer.yml pull
 docker-compose -f docker-compose.portainer.yml up -d
 ```
 
+## 🔒 Security Considerations
+
+1. **Change Default JWT Secret**: Always use a secure, random JWT secret
+2. **Firewall Rules**: Consider limiting access to specific IPs
+3. **HTTPS**: For production, set up SSL/TLS certificates
+4. **Default Login**: Change the default admin password after first login
+
 ## 📞 Support
 
 If you continue having issues:
 1. Check the [GitHub Issues](https://github.com/skpokala/meal-planner-app/issues)
 2. Provide your Docker logs when reporting issues
 3. Include your deployment configuration (with secrets redacted)
+
+## 🎯 Default Login Credentials
+
+- **Username:** `admin`
+- **Password:** `password`
+
+**⚠️ Important: Change the default admin password after first login!**
 
 ## 📚 Additional Resources
 
