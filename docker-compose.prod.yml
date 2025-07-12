@@ -9,7 +9,7 @@ services:
       - NODE_ENV=production
       - REACT_APP_API_URL=http://localhost:5000/api
     depends_on:
-      - backend
+      - meal-planner-backend
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
@@ -18,18 +18,18 @@ services:
       retries: 3
       start_period: 40s
 
-  backend:
+  meal-planner-backend:
     image: ghcr.io/skpokala/meal-planner-app-backend:latest
     ports:
       - "5000:5000"
     environment:
       - NODE_ENV=production
-      - MONGODB_URI=mongodb://mongo:27017/meal-planner
+      - MONGODB_URI=mongodb://meal-planner-mongo:27017/meal-planner
       - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-here}
       - PORT=5000
       - FRONTEND_URL=http://localhost:3000
     depends_on:
-      mongo:
+      meal-planner-mongo:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
@@ -39,7 +39,7 @@ services:
       retries: 3
       start_period: 40s
 
-  mongo:
+  meal-planner-mongo:
     image: mongo:7.0
     ports:
       - "27017:27017"
