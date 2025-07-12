@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { AuthProvider } from '../../contexts/AuthContext';
+import { ThemeProvider } from '../../contexts/ThemeContext';
 
 // Mock navigate
 const mockNavigate = jest.fn();
@@ -33,12 +34,33 @@ jest.mock('../../contexts/AuthContext', () => ({
   AuthProvider: ({ children }) => <div>{children}</div>
 }));
 
+// Mock ThemeContext
+const mockThemeContext = {
+  theme: 'light',
+  resolvedTheme: 'light',
+  setTheme: jest.fn(),
+  toggleTheme: jest.fn(),
+  themes: [
+    { value: 'light', label: 'Light' },
+    { value: 'dark', label: 'Dark' },
+    { value: 'system', label: 'System' }
+  ]
+};
+
+jest.mock('../../contexts/ThemeContext', () => ({
+  ...jest.requireActual('../../contexts/ThemeContext'),
+  useTheme: () => mockThemeContext,
+  ThemeProvider: ({ children }) => <div>{children}</div>
+}));
+
 const renderLayout = (children = <div>Test Content</div>) => {
   return render(
     <BrowserRouter>
-      <AuthProvider>
-        <Layout>{children}</Layout>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <Layout>{children}</Layout>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 };

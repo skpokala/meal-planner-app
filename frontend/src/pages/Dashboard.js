@@ -183,13 +183,13 @@ const Dashboard = () => {
               <div className="card-body">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-secondary-600 mb-1">
+                    <p className="text-sm font-medium text-secondary-600 dark:text-secondary-400 mb-1">
                       {card.title}
                     </p>
-                    <p className="text-3xl font-bold text-secondary-900">
+                    <p className="text-3xl font-bold text-secondary-900 dark:text-secondary-100">
                       {card.value}
                     </p>
-                    <p className="text-xs text-secondary-500 mt-1">
+                    <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
                       {card.description}
                     </p>
                   </div>
@@ -208,7 +208,7 @@ const Dashboard = () => {
         <div className="card">
           <div className="card-header">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-secondary-900">
+              <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
                 Your Recent Meals
               </h3>
               <button
@@ -223,8 +223,8 @@ const Dashboard = () => {
           <div className="card-body">
             {recentMeals.length === 0 ? (
               <div className="text-center py-8">
-                <ChefHat className="w-12 h-12 text-secondary-400 mx-auto mb-4" />
-                <p className="text-secondary-600">No meals created yet</p>
+                <ChefHat className="w-12 h-12 text-secondary-400 dark:text-secondary-500 mx-auto mb-4" />
+                <p className="text-secondary-600 dark:text-secondary-400">No meals created yet</p>
                 <button
                   onClick={() => setMealModalOpen(true)}
                   className="mt-4 btn-primary"
@@ -237,31 +237,31 @@ const Dashboard = () => {
                 {recentMeals.map((meal) => (
                   <div
                     key={meal._id}
-                    className="flex items-center justify-between p-4 bg-secondary-50 rounded-card hover:bg-secondary-100 transition-colors"
+                    className="flex items-center justify-between p-4 bg-secondary-50 dark:bg-secondary-700 rounded-card hover:bg-secondary-100 dark:hover:bg-secondary-600 transition-colors"
                   >
                     <div className="flex-1">
-                      <h4 className="font-medium text-secondary-900">
+                      <h4 className="font-medium text-secondary-900 dark:text-secondary-100">
                         {meal.name}
                       </h4>
                       <div className="flex items-center space-x-2 mt-1">
-                        <span className={`badge ${meal.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                        <span className={`badge ${meal.active ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-900/20 text-gray-800 dark:text-gray-300'}`}>
                           {meal.active ? 'Active' : 'Inactive'}
                         </span>
                         {meal.createdAt && (
-                          <span className="text-sm text-secondary-600">
+                          <span className="text-sm text-secondary-600 dark:text-secondary-400">
                             {formatDate(meal.createdAt)}
                           </span>
                         )}
                       </div>
                       {meal.description && (
-                        <p className="text-sm text-secondary-600 mt-1">
+                        <p className="text-sm text-secondary-600 dark:text-secondary-400 mt-1">
                           {meal.description}
                         </p>
                       )}
                     </div>
                     <div className="flex items-center space-x-2">
                       {meal.prepTime > 0 && (
-                        <div className="flex items-center text-sm text-secondary-600">
+                        <div className="flex items-center text-sm text-secondary-600 dark:text-secondary-400">
                           <Clock className="w-4 h-4 mr-1" />
                           {meal.prepTime}m prep
                         </div>
@@ -277,7 +277,7 @@ const Dashboard = () => {
         {/* Quick Actions */}
         <div className="card">
           <div className="card-header">
-            <h3 className="text-lg font-semibold text-secondary-900">
+            <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
               Quick Actions
             </h3>
           </div>
@@ -285,14 +285,14 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 gap-4">
               <button
                 onClick={() => navigate('/family-members')}
-                className="flex items-center p-4 bg-primary-50 hover:bg-primary-100 rounded-card transition-colors text-left"
+                className="flex items-center p-4 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/30 rounded-card transition-colors text-left"
               >
-                <Users className="w-6 h-6 text-primary-600 mr-3" />
+                <Users className="w-6 h-6 text-primary-600 dark:text-primary-400 mr-3" />
                 <div>
-                  <h4 className="font-medium text-secondary-900">
+                  <h4 className="font-medium text-secondary-900 dark:text-secondary-100">
                     Manage Family Members
                   </h4>
-                  <p className="text-sm text-secondary-600">
+                  <p className="text-sm text-secondary-600 dark:text-secondary-400">
                     Add or edit family member profiles
                   </p>
                 </div>
@@ -300,14 +300,14 @@ const Dashboard = () => {
 
               <button
                 onClick={() => navigate('/meals')}
-                className="flex items-center p-4 bg-success-50 hover:bg-success-100 rounded-card transition-colors text-left"
+                className="flex items-center p-4 bg-success-50 dark:bg-success-900/20 hover:bg-success-100 dark:hover:bg-success-900/30 rounded-card transition-colors text-left"
               >
-                <ChefHat className="w-6 h-6 text-success-600 mr-3" />
+                <ChefHat className="w-6 h-6 text-success-600 dark:text-success-400 mr-3" />
                 <div>
-                  <h4 className="font-medium text-secondary-900">
+                  <h4 className="font-medium text-secondary-900 dark:text-secondary-100">
                     Manage Meals
                   </h4>
-                  <p className="text-sm text-secondary-600">
+                  <p className="text-sm text-secondary-600 dark:text-secondary-400">
                     Create and edit your meal collection
                   </p>
                 </div>
@@ -315,14 +315,14 @@ const Dashboard = () => {
 
               <button
                 onClick={() => navigate('/meal-planner')}
-                className="flex items-center p-4 bg-warning-50 hover:bg-warning-100 rounded-card transition-colors text-left"
+                className="flex items-center p-4 bg-warning-50 dark:bg-warning-900/20 hover:bg-warning-100 dark:hover:bg-warning-900/30 rounded-card transition-colors text-left"
               >
-                <Calendar className="w-6 h-6 text-warning-600 mr-3" />
+                <Calendar className="w-6 h-6 text-warning-600 dark:text-warning-400 mr-3" />
                 <div>
-                  <h4 className="font-medium text-secondary-900">
+                  <h4 className="font-medium text-secondary-900 dark:text-secondary-100">
                     Plan Meals
                   </h4>
-                  <p className="text-sm text-secondary-600">
+                  <p className="text-sm text-secondary-600 dark:text-secondary-400">
                     Schedule meals for the future
                   </p>
                 </div>

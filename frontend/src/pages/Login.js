@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Calendar, Eye, EyeOff, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ThemeToggle from '../components/ThemeToggle';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -29,7 +30,12 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-100 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-100 dark:from-secondary-900 dark:to-secondary-800 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      {/* Theme Toggle - positioned in top right corner */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle variant="simple" />
+      </div>
+      
       <div className="max-w-md w-full space-y-8">
         <div>
           <div className="flex items-center justify-center">
@@ -37,10 +43,10 @@ const Login = () => {
               <Calendar className="w-8 h-8 text-white" />
             </div>
           </div>
-          <h2 className="mt-6 text-center text-3xl font-bold text-secondary-900">
+          <h2 className="mt-6 text-center text-3xl font-bold text-secondary-900 dark:text-secondary-100">
             Family Meal Planner
           </h2>
-          <p className="mt-2 text-center text-sm text-secondary-600">
+          <p className="mt-2 text-center text-sm text-secondary-600 dark:text-secondary-400">
             Sign in to your account
           </p>
         </div>
@@ -49,7 +55,7 @@ const Login = () => {
           <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="username" className="block text-sm font-medium text-secondary-700 mb-1">
+                <label htmlFor="username" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                   Username
                 </label>
                 <input
@@ -65,7 +71,7 @@ const Login = () => {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-secondary-700 mb-1">
+                <label htmlFor="password" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                   Password
                 </label>
                 <div className="relative">
@@ -82,7 +88,7 @@ const Login = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-secondary-400 hover:text-secondary-600"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-secondary-400 hover:text-secondary-600 dark:text-secondary-500 dark:hover:text-secondary-400"
                   >
                     {showPassword ? (
                       <EyeOff className="w-5 h-5" />
@@ -114,11 +120,11 @@ const Login = () => {
         </div>
 
         <div className="text-center">
-                      <div className="bg-white rounded-card p-4 shadow-card">
-            <h3 className="text-lg font-semibold text-secondary-900 mb-2">
+          <div className="bg-white dark:bg-secondary-800 rounded-card p-4 shadow-card">
+            <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-2">
               Demo Credentials
             </h3>
-            <div className="space-y-2 text-sm text-secondary-600">
+            <div className="space-y-2 text-sm text-secondary-600 dark:text-secondary-400">
               <div>
                 <span className="font-medium">Username:</span> admin
               </div>

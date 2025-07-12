@@ -17,6 +17,11 @@ export const ThemeProvider = ({ children }) => {
 
   // Detect system theme preference
   useEffect(() => {
+    // Check if matchMedia is available (not available in older browsers or test environments)
+    if (typeof window === 'undefined' || !window.matchMedia) {
+      return;
+    }
+    
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleSystemThemeChange = (e) => {
       setSystemTheme(e.matches ? 'dark' : 'light');
@@ -35,6 +40,10 @@ export const ThemeProvider = ({ children }) => {
 
   // Load saved theme from localStorage on mount
   useEffect(() => {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
+    
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
       setTheme(savedTheme);
@@ -47,16 +56,20 @@ export const ThemeProvider = ({ children }) => {
     setResolvedTheme(newResolvedTheme);
 
     // Apply theme to document
-    const root = document.documentElement;
-    
-    // Remove existing theme classes
-    root.classList.remove('light', 'dark');
-    
-    // Add new theme class
-    root.classList.add(newResolvedTheme);
+    if (typeof window !== 'undefined' && document) {
+      const root = document.documentElement;
+      
+      // Remove existing theme classes
+      root.classList.remove('light', 'dark');
+      
+      // Add new theme class
+      root.classList.add(newResolvedTheme);
+    }
 
     // Save theme preference to localStorage
-    localStorage.setItem('theme', theme);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('theme', theme);
+    }
   }, [theme, systemTheme]);
 
   const setThemePreference = (newTheme) => {

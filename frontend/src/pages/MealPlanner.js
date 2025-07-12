@@ -169,12 +169,12 @@ const MealPlanner = () => {
 
   const getMealTypeColor = useCallback((mealType) => {
     const colors = {
-      breakfast: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      lunch: 'bg-green-100 text-green-800 border-green-200',
-      dinner: 'bg-blue-100 text-blue-800 border-blue-200',
-      snack: 'bg-purple-100 text-purple-800 border-purple-200',
+      breakfast: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700',
+      lunch: 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 border-green-200 dark:border-green-700',
+      dinner: 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-700',
+      snack: 'bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-700',
     };
-    return colors[mealType] || 'bg-gray-100 text-gray-800 border-gray-200';
+    return colors[mealType] || 'bg-gray-100 dark:bg-gray-900/20 text-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700';
   }, []);
 
   const isToday = useCallback((date) => {
@@ -671,9 +671,9 @@ const CalendarView = ({
       <div className="card-body p-0">
         {/* Day headers for monthly/weekly view */}
         {(viewMode === VIEW_MODES.MONTHLY || viewMode === VIEW_MODES.WEEKLY) && (
-          <div className="grid grid-cols-7 border-b border-secondary-200">
+          <div className="grid grid-cols-7 border-b border-secondary-200 dark:border-secondary-700">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="p-3 text-center text-sm font-medium text-secondary-700 border-r border-secondary-200 last:border-r-0">
+              <div key={day} className="p-3 text-center text-sm font-medium text-secondary-700 dark:text-secondary-300 border-r border-secondary-200 dark:border-secondary-700 last:border-r-0">
                 {day}
               </div>
             ))}
@@ -724,7 +724,7 @@ const DayCell = ({
   const [selectedMealType, setSelectedMealType] = useState('dinner');
 
   if (!date) {
-    return <div className="h-32 border-r border-b border-secondary-200"></div>;
+    return <div className="h-32 border-r border-b border-secondary-200 dark:border-secondary-700"></div>;
   }
 
   const handleAddMeal = (mealType) => {
@@ -741,13 +741,13 @@ const DayCell = ({
   const cellHeight = viewMode === VIEW_MODES.DAILY ? 'min-h-96' : 'h-32';
   
   return (
-    <div className={`${cellHeight} border-r border-b border-secondary-200 last:border-r-0 p-2 ${
-      isToday ? 'bg-primary-50' : isPastDate ? 'bg-secondary-50' : 'bg-white'
+    <div className={`${cellHeight} border-r border-b border-secondary-200 dark:border-secondary-700 last:border-r-0 p-2 ${
+      isToday ? 'bg-primary-50 dark:bg-primary-900/20' : isPastDate ? 'bg-secondary-50 dark:bg-secondary-800' : 'bg-white dark:bg-secondary-800'
     } overflow-hidden relative`}>
       {/* Date header */}
       <div className="flex items-center justify-between mb-2">
         <span className={`text-sm font-medium ${
-          isToday ? 'text-primary-700' : isPastDate ? 'text-secondary-500' : 'text-secondary-900'
+          isToday ? 'text-primary-700 dark:text-primary-300' : isPastDate ? 'text-secondary-500 dark:text-secondary-400' : 'text-secondary-900 dark:text-secondary-100'
         }`}>
           {date.getDate()}
         </span>
@@ -757,7 +757,7 @@ const DayCell = ({
           <select
             value=""
             onChange={(e) => e.target.value && handleAddMeal(e.target.value)}
-            className="text-xs border-0 bg-transparent text-secondary-500 cursor-pointer hover:text-secondary-700 focus:ring-0 focus:border-0 appearance-none"
+            className="text-xs border-0 bg-transparent text-secondary-500 dark:text-secondary-400 cursor-pointer hover:text-secondary-700 dark:hover:text-secondary-300 focus:ring-0 focus:border-0 appearance-none"
             style={{
               backgroundImage: 'none',
               paddingRight: '0.5rem'
@@ -790,7 +790,7 @@ const DayCell = ({
               ) : (
                 <button
                   onClick={() => onMealRemove(date, plan._id)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-200 rounded"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-200 dark:hover:bg-red-900/20 rounded"
                   title="Remove meal"
                 >
                   <Trash2 className="w-2.5 h-2.5" />
@@ -809,14 +809,14 @@ const DayCell = ({
 
       {/* Meal selector modal */}
       {showMealSelector && (
-        <div className="absolute inset-0 bg-white border border-secondary-300 rounded shadow-lg z-10 p-2 overflow-y-auto">
+        <div className="absolute inset-0 bg-white dark:bg-secondary-800 border border-secondary-300 dark:border-secondary-700 rounded shadow-lg z-10 p-2 overflow-y-auto">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-secondary-700">
+            <span className="text-xs font-medium text-secondary-700 dark:text-secondary-300">
               Add {selectedMealType}
             </span>
             <button
               onClick={() => setShowMealSelector(false)}
-              className="text-secondary-400 hover:text-secondary-600"
+              className="text-secondary-400 dark:text-secondary-500 hover:text-secondary-600 dark:hover:text-secondary-400"
             >
               ✕
             </button>
@@ -825,7 +825,7 @@ const DayCell = ({
           <div className="space-y-1">
             <button
               onClick={() => handleMealSelection('create-new')}
-              className="w-full text-left text-xs p-1 rounded hover:bg-primary-50 text-primary-600 border border-primary-200"
+              className="w-full text-left text-xs p-1 rounded hover:bg-primary-50 dark:hover:bg-primary-900/20 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-700"
             >
               + Create New Meal
             </button>
@@ -834,18 +834,18 @@ const DayCell = ({
               <button
                 key={meal._id}
                 onClick={() => handleMealSelection(meal._id)}
-                className="w-full text-left text-xs p-1 rounded hover:bg-secondary-50 border border-secondary-200 truncate"
+                className="w-full text-left text-xs p-1 rounded hover:bg-secondary-50 dark:hover:bg-secondary-700 border border-secondary-200 dark:border-secondary-700 truncate text-secondary-900 dark:text-secondary-100"
                 title={meal.description}
               >
                 {meal.name}
                 {meal.prepTime > 0 && (
-                  <span className="text-secondary-500 ml-1">({meal.prepTime}m)</span>
+                  <span className="text-secondary-500 dark:text-secondary-400 ml-1">({meal.prepTime}m)</span>
                 )}
               </button>
             ))}
             
             {availableMeals.length === 0 && (
-              <div className="text-xs text-secondary-500 text-center py-2">
+              <div className="text-xs text-secondary-500 dark:text-secondary-400 text-center py-2">
                 No available meals
               </div>
             )}

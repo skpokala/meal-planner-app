@@ -111,14 +111,14 @@ const FamilyMembers = () => {
 
   const getRelationshipColor = (relationship) => {
     const colors = {
-      parent: 'bg-blue-100 text-blue-800',
-      child: 'bg-green-100 text-green-800',
-      spouse: 'bg-purple-100 text-purple-800',
-      sibling: 'bg-yellow-100 text-yellow-800',
-      grandparent: 'bg-red-100 text-red-800',
-      other: 'bg-gray-100 text-gray-800',
+      parent: 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300',
+      child: 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300',
+      spouse: 'bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300',
+      sibling: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300',
+      grandparent: 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300',
+      other: 'bg-gray-100 dark:bg-gray-900/20 text-gray-800 dark:text-gray-300',
     };
-    return colors[relationship] || 'bg-gray-100 text-gray-800';
+    return colors[relationship] || 'bg-gray-100 dark:bg-gray-900/20 text-gray-800 dark:text-gray-300';
   };
 
   const calculateAge = (dateOfBirth) => {
@@ -143,8 +143,8 @@ const FamilyMembers = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-secondary-900">Family Members</h1>
-          <p className="text-secondary-600">Manage your family member profiles</p>
+          <h1 className="text-2xl font-bold text-secondary-900 dark:text-secondary-100">Family Members</h1>
+          <p className="text-secondary-600 dark:text-secondary-400">Manage your family member profiles</p>
         </div>
         <button
           onClick={() => {
@@ -161,9 +161,9 @@ const FamilyMembers = () => {
       {/* Family Members Grid */}
       {familyMembers.length === 0 ? (
         <div className="text-center py-12 mt-6">
-          <Users className="w-16 h-16 text-secondary-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-secondary-900 mb-2">No family members yet</h3>
-          <p className="text-secondary-600 mb-6">Add your first family member to get started</p>
+          <Users className="w-16 h-16 text-secondary-400 dark:text-secondary-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-2">No family members yet</h3>
+          <p className="text-secondary-600 dark:text-secondary-400 mb-6">Add your first family member to get started</p>
           <button
             onClick={() => {
               resetForm();
@@ -182,11 +182,11 @@ const FamilyMembers = () => {
               <div className="card-body">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center">
-                    <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                      <User className="w-6 h-6 text-primary-600" />
+                    <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/20 rounded-full flex items-center justify-center">
+                      <User className="w-6 h-6 text-primary-600 dark:text-primary-400" />
                     </div>
                     <div className="ml-3">
-                      <h3 className="font-semibold text-secondary-900">
+                      <h3 className="font-semibold text-secondary-900 dark:text-secondary-100">
                         {member.firstName} {member.lastName}
                       </h3>
                       <span className={`badge ${getRelationshipColor(member.relationship)}`}>
@@ -197,13 +197,13 @@ const FamilyMembers = () => {
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleEdit(member)}
-                      className="p-2 text-secondary-600 hover:text-primary-600 hover:bg-primary-50 rounded-card"
+                      className="p-2 text-secondary-600 dark:text-secondary-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-card"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(member._id)}
-                      className="p-2 text-secondary-600 hover:text-error-600 hover:bg-error-50 rounded-card"
+                      className="p-2 text-secondary-600 dark:text-secondary-400 hover:text-error-600 dark:hover:text-error-400 hover:bg-error-50 dark:hover:bg-error-900/20 rounded-card"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -211,16 +211,16 @@ const FamilyMembers = () => {
                 </div>
 
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center text-secondary-600">
+                  <div className="flex items-center text-secondary-600 dark:text-secondary-400">
                     <Mail className="w-4 h-4 mr-2" />
                     {member.email}
                   </div>
-                  <div className="flex items-center text-secondary-600">
+                  <div className="flex items-center text-secondary-600 dark:text-secondary-400">
                     <Calendar className="w-4 h-4 mr-2" />
                     Age: {calculateAge(member.dateOfBirth)}
                   </div>
                   {member.dietaryRestrictions.length > 0 && (
-                    <div className="flex items-start text-secondary-600">
+                    <div className="flex items-start text-secondary-600 dark:text-secondary-400">
                       <Heart className="w-4 h-4 mr-2 mt-0.5" />
                       <div>
                         <span className="font-medium">Dietary:</span>
@@ -243,17 +243,17 @@ const FamilyMembers = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-card shadow-card-lg max-w-md w-full m-4 max-h-screen overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-secondary-800 rounded-card shadow-card-lg max-w-md w-full m-4 max-h-screen overflow-y-auto border border-secondary-200 dark:border-secondary-700">
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-secondary-900 mb-4">
+              <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-4">
                 {editingMember ? 'Edit Family Member' : 'Add Family Member'}
               </h3>
               
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                       First Name
                     </label>
                     <input
@@ -266,7 +266,7 @@ const FamilyMembers = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                       Last Name
                     </label>
                     <input
@@ -281,7 +281,7 @@ const FamilyMembers = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-1">
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                     Email
                   </label>
                   <input
@@ -295,7 +295,7 @@ const FamilyMembers = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-1">
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                     Date of Birth
                   </label>
                   <input
@@ -309,7 +309,7 @@ const FamilyMembers = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-1">
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                     Relationship
                   </label>
                   <select

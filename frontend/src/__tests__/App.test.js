@@ -46,6 +46,22 @@ jest.mock('../contexts/AuthContext', () => ({
   })),
 }));
 
+// Mock ThemeContext
+jest.mock('../contexts/ThemeContext', () => ({
+  ThemeProvider: ({ children }) => <div>{children}</div>,
+  useTheme: jest.fn(() => ({
+    theme: 'light',
+    resolvedTheme: 'light',
+    setTheme: jest.fn(),
+    toggleTheme: jest.fn(),
+    themes: [
+      { value: 'light', label: 'Light' },
+      { value: 'dark', label: 'Dark' },
+      { value: 'system', label: 'System' }
+    ]
+  })),
+}));
+
 // Mock all page components
 jest.mock('../pages/Login', () => () => <div>Login Page</div>);
 jest.mock('../pages/Dashboard', () => () => <div>Dashboard Page</div>);

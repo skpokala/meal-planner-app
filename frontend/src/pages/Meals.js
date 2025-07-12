@@ -189,8 +189,8 @@ const Meals = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-secondary-900">Meals</h1>
-          <p className="text-secondary-600">Manage your meal collection</p>
+          <h1 className="text-2xl font-bold text-secondary-900 dark:text-secondary-100">Meals</h1>
+          <p className="text-secondary-600 dark:text-secondary-400">Manage your meal collection</p>
         </div>
         <button
           onClick={handleAddMeal}
@@ -207,7 +207,7 @@ const Meals = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 dark:text-secondary-500 w-4 h-4" />
               <input
                 type="text"
                 placeholder="Search meals..."
@@ -265,18 +265,18 @@ const Meals = () => {
       {/* Meals Table */}
       <div className="card">
         <div className="card-header">
-          <h3 className="text-lg font-semibold text-secondary-900">
+          <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
             {filteredAndSortedMeals.length} Meal{filteredAndSortedMeals.length !== 1 ? 's' : ''}
           </h3>
         </div>
         <div className="card-body">
           {filteredAndSortedMeals.length === 0 ? (
             <div className="text-center py-12">
-              <ChefHat className="w-16 h-16 text-secondary-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-secondary-900 mb-2">
+              <ChefHat className="w-16 h-16 text-secondary-400 dark:text-secondary-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-2">
                 {meals.length === 0 ? 'No meals added yet' : 'No meals match your filters'}
               </h3>
-              <p className="text-secondary-600 mb-6">
+              <p className="text-secondary-600 dark:text-secondary-400 mb-6">
                 {meals.length === 0 
                   ? 'Start by adding your first meal' 
                   : 'Try adjusting your search or filters'}
@@ -291,44 +291,44 @@ const Meals = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-secondary-200">
-                <thead className="bg-secondary-50">
+              <table className="min-w-full divide-y divide-secondary-200 dark:divide-secondary-700">
+                <thead className="bg-secondary-50 dark:bg-secondary-900">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">
                       Description
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">
                       Ingredients
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">
                       Prep Time
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-secondary-200">
+                <tbody className="bg-white dark:bg-secondary-800 divide-y divide-secondary-200 dark:divide-secondary-700">
                   {filteredAndSortedMeals.map((meal) => (
-                    <tr key={meal._id} className="hover:bg-secondary-50">
+                    <tr key={meal._id} className="hover:bg-secondary-50 dark:hover:bg-secondary-700">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-secondary-900">
+                        <div className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
                           {meal.name}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-secondary-600 max-w-xs truncate">
+                        <div className="text-sm text-secondary-600 dark:text-secondary-400 max-w-xs truncate">
                           {meal.description || 'No description'}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-secondary-600">
+                        <div className="text-sm text-secondary-600 dark:text-secondary-400">
                           {meal.ingredients && meal.ingredients.length > 0 ? (
                             <div className="space-y-1">
                               {meal.ingredients.slice(0, 2).map((ingredient, index) => (
@@ -337,25 +337,25 @@ const Meals = () => {
                                     {ingredient.ingredient?.name || 'Unknown'}
                                   </span>
                                   {ingredient.quantity && (
-                                    <span className="text-xs text-secondary-500">
+                                    <span className="text-xs text-secondary-500 dark:text-secondary-400">
                                       ({ingredient.quantity} {ingredient.unit})
                                     </span>
                                   )}
                                 </div>
                               ))}
                               {meal.ingredients.length > 2 && (
-                                <div className="text-xs text-secondary-500">
+                                <div className="text-xs text-secondary-500 dark:text-secondary-400">
                                   +{meal.ingredients.length - 2} more
                                 </div>
                               )}
                             </div>
                           ) : (
-                            <span className="text-secondary-400 italic">No ingredients</span>
+                            <span className="text-secondary-400 dark:text-secondary-500 italic">No ingredients</span>
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-secondary-600 flex items-center">
+                        <div className="text-sm text-secondary-600 dark:text-secondary-400 flex items-center">
                           <Clock className="w-4 h-4 mr-1" />
                           {meal.prepTime || 0} min
                         </div>
@@ -365,8 +365,8 @@ const Meals = () => {
                           onClick={() => handleToggleActive(meal)}
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             meal.active 
-                              ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                              : 'bg-red-100 text-red-800 hover:bg-red-200'
+                              ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/30' 
+                              : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/30'
                           } transition-colors cursor-pointer`}
                         >
                           {meal.active ? (
@@ -386,14 +386,14 @@ const Meals = () => {
                         <div className="flex items-center justify-end space-x-2">
                           <button
                             onClick={() => handleEditMeal(meal)}
-                            className="text-primary-600 hover:text-primary-900 p-1 rounded hover:bg-primary-50 transition-colors"
+                            className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300 p-1 rounded hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
                             title="Edit meal"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteMeal(meal._id)}
-                            className="text-error-600 hover:text-error-900 p-1 rounded hover:bg-error-50 transition-colors"
+                            className="text-error-600 dark:text-error-400 hover:text-error-900 dark:hover:text-error-300 p-1 rounded hover:bg-error-50 dark:hover:bg-error-900/20 transition-colors"
                             title="Delete meal"
                           >
                             <Trash2 className="w-4 h-4" />
