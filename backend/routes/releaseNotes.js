@@ -82,6 +82,50 @@ router.get('/unviewed', auth, async (req, res) => {
   }
 });
 
+// GET /api/release-notes/stats/summary - Get release notes statistics (admin only)
+router.get('/stats/summary', auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+
+    const totalReleases = await ReleaseNotes.countDocuments({ isVisible: true });
+    const releasesByType = await ReleaseNotes.aggregate([
+      { $match: { isVisible: true } },
+      { $group: { _id: '$type', count: { $sum: 1 } } }
+    ]);
+
+    const recentReleases = await ReleaseNotes.find({ isVisible: true })
+      .sort({ releaseDate: -1 })
+      .limit(5)
+      .select('version title type releaseDate viewCount');
+
+    const stats = {
+      totalReleases,
+      releasesByType: releasesByType.reduce((acc, item) => {
+        acc[item._id] = item.count;
+        return acc;
+      }, {}),
+      recentReleases
+    };
+
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Error fetching release notes statistics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch release notes statistics'
+    });
+  }
+});
+
 // GET /api/release-notes/:version - Get specific release notes by version
 router.get('/:version', async (req, res) => {
   try {
@@ -313,50 +357,6 @@ router.post('/:id/mark-viewed', auth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to mark release notes as viewed'
-    });
-  }
-});
-
-// GET /api/release-notes/stats/summary - Get release notes statistics (admin only)
-router.get('/stats/summary', auth, async (req, res) => {
-  try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Admin access required'
-      });
-    }
-
-    const totalReleases = await ReleaseNotes.countDocuments({ isVisible: true });
-    const releasesByType = await ReleaseNotes.aggregate([
-      { $match: { isVisible: true } },
-      { $group: { _id: '$type', count: { $sum: 1 } } }
-    ]);
-
-    const recentReleases = await ReleaseNotes.find({ isVisible: true })
-      .sort({ releaseDate: -1 })
-      .limit(5)
-      .select('version title type releaseDate viewCount');
-
-    const stats = {
-      totalReleases,
-      releasesByType: releasesByType.reduce((acc, item) => {
-        acc[item._id] = item.count;
-        return acc;
-      }, {}),
-      recentReleases
-    };
-
-    res.json({
-      success: true,
-      data: stats
-    });
-  } catch (error) {
-    console.error('Error fetching release notes statistics:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch release notes statistics'
     });
   }
 });
