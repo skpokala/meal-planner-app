@@ -133,7 +133,7 @@ npm run test:full
 ### Backend
 - **Node.js + Express** REST API
 - **MongoDB** with Mongoose ODM
-- **JWT** authentication
+- **JWT** authentication with dual password system for admin users
 - **bcryptjs** password hashing
 - **Helmet + CORS** security middleware
 - **Jest + Supertest** for testing
