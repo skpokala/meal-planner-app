@@ -4,7 +4,6 @@ import { Info } from 'lucide-react';
 
 const Version = ({ sidebarCollapsed }) => {
   const [backendVersion, setBackendVersion] = useState(null);
-  const [error, setError] = useState(null);
   
   useEffect(() => {
     const fetchBackendVersion = async () => {

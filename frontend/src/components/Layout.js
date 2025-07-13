@@ -17,10 +17,11 @@ import {
   ChevronRight,
   ChefHat,
   Database,
+  Shield,
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, isSystemAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -28,14 +29,33 @@ const Layout = ({ children }) => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [showExpandButton, setShowExpandButton] = useState(true);
 
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Family Members', href: '/family-members', icon: Users },
-    { name: 'Meals', href: '/meals', icon: ChefHat },
-    { name: 'Meal Planner', href: '/meal-planner', icon: Calendar },
-    { name: 'Master Data', href: '/master-data', icon: Database },
-    { name: 'Settings', href: '/settings', icon: Settings },
-  ];
+  // Build navigation based on user permissions
+  const getNavigation = () => {
+    const baseNavigation = [
+      { name: 'Dashboard', href: '/dashboard', icon: Home },
+      { name: 'Family Members', href: '/family-members', icon: Users },
+      { name: 'Meals', href: '/meals', icon: ChefHat },
+      { name: 'Meal Planner', href: '/meal-planner', icon: Calendar },
+      { name: 'Master Data', href: '/master-data', icon: Database },
+    ];
+
+    // Add admin-only sections
+    if (isSystemAdmin && isSystemAdmin()) {
+      baseNavigation.push({ 
+        name: 'Audit Logs', 
+        href: '/audit', 
+        icon: Shield,
+        adminOnly: true 
+      });
+    }
+
+    // Always add settings at the end
+    baseNavigation.push({ name: 'Settings', href: '/settings', icon: Settings });
+    
+    return baseNavigation;
+  };
+
+  const navigation = getNavigation();
 
   // Auto-hide expand button after 3 seconds when sidebar is collapsed
   useEffect(() => {
@@ -60,8 +80,8 @@ const Layout = ({ children }) => {
     }
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 

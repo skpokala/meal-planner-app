@@ -112,7 +112,7 @@ const requireSystemAdmin = (req, res, next) => {
   if (req.user.userType !== 'User' || req.user.role !== 'admin') {
     return res.status(403).json({
       success: false,
-      message: 'System admin access required'
+      message: 'System administrator access required'
     });
   }
   next();

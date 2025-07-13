@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Calendar, ChefHat, Plus, Clock, Settings, RefreshCw } from 'lucide-react';
+import { Users, Calendar, ChefHat, Plus, Clock } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MealModal from '../components/MealModal';
@@ -17,14 +17,11 @@ const Dashboard = () => {
   const [recentMeals, setRecentMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mealModalOpen, setMealModalOpen] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+
   const navigate = useNavigate();
 
   const fetchDashboardData = async (showRefreshIndicator = false) => {
     try {
-      if (showRefreshIndicator) {
-        setRefreshing(true);
-      }
 
       const [familyResponse, mealsResponse, mealPlansResponse] = await Promise.all([
         api.get('/family-members'),
@@ -49,13 +46,10 @@ const Dashboard = () => {
       toast.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
-  const handleRefresh = () => {
-    fetchDashboardData(true);
-  };
+
 
   useEffect(() => {
     // Only fetch dashboard data if user is authenticated and auth loading is complete

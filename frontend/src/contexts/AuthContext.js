@@ -72,18 +72,26 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    // Remove token from localStorage
-    localStorage.removeItem('token');
-    
-    // Remove token from API headers
-    delete api.defaults.headers.common['Authorization'];
-    
-    // Clear user state
-    setUser(null);
-    
-    // Clear any cached data by forcing a page reload
-    window.location.href = '/login';
+  const logout = async () => {
+    try {
+      // Call logout endpoint to log the logout event
+      await api.post('/auth/logout');
+    } catch (error) {
+      // Don't fail if logout API call fails
+      console.error('Logout API call failed:', error);
+    } finally {
+      // Always clear local state regardless of API call result
+      // Remove token from localStorage
+      localStorage.removeItem('token');
+      
+      // Remove token from API headers
+      delete api.defaults.headers.common['Authorization'];
+      
+      // Clear user state
+      setUser(null);
+      
+      // Navigation should be handled by the calling component
+    }
   };
 
   const updateProfile = async (profileData) => {

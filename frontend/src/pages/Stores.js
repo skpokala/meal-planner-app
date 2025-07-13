@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AddressAutocomplete from '../components/AddressAutocomplete';
@@ -7,7 +6,6 @@ import { Plus, Edit, Trash2, Search, MapPin, Store as StoreIcon } from 'lucide-r
 import toast from 'react-hot-toast';
 
 const Stores = () => {
-  const { user } = useAuth();
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -28,7 +26,7 @@ const Stores = () => {
 
   useEffect(() => {
     fetchStores();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchStores = async () => {
     try {

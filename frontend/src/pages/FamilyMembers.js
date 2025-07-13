@@ -6,7 +6,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
 
 const FamilyMembers = () => {
-  const { user, canAssignAdminRole, canManageFamilyMembers } = useAuth();
+  const { canAssignAdminRole, canManageFamilyMembers } = useAuth();
   const [familyMembers, setFamilyMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -85,7 +85,7 @@ const FamilyMembers = () => {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [formData.username, formData.hasLoginAccess, editingMember]);
+  }, [formData.username, formData.hasLoginAccess, editingMember]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e) => {
     e.preventDefault();

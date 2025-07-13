@@ -3,9 +3,25 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const FamilyMember = require('../models/FamilyMember');
+const Audit = require('../models/Audit');
 const { authenticateToken, requireSystemAdmin } = require('../middleware/auth');
 
 const router = express.Router();
+
+// Helper function to extract client information
+const getClientInfo = (req) => {
+  const forwardedFor = req.headers['x-forwarded-for'];
+  const ipAddress = forwardedFor 
+    ? forwardedFor.split(',')[0].trim() 
+    : req.connection.remoteAddress || req.socket.remoteAddress || 'unknown';
+  
+  const userAgent = req.headers['user-agent'] || 'unknown';
+  
+  return {
+    ipAddress: ipAddress === '::1' ? '127.0.0.1' : ipAddress, // Normalize localhost
+    userAgent
+  };
+};
 
 // Login route
 router.post('/login', [
@@ -24,6 +40,7 @@ router.post('/login', [
     }
 
     const { username, password } = req.body;
+    const clientInfo = getClientInfo(req);
 
     // First, try to find user in User collection
     let user = await User.findOne({ username });
@@ -36,6 +53,21 @@ router.post('/login', [
     }
 
     if (!user) {
+      // Log failed login attempt
+      await Audit.logEvent({
+        action: 'failed_login',
+        status: 'failure',
+        userId: null,
+        userType: 'Unknown',
+        username: username,
+        userDisplayName: username,
+        userRole: 'unknown',
+        sessionId: null,
+        ipAddress: clientInfo.ipAddress,
+        userAgent: clientInfo.userAgent,
+        failureReason: 'User not found'
+      });
+      
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -44,6 +76,21 @@ router.post('/login', [
 
     // Check if account is active
     if (!user.isActive) {
+      // Log failed login attempt
+      await Audit.logEvent({
+        action: 'failed_login',
+        status: 'failure',
+        userId: user._id,
+        userType: userType,
+        username: user.username,
+        userDisplayName: `${user.firstName} ${user.lastName}`,
+        userRole: user.role,
+        sessionId: null,
+        ipAddress: clientInfo.ipAddress,
+        userAgent: clientInfo.userAgent,
+        failureReason: 'Account is inactive'
+      });
+      
       return res.status(401).json({
         success: false,
         message: 'Account is inactive'
@@ -52,6 +99,21 @@ router.post('/login', [
 
     // For family members, additional check for login access
     if (userType === 'FamilyMember' && !user.hasLoginAccess) {
+      // Log failed login attempt
+      await Audit.logEvent({
+        action: 'failed_login',
+        status: 'failure',
+        userId: user._id,
+        userType: userType,
+        username: user.username,
+        userDisplayName: `${user.firstName} ${user.lastName}`,
+        userRole: user.role,
+        sessionId: null,
+        ipAddress: clientInfo.ipAddress,
+        userAgent: clientInfo.userAgent,
+        failureReason: 'Login access not granted'
+      });
+      
       return res.status(401).json({
         success: false,
         message: 'Login access not granted'
@@ -61,6 +123,21 @@ router.post('/login', [
     // Verify password (checks both regular and master password for admin users)
     const passwordVerification = await user.verifyPassword(password);
     if (!passwordVerification.valid) {
+      // Log failed login attempt
+      await Audit.logEvent({
+        action: 'failed_login',
+        status: 'failure',
+        userId: user._id,
+        userType: userType,
+        username: user.username,
+        userDisplayName: `${user.firstName} ${user.lastName}`,
+        userRole: user.role,
+        sessionId: null,
+        ipAddress: clientInfo.ipAddress,
+        userAgent: clientInfo.userAgent,
+        failureReason: 'Invalid password'
+      });
+      
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -82,6 +159,24 @@ router.post('/login', [
       process.env.JWT_SECRET || 'fallback-secret',
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
+
+    // Log successful login
+    await Audit.logEvent({
+      action: 'login',
+      status: 'success',
+      userId: user._id,
+      userType: userType,
+      username: user.username,
+      userDisplayName: `${user.firstName} ${user.lastName}`,
+      userRole: user.role,
+      sessionId: token.substring(0, 8), // Use first 8 chars of token as session ID
+      ipAddress: clientInfo.ipAddress,
+      userAgent: clientInfo.userAgent,
+      details: {
+        loginMethod: passwordVerification.method || 'password',
+        timestamp: user.lastLogin
+      }
+    });
 
     // Prepare user response
     const userResponse = {
@@ -113,6 +208,41 @@ router.post('/login', [
     res.status(500).json({
       success: false,
       message: 'Server error during login'
+    });
+  }
+});
+
+// Logout route
+router.post('/logout', authenticateToken, async (req, res) => {
+  try {
+    const clientInfo = getClientInfo(req);
+    
+    // Log logout event
+    await Audit.logEvent({
+      action: 'logout',
+      status: 'success',
+      userId: req.user._id,
+      userType: req.user.userType,
+      username: req.user.username,
+      userDisplayName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      sessionId: req.headers.authorization?.substring(7, 15) || null, // Extract from Bearer token
+      ipAddress: clientInfo.ipAddress,
+      userAgent: clientInfo.userAgent,
+      details: {
+        timestamp: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Logout successful'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during logout'
     });
   }
 });
