@@ -18,6 +18,7 @@ import {
   ChefHat,
   Database,
   Shield,
+  FileText,
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
@@ -45,6 +46,12 @@ const Layout = ({ children }) => {
         name: 'Audit Logs', 
         href: '/audit', 
         icon: Shield,
+        adminOnly: true 
+      });
+      baseNavigation.push({ 
+        name: 'Release Notes', 
+        href: '/release-notes', 
+        icon: FileText,
         adminOnly: true 
       });
     }

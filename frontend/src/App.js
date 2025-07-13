@@ -12,8 +12,10 @@ import MealPlanner from './pages/MealPlanner';
 import MasterData from './pages/MasterData';
 import Settings from './pages/Settings';
 import Audit from './pages/Audit';
+import ReleaseNotesHistory from './pages/ReleaseNotesHistory';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import ReleaseNotesWrapper from './components/ReleaseNotesWrapper';
 import './index.css';
 
 function App() {
@@ -22,17 +24,20 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <Router>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-              <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-              <Route path="/family-members" element={<ProtectedRoute><Layout><FamilyMembers /></Layout></ProtectedRoute>} />
-              <Route path="/meals" element={<ProtectedRoute><Layout><Meals /></Layout></ProtectedRoute>} />
-              <Route path="/meal-planner" element={<ProtectedRoute><Layout><MealPlanner /></Layout></ProtectedRoute>} />
-              <Route path="/master-data" element={<ProtectedRoute><Layout><MasterData /></Layout></ProtectedRoute>} />
-              <Route path="/audit" element={<ProtectedRoute><Layout><Audit /></Layout></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
-            </Routes>
+            <ReleaseNotesWrapper>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+                <Route path="/family-members" element={<ProtectedRoute><Layout><FamilyMembers /></Layout></ProtectedRoute>} />
+                <Route path="/meals" element={<ProtectedRoute><Layout><Meals /></Layout></ProtectedRoute>} />
+                <Route path="/meal-planner" element={<ProtectedRoute><Layout><MealPlanner /></Layout></ProtectedRoute>} />
+                <Route path="/master-data" element={<ProtectedRoute><Layout><MasterData /></Layout></ProtectedRoute>} />
+                <Route path="/audit" element={<ProtectedRoute><Layout><Audit /></Layout></ProtectedRoute>} />
+                <Route path="/release-notes" element={<ProtectedRoute><Layout><ReleaseNotesHistory /></Layout></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
+              </Routes>
+            </ReleaseNotesWrapper>
             <Toaster
               position="top-right"
               toastOptions={{
