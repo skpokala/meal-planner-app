@@ -105,7 +105,12 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
+      <div 
+        role="dialog" 
+        aria-modal="true" 
+        aria-labelledby="release-notes-title"
+        className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden"
+      >
         {loading ? (
           <div className="p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
@@ -119,6 +124,7 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
             <p className="text-red-600">{error}</p>
             <button
               onClick={onClose}
+              aria-label="Close release notes modal"
               className="mt-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
             >
               Close
@@ -132,6 +138,7 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
             <p className="text-gray-600">No new release notes available</p>
             <button
               onClick={onClose}
+              aria-label="Close release notes modal"
               className="mt-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
             >
               Close
@@ -150,7 +157,7 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
                     </span>
                     <span className="text-sm opacity-90">v{currentRelease.version}</span>
                   </div>
-                  <h2 className="text-2xl font-bold mb-2">{currentRelease.title}</h2>
+                  <h2 id="release-notes-title" className="text-2xl font-bold mb-2">{currentRelease.title}</h2>
                   <div className="flex items-center space-x-4 text-sm opacity-90">
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-4 h-4" />
@@ -164,6 +171,7 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
                 </div>
                 <button
                   onClick={handleClose}
+                  aria-label="Close release notes modal"
                   className="text-white hover:text-gray-300 transition-colors"
                 >
                   <X className="w-6 h-6" />
