@@ -14,8 +14,8 @@ router.get('/', async (req, res) => {
   try {
     const { search, active } = req.query;
     
-    // Build query
-    const query = req.user.role === 'admin' ? {} : { createdBy: req.user._id };
+    // Build query - all users can see all meals
+    const query = {};
     
     if (search) {
       query.$or = [
@@ -59,9 +59,8 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    const query = req.user.role === 'admin' 
-      ? { _id: req.params.id } 
-      : { _id: req.params.id, createdBy: req.user._id };
+    // All users can see all meals
+    const query = { _id: req.params.id };
     
     const meal = await Meal.findOne(query)
       .populate('createdBy', 'firstName lastName username')
@@ -327,7 +326,8 @@ router.delete('/:id', async (req, res) => {
 // Get meal statistics
 router.get('/stats/overview', async (req, res) => {
   try {
-    const query = req.user.role === 'admin' ? {} : { createdBy: req.user._id };
+    // All users can see all meal stats
+    const query = {};
     
     const stats = await Meal.aggregate([
       { $match: query },

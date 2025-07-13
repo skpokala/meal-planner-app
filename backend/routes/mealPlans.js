@@ -16,8 +16,8 @@ router.get('/', async (req, res) => {
   try {
     const { date, mealType, assignedTo, startDate, endDate, future } = req.query;
     
-    // Build query
-    const query = req.user.role === 'admin' ? {} : { createdBy: req.user._id };
+    // Build query - all users can see all meal plans
+    const query = {};
     
     if (date) {
       const startOfDay = new Date(date);
@@ -86,7 +86,8 @@ router.get('/calendar', async (req, res) => {
       });
     }
 
-    const query = req.user.role === 'admin' ? {} : { createdBy: req.user._id };
+    // All users can see all meal plans
+    const query = {};
     const start = new Date(startDate);
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999); // Include the entire end day
@@ -136,9 +137,8 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    const query = req.user.role === 'admin' 
-      ? { _id: req.params.id } 
-      : { _id: req.params.id, createdBy: req.user._id };
+    // All users can see all meal plans
+    const query = { _id: req.params.id };
     
     const mealPlan = await MealPlan.findOne(query)
       .populate('meal', 'name description prepTime active')
@@ -397,7 +397,8 @@ router.delete('/:id', async (req, res) => {
 // Get meal plan statistics
 router.get('/stats/overview', async (req, res) => {
   try {
-    const query = req.user.role === 'admin' ? {} : { createdBy: req.user._id };
+    // All users can see all meal plan stats
+    const query = {};
     
     // Get future meal plans
     const today = new Date();
