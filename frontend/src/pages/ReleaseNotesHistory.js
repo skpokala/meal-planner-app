@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../contexts/AuthContext';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   Tag, 
   Wrench, 
@@ -23,7 +23,7 @@ import ReleaseNotesAdmin from '../components/ReleaseNotesAdmin';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const ReleaseNotesHistory = () => {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [releaseNotes, setReleaseNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
