@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult, query } = require('express-validator');
-const auth = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 const ReleaseNotes = require('../models/ReleaseNotes');
 const User = require('../models/User');
 
@@ -65,7 +65,7 @@ router.get('/latest', [
 });
 
 // GET /api/release-notes/unviewed - Get unviewed release notes for current user
-router.get('/unviewed', auth, async (req, res) => {
+router.get('/unviewed', authenticateToken, async (req, res) => {
   try {
     const releaseNotes = await ReleaseNotes.getUnviewedForUser(req.user.id);
     
@@ -83,7 +83,7 @@ router.get('/unviewed', auth, async (req, res) => {
 });
 
 // GET /api/release-notes/stats/summary - Get release notes statistics (admin only)
-router.get('/stats/summary', auth, async (req, res) => {
+router.get('/stats/summary', authenticateToken, async (req, res) => {
   try {
     // Check if user is admin
     if (req.user.role !== 'admin') {
@@ -153,7 +153,7 @@ router.get('/:version', async (req, res) => {
 
 // POST /api/release-notes - Create new release notes (admin only)
 router.post('/', [
-  auth,
+  authenticateToken,
   body('version').notEmpty().withMessage('Version is required'),
   body('title').notEmpty().withMessage('Title is required'),
   body('content').notEmpty().withMessage('Content is required'),
@@ -239,7 +239,7 @@ router.post('/', [
 
 // PUT /api/release-notes/:id - Update release notes (admin only)
 router.put('/:id', [
-  auth,
+  authenticateToken,
   body('title').optional().notEmpty().withMessage('Title cannot be empty'),
   body('content').optional().notEmpty().withMessage('Content cannot be empty'),
   body('type').optional().isIn(['major', 'minor', 'patch', 'hotfix']),
@@ -302,7 +302,7 @@ router.put('/:id', [
 });
 
 // DELETE /api/release-notes/:id - Delete release notes (admin only)
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     // Check if user is admin
     if (req.user.role !== 'admin') {
@@ -336,7 +336,7 @@ router.delete('/:id', auth, async (req, res) => {
 });
 
 // POST /api/release-notes/:id/mark-viewed - Mark release notes as viewed by current user
-router.post('/:id/mark-viewed', auth, async (req, res) => {
+router.post('/:id/mark-viewed', authenticateToken, async (req, res) => {
   try {
     const releaseNotes = await ReleaseNotes.findById(req.params.id);
     if (!releaseNotes) {
