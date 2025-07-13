@@ -54,7 +54,11 @@ router.post('/login', [
 
     if (!user) {
       // Log failed login attempt
-      await Audit.logEvent({
+      if (process.env.NODE_ENV === 'test') {
+        console.log('Attempting to log audit event for non-existent user:', username);
+      }
+      
+      const auditResult = await Audit.logEvent({
         action: 'failed_login',
         status: 'failure',
         userId: null,
@@ -67,6 +71,13 @@ router.post('/login', [
         userAgent: clientInfo.userAgent,
         failureReason: 'User not found'
       });
+      
+      if (process.env.NODE_ENV === 'test') {
+        console.log('Audit log result:', auditResult ? 'Success' : 'Failed');
+        if (auditResult) {
+          console.log('Audit log ID:', auditResult._id);
+        }
+      }
       
       return res.status(401).json({
         success: false,

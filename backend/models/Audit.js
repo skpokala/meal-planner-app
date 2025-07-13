@@ -112,6 +112,11 @@ auditSchema.statics.logEvent = async function(eventData) {
     return auditEntry;
   } catch (error) {
     console.error('Failed to log audit event:', error);
+    // In test environment, also log more details
+    if (process.env.NODE_ENV === 'test') {
+      console.error('Audit event data:', eventData);
+      console.error('Error stack:', error.stack);
+    }
     // Don't throw error to prevent breaking the main flow
     return null;
   }

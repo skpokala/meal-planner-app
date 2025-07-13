@@ -191,7 +191,7 @@ describe('Layout Component', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/settings');
     });
 
-    it('calls logout when Sign Out is clicked', () => {
+    it('calls logout when Sign Out is clicked', async () => {
       renderLayout();
       
       const userMenuButton = screen.getAllByText('John Doe').find(text => text.closest('button'))?.closest('button');
@@ -200,8 +200,11 @@ describe('Layout Component', () => {
       const signOutButton = screen.getByText('Sign Out');
       fireEvent.click(signOutButton);
       
-      expect(mockAuthContext.logout).toHaveBeenCalled();
-      expect(mockNavigate).toHaveBeenCalledWith('/login');
+      // Wait for the async logout operation to complete
+      await waitFor(() => {
+        expect(mockAuthContext.logout).toHaveBeenCalled();
+        expect(mockNavigate).toHaveBeenCalledWith('/login');
+      });
     });
   });
 
