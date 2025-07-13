@@ -26,7 +26,7 @@ router.get('/', [
     const filters = {};
     
     if (type) filters.type = type;
-    if (version) filters.version = { $regex: version, $options: 'i' };
+    if (version) filters.version = { $regex: `^${version}`, $options: 'i' };
 
     const result = await ReleaseNotes.getPaginated(page, limit, filters);
     
@@ -45,10 +45,10 @@ router.get('/', [
 
 // GET /api/release-notes/latest - Get latest release notes
 router.get('/latest', [
-  query('limit').optional().isInt({ min: 1, max: 10 }).toInt()
+  query('limit').optional().isInt({ min: 0, max: 10 }).toInt()
 ], async (req, res) => {
   try {
-    const { limit = 5 } = req.query;
+    const limit = req.query.limit !== undefined ? req.query.limit : 5;
     const releaseNotes = await ReleaseNotes.getLatest(limit);
     
     res.json({

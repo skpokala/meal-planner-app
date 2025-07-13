@@ -112,6 +112,9 @@ releaseNotesSchema.virtual('summary').get(function() {
 
 // Static method to get latest release notes
 releaseNotesSchema.statics.getLatest = function(limit = 10) {
+  if (limit === 0) {
+    return Promise.resolve([]);
+  }
   return this.find({ isVisible: true })
     .sort({ releaseDate: -1 })
     .limit(limit);

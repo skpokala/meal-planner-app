@@ -20,11 +20,12 @@ const authenticateToken = async (req, res, next) => {
     // Determine user type and load appropriate model
     let user;
     const userType = decoded.userType || 'User'; // Default to User for backward compatibility
+    const userId = decoded.userId || decoded.id; // Support both userId and id for backward compatibility
     
     if (userType === 'FamilyMember') {
-      user = await FamilyMember.findById(decoded.userId).select('-password -masterPassword');
+      user = await FamilyMember.findById(userId).select('-password -masterPassword');
     } else {
-      user = await User.findById(decoded.userId).select('-password -masterPassword');
+      user = await User.findById(userId).select('-password -masterPassword');
     }
 
     if (!user) {
