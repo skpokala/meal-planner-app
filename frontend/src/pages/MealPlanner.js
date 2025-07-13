@@ -12,6 +12,125 @@ const VIEW_MODES = {
   LIST: 'list'
 };
 
+// Simple List View Component
+const ListView = ({ 
+  plannedMeals, 
+  onMealRemove, 
+  getMealTypeColor, 
+  removingMeals 
+}) => {
+  // Get all planned meals and sort by date
+  const allPlannedMeals = Object.entries(plannedMeals)
+    .flatMap(([dateKey, dayMeals]) => 
+      dayMeals.map(meal => ({
+        ...meal,
+        dateKey,
+        date: new Date(dateKey)
+      }))
+    )
+    .sort((a, b) => a.date - b.date);
+
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const formatMealType = (mealType) => {
+    return mealType.charAt(0).toUpperCase() + mealType.slice(1);
+  };
+
+  if (allPlannedMeals.length === 0) {
+    return (
+      <div className="card">
+        <div className="card-body text-center py-12">
+          <Calendar className="w-16 h-16 text-secondary-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-secondary-900 mb-2">No Meals Planned</h3>
+          <p className="text-secondary-600">
+            Switch to calendar view to start planning your meals.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card">
+      <div className="card-body">
+        <div className="space-y-4">
+          {allPlannedMeals.map((plannedMeal, index) => {
+            const isNewDay = index === 0 || 
+              allPlannedMeals[index - 1].dateKey !== plannedMeal.dateKey;
+            
+            return (
+              <div key={plannedMeal._id}>
+                {/* Date header for new day */}
+                {isNewDay && (
+                  <div className="flex items-center mb-3">
+                    <div className="flex-1 border-t border-secondary-200"></div>
+                    <h3 className="px-4 text-sm font-semibold text-secondary-700 bg-white">
+                      {formatDate(plannedMeal.date)}
+                    </h3>
+                    <div className="flex-1 border-t border-secondary-200"></div>
+                  </div>
+                )}
+                
+                {/* Meal item */}
+                <div className="flex items-center justify-between p-4 bg-secondary-50 rounded-lg border border-secondary-200 hover:bg-secondary-100 transition-colors">
+                  <div className="flex items-center space-x-4">
+                    {/* Meal type badge */}
+                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${getMealTypeColor(plannedMeal.mealType)}`}>
+                      {formatMealType(plannedMeal.mealType)}
+                    </div>
+                    
+                    {/* Meal details */}
+                    <div>
+                      <h4 className="font-semibold text-secondary-900">
+                        {plannedMeal.meal?.name || 'Unknown Meal'}
+                      </h4>
+                      {plannedMeal.meal?.description && (
+                        <p className="text-sm text-secondary-600 mt-1">
+                          {plannedMeal.meal.description}
+                        </p>
+                      )}
+                      {plannedMeal.meal?.prepTime > 0 && (
+                        <div className="flex items-center mt-2 text-sm text-secondary-500">
+                          <Clock className="w-4 h-4 mr-1" />
+                          <span>{plannedMeal.meal.prepTime} minutes</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Actions */}
+                  <div className="flex items-center space-x-2">
+                    {removingMeals.has(plannedMeal._id) ? (
+                      <div className="p-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-secondary-500" />
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => onMealRemove(plannedMeal.date, plannedMeal._id)}
+                        className="p-2 text-secondary-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                        title="Remove meal"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const MealPlanner = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -642,125 +761,6 @@ const MealPlanner = () => {
         onMealCreated={handleNewMealCreated}
         mode="add"
       />
-    </div>
-  );
-};
-
-// Simple List View Component
-const ListView = ({ 
-  plannedMeals, 
-  onMealRemove, 
-  getMealTypeColor, 
-  removingMeals 
-}) => {
-  // Get all planned meals and sort by date
-  const allPlannedMeals = Object.entries(plannedMeals)
-    .flatMap(([dateKey, dayMeals]) => 
-      dayMeals.map(meal => ({
-        ...meal,
-        dateKey,
-        date: new Date(dateKey)
-      }))
-    )
-    .sort((a, b) => a.date - b.date);
-
-  const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-  };
-
-  const formatMealType = (mealType) => {
-    return mealType.charAt(0).toUpperCase() + mealType.slice(1);
-  };
-
-  if (allPlannedMeals.length === 0) {
-    return (
-      <div className="card">
-        <div className="card-body text-center py-12">
-          <Calendar className="w-16 h-16 text-secondary-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-secondary-900 mb-2">No Meals Planned</h3>
-          <p className="text-secondary-600">
-            Switch to calendar view to start planning your meals.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="card">
-      <div className="card-body">
-        <div className="space-y-4">
-          {allPlannedMeals.map((plannedMeal, index) => {
-            const isNewDay = index === 0 || 
-              allPlannedMeals[index - 1].dateKey !== plannedMeal.dateKey;
-            
-            return (
-              <div key={plannedMeal._id}>
-                {/* Date header for new day */}
-                {isNewDay && (
-                  <div className="flex items-center mb-3">
-                    <div className="flex-1 border-t border-secondary-200"></div>
-                    <h3 className="px-4 text-sm font-semibold text-secondary-700 bg-white">
-                      {formatDate(plannedMeal.date)}
-                    </h3>
-                    <div className="flex-1 border-t border-secondary-200"></div>
-                  </div>
-                )}
-                
-                {/* Meal item */}
-                <div className="flex items-center justify-between p-4 bg-secondary-50 rounded-lg border border-secondary-200 hover:bg-secondary-100 transition-colors">
-                  <div className="flex items-center space-x-4">
-                    {/* Meal type badge */}
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${getMealTypeColor(plannedMeal.mealType)}`}>
-                      {formatMealType(plannedMeal.mealType)}
-                    </div>
-                    
-                    {/* Meal details */}
-                    <div>
-                      <h4 className="font-semibold text-secondary-900">
-                        {plannedMeal.meal?.name || 'Unknown Meal'}
-                      </h4>
-                      {plannedMeal.meal?.description && (
-                        <p className="text-sm text-secondary-600 mt-1">
-                          {plannedMeal.meal.description}
-                        </p>
-                      )}
-                      {plannedMeal.meal?.prepTime > 0 && (
-                        <div className="flex items-center mt-2 text-sm text-secondary-500">
-                          <Clock className="w-4 h-4 mr-1" />
-                          <span>{plannedMeal.meal.prepTime} minutes</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Actions */}
-                  <div className="flex items-center space-x-2">
-                    {removingMeals.has(plannedMeal._id) ? (
-                      <div className="p-2">
-                        <Loader2 className="w-4 h-4 animate-spin text-secondary-500" />
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => onMealRemove(plannedMeal.date, plannedMeal._id)}
-                        className="p-2 text-secondary-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
-                        title="Remove meal"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 };
