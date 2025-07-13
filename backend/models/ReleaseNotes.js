@@ -42,15 +42,15 @@ const releaseNotesSchema = new mongoose.Schema({
   
   // Content Structure
   features: [{
-    type: String,
+    type: { type: String },
     description: String
   }],
   bugFixes: [{
-    type: String,
+    type: { type: String },
     description: String
   }],
   improvements: [{
-    type: String,
+    type: { type: String },
     description: String
   }],
   

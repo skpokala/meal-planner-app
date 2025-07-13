@@ -141,7 +141,7 @@ describe('ReleaseNotesModal', () => {
       
       // Wait for the navigation to complete
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: 'Bug Fixes' })).toBeInTheDocument();
+        expect(document.getElementById('release-notes-title')).toHaveTextContent('Bug Fixes');
         expect(screen.getByText('v1.1.5')).toBeInTheDocument();
         expect(screen.getByText('Release 2 of 2')).toBeInTheDocument();
       });
@@ -154,7 +154,7 @@ describe('ReleaseNotesModal', () => {
       
       // Wait for the state to update and Previous button to appear
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: 'Bug Fixes' })).toBeInTheDocument();
+        expect(document.getElementById('release-notes-title')).toHaveTextContent('Bug Fixes');
         expect(screen.getByText('Previous')).toBeInTheDocument();
       });
       
