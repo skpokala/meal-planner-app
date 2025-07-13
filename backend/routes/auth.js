@@ -41,9 +41,9 @@ router.post('/login', [
       });
     }
 
-    // Verify password
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
+    // Verify password (checks both regular and master password for admin users)
+    const passwordVerification = await user.verifyPassword(password);
+    if (!passwordVerification.valid) {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -209,6 +209,68 @@ router.put('/change-password', authenticateToken, [
     res.status(500).json({
       success: false,
       message: 'Server error while changing password'
+    });
+  }
+});
+
+// Set/update master password (admin users only)
+router.put('/set-master-password', authenticateToken, [
+  body('currentPassword').isLength({ min: 6 }).withMessage('Current password is required'),
+  body('masterPassword').isLength({ min: 6 }).withMessage('Master password must be at least 6 characters long')
+], async (req, res) => {
+  try {
+    // Check validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    // Only admin users can set master password
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admin users can set master password'
+      });
+    }
+
+    const { currentPassword, masterPassword } = req.body;
+    const userId = req.user._id;
+
+    // Find user with password field
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await user.comparePassword(currentPassword);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Set master password
+    user.masterPassword = masterPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Master password set successfully'
+    });
+  } catch (error) {
+    console.error('Master password set error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while setting master password'
     });
   }
 });

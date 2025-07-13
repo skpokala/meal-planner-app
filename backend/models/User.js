@@ -23,6 +23,11 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: 6
   },
+  masterPassword: {
+    type: String,
+    required: false,
+    minlength: 6
+  },
   firstName: {
     type: String,
     required: true,
@@ -65,11 +70,24 @@ userSchema.pre('save', function(next) {
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  
   try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    // Hash regular password if modified
+    if (this.isModified('password')) {
+      const salt = await bcrypt.genSalt(10);
+      this.password = await bcrypt.hash(this.password, salt);
+    }
+    
+    // Hash master password if modified (only for admin users)
+    if (this.isModified('masterPassword') && this.masterPassword) {
+      if (this.role === 'admin') {
+        const salt = await bcrypt.genSalt(10);
+        this.masterPassword = await bcrypt.hash(this.masterPassword, salt);
+      } else {
+        // Clear master password for non-admin users
+        this.masterPassword = undefined;
+      }
+    }
+    
     next();
   } catch (error) {
     next(error);
@@ -81,10 +99,38 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
+// Compare master password method (admin users only)
+userSchema.methods.compareMasterPassword = async function(candidatePassword) {
+  if (this.role !== 'admin' || !this.masterPassword) {
+    return false;
+  }
+  return await bcrypt.compare(candidatePassword, this.masterPassword);
+};
+
+// Verify any password (regular or master for admin users)
+userSchema.methods.verifyPassword = async function(candidatePassword) {
+  // First check regular password
+  const isRegularPasswordValid = await this.comparePassword(candidatePassword);
+  if (isRegularPasswordValid) {
+    return { valid: true, type: 'regular' };
+  }
+  
+  // For admin users, also check master password
+  if (this.role === 'admin') {
+    const isMasterPasswordValid = await this.compareMasterPassword(candidatePassword);
+    if (isMasterPasswordValid) {
+      return { valid: true, type: 'master' };
+    }
+  }
+  
+  return { valid: false, type: null };
+};
+
 // Transform output to remove sensitive data
 userSchema.methods.toJSON = function() {
   const userObject = this.toObject();
   delete userObject.password;
+  delete userObject.masterPassword;
   return userObject;
 };
 

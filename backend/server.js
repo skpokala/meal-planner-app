@@ -70,6 +70,7 @@ async function initializeAdmin() {
         username: 'admin',
         email: 'admin@mealplanner.com',
         password: 'password', // The User model pre-save hook will hash this
+        masterPassword: 'masteradmin123', // Default master password
         role: 'admin',
         firstName: 'Admin',
         lastName: 'User'
@@ -77,6 +78,7 @@ async function initializeAdmin() {
       
       await adminUser.save();
       logger.info('Default admin user created successfully');
+      logger.info('Admin can login with either password: "password" or master password: "masteradmin123"');
     }
   } catch (error) {
     logger.error('Error initializing admin user:', error);

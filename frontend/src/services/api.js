@@ -32,8 +32,8 @@ const getApiUrl = () => {
   }
   
   // Default fallback for local development
-  console.log('Local development detected, using localhost:5000');
-  return 'http://localhost:5000/api';
+  console.log('Local development detected, using localhost:5001');
+  return 'http://localhost:5001/api';
 };
 
 // Create axios instance with base configuration

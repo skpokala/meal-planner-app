@@ -108,6 +108,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const setMasterPassword = async (currentPassword, masterPassword) => {
+    try {
+      const response = await api.put('/auth/set-master-password', {
+        currentPassword,
+        masterPassword,
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -115,6 +127,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateProfile,
     changePassword,
+    setMasterPassword,
   };
 
   return (

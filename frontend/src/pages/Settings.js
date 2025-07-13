@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { User, Lock, Save } from 'lucide-react';
+import { User, Lock, Save, Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 const Settings = () => {
-  const { user, updateProfile, changePassword } = useAuth();
+  const { user, updateProfile, changePassword, setMasterPassword } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
   
@@ -18,6 +18,12 @@ const Settings = () => {
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
+  });
+
+  const [masterPasswordData, setMasterPasswordData] = useState({
+    currentPassword: '',
+    masterPassword: '',
+    confirmMasterPassword: '',
   });
 
   const handleProfileSubmit = async (e) => {
@@ -82,10 +88,54 @@ const Settings = () => {
     }));
   };
 
-  const tabs = [
+  const handleMasterPasswordSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (masterPasswordData.masterPassword !== masterPasswordData.confirmMasterPassword) {
+      toast.error('Master passwords do not match');
+      return;
+    }
+    
+    if (masterPasswordData.masterPassword.length < 6) {
+      toast.error('Master password must be at least 6 characters long');
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      await setMasterPassword(masterPasswordData.currentPassword, masterPasswordData.masterPassword);
+      toast.success('Master password set successfully');
+      setMasterPasswordData({
+        currentPassword: '',
+        masterPassword: '',
+        confirmMasterPassword: '',
+      });
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Failed to set master password';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMasterPasswordInputChange = (e) => {
+    const { name, value } = e.target;
+    setMasterPasswordData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const baseTabs = [
     { id: 'profile', name: 'Profile', icon: User },
     { id: 'password', name: 'Password', icon: Lock },
   ];
+
+  // Add master password tab for admin users
+  const tabs = user?.role === 'admin' 
+    ? [...baseTabs, { id: 'masterPassword', name: 'Master Password', icon: Shield }]
+    : baseTabs;
 
   return (
     <div>
@@ -301,6 +351,108 @@ const Settings = () => {
                         <>
                           <Lock className="w-4 h-4 mr-2" />
                           Change Password
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'masterPassword' && user?.role === 'admin' && (
+            <div className="card">
+              <div className="card-header">
+                <h3 className="text-lg font-semibold text-secondary-900">
+                  Master Password
+                </h3>
+                <p className="text-sm text-secondary-600">
+                  Set or update your master password for enhanced admin access
+                </p>
+              </div>
+              <div className="card-body">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                  <div className="flex">
+                    <Shield className="w-5 h-5 text-amber-600 mr-3 mt-0.5" />
+                    <div>
+                      <h4 className="text-sm font-medium text-amber-800">Admin Feature</h4>
+                      <p className="text-sm text-amber-700 mt-1">
+                        Master password allows you to login with an alternative password. 
+                        This can serve as a backup authentication method or for enhanced security.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <form onSubmit={handleMasterPasswordSubmit} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                      Current Password
+                    </label>
+                    <input
+                      type="password"
+                      name="currentPassword"
+                      value={masterPasswordData.currentPassword}
+                      onChange={handleMasterPasswordInputChange}
+                      className="input"
+                      required
+                      placeholder="Enter your current password"
+                    />
+                    <p className="text-xs text-secondary-500 mt-1">
+                      Required for security verification
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                      Master Password
+                    </label>
+                    <input
+                      type="password"
+                      name="masterPassword"
+                      value={masterPasswordData.masterPassword}
+                      onChange={handleMasterPasswordInputChange}
+                      className="input"
+                      required
+                      minLength={6}
+                      placeholder="Enter your new master password"
+                    />
+                    <p className="text-xs text-secondary-500 mt-1">
+                      Must be at least 6 characters long and different from your regular password
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                      Confirm Master Password
+                    </label>
+                    <input
+                      type="password"
+                      name="confirmMasterPassword"
+                      value={masterPasswordData.confirmMasterPassword}
+                      onChange={handleMasterPasswordInputChange}
+                      className="input"
+                      required
+                      minLength={6}
+                      placeholder="Confirm your new master password"
+                    />
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="btn-primary"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="spinner mr-2" />
+                          Setting...
+                        </>
+                      ) : (
+                        <>
+                          <Shield className="w-4 h-4 mr-2" />
+                          Set Master Password
                         </>
                       )}
                     </button>
