@@ -15,6 +15,14 @@ jest.setTimeout(60000);
 import { BrowserRouter } from 'react-router-dom';
 import { render } from '@testing-library/react';
 
+// Mock API service to prevent real API calls
+jest.mock('./services/api', () => ({
+  get: jest.fn().mockResolvedValue({ data: { version: '1.0.0' } }),
+  post: jest.fn().mockResolvedValue({ data: { success: true } }),
+  put: jest.fn().mockResolvedValue({ data: { success: true } }),
+  delete: jest.fn().mockResolvedValue({ data: { success: true } }),
+}));
+
 // Global test utilities
 export const renderWithRouter = (component) => {
   return render(component, { wrapper: BrowserRouter });
@@ -37,7 +45,10 @@ beforeAll(() => {
         args[0]?.includes?.('Error fetching dashboard data:') ||
         args[0]?.includes?.('Error fetching meals:') ||
         args[0]?.includes?.('Error deleting meal:') ||
-        args[0]?.includes?.('Error fetching data:')) {
+        args[0]?.includes?.('Error fetching data:') ||
+        args[0]?.includes?.('Failed to fetch backend version:') ||
+        args[0]?.includes?.('Cross origin') ||
+        args[0]?.includes?.('Network Error')) {
       return;
     }
     originalError.call(console, ...args);

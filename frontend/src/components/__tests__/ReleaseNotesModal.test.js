@@ -135,34 +135,48 @@ describe('ReleaseNotesModal', () => {
       expect(screen.getByText('Release 1 of 2')).toBeInTheDocument();
     });
 
-    it('should navigate to next release', () => {
+    it('should navigate to next release', async () => {
       const nextButton = screen.getByText('Next');
       fireEvent.click(nextButton);
       
-      expect(screen.getByText('Bug Fixes')).toBeInTheDocument();
-      expect(screen.getByText('v1.1.5')).toBeInTheDocument();
-      expect(screen.getByText('Release 2 of 2')).toBeInTheDocument();
+      // Wait for the navigation to complete
+      await waitFor(() => {
+        expect(screen.getByText('Bug Fixes')).toBeInTheDocument();
+        expect(screen.getByText('v1.1.5')).toBeInTheDocument();
+        expect(screen.getByText('Release 2 of 2')).toBeInTheDocument();
+      });
     });
 
-    it('should navigate to previous release', () => {
+    it('should navigate to previous release', async () => {
       // Go to next release first
       const nextButton = screen.getByText('Next');
       fireEvent.click(nextButton);
+      
+      // Wait for the state to update
+      await waitFor(() => {
+        expect(screen.getByText('Bug Fixes')).toBeInTheDocument();
+      });
       
       // Then go back to previous
       const prevButton = screen.getByText('Previous');
       fireEvent.click(prevButton);
       
-      expect(screen.getByText('New Features Update')).toBeInTheDocument();
-      expect(screen.getByText('v1.2.0')).toBeInTheDocument();
+      // Wait for the navigation to complete
+      await waitFor(() => {
+        expect(screen.getByText('New Features Update')).toBeInTheDocument();
+        expect(screen.getByText('v1.2.0')).toBeInTheDocument();
+      });
     });
 
-    it('should show "Got it!" button on last release', () => {
+    it('should show "Got it!" button on last release', async () => {
       const nextButton = screen.getByText('Next');
       fireEvent.click(nextButton);
       
-      expect(screen.getByText('Got it!')).toBeInTheDocument();
-      expect(screen.queryByText('Next')).not.toBeInTheDocument();
+      // Wait for the navigation to complete and "Got it!" button to appear
+      await waitFor(() => {
+        expect(screen.getByText('Got it!')).toBeInTheDocument();
+        expect(screen.queryByText('Next')).not.toBeInTheDocument();
+      });
     });
   });
 
