@@ -120,6 +120,75 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const checkUsernameAvailability = async (username, excludeId = null) => {
+    try {
+      const response = await api.post('/auth/check-username', {
+        username,
+        excludeId,
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // Helper functions for user type checking
+  const isSystemUser = () => {
+    return user && user.userType === 'User';
+  };
+
+  const isFamilyMember = () => {
+    return user && user.userType === 'FamilyMember';
+  };
+
+  const isAdmin = () => {
+    return user && user.role === 'admin';
+  };
+
+  const isSystemAdmin = () => {
+    return user && user.userType === 'User' && user.role === 'admin';
+  };
+
+  const isFamilyAdmin = () => {
+    return user && user.userType === 'FamilyMember' && user.role === 'admin';
+  };
+
+  const canManageFamilyMembers = () => {
+    return isSystemAdmin() || isFamilyAdmin();
+  };
+
+  const canAssignAdminRole = () => {
+    return isSystemAdmin();
+  };
+
+  const canSetMasterPassword = () => {
+    return isAdmin();
+  };
+
+  const getUserDisplayName = () => {
+    if (!user) return '';
+    return `${user.firstName} ${user.lastName}`;
+  };
+
+  const getUserTypeLabel = () => {
+    if (!user) return '';
+    if (isSystemUser()) return 'System User';
+    if (isFamilyMember()) return 'Family Member';
+    return 'User';
+  };
+
+  const getRoleLabel = () => {
+    if (!user) return '';
+    return user.role === 'admin' ? 'Administrator' : 'User';
+  };
+
+  const getFullUserLabel = () => {
+    if (!user) return '';
+    const typeLabel = getUserTypeLabel();
+    const roleLabel = getRoleLabel();
+    return `${typeLabel} - ${roleLabel}`;
+  };
+
   const value = {
     user,
     loading,
@@ -128,6 +197,20 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
     changePassword,
     setMasterPassword,
+    checkUsernameAvailability,
+    // Helper functions
+    isSystemUser,
+    isFamilyMember,
+    isAdmin,
+    isSystemAdmin,
+    isFamilyAdmin,
+    canManageFamilyMembers,
+    canAssignAdminRole,
+    canSetMasterPassword,
+    getUserDisplayName,
+    getUserTypeLabel,
+    getRoleLabel,
+    getFullUserLabel,
   };
 
   return (
