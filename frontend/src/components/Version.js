@@ -12,7 +12,6 @@ const Version = ({ sidebarCollapsed }) => {
         setBackendVersion(response.data.version);
       } catch (err) {
         console.error('Failed to fetch backend version:', err);
-        setError('Failed to fetch backend version');
       }
     };
     
