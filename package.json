@@ -1,6 +1,6 @@
 {
   "name": "meal-planner-app",
-  "version": "1.1.22",
+  "version": "1.1.23",
   "description": "Family Meal Planner Application",
   "private": true,
   "scripts": {
