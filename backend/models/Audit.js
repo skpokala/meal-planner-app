@@ -18,13 +18,13 @@ const auditSchema = new mongoose.Schema({
   // User Information
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    required: true,
+    required: false, // Allow null for failed login attempts
     index: true
   },
   userType: {
     type: String,
     required: true,
-    enum: ['User', 'FamilyMember'],
+    enum: ['User', 'FamilyMember', 'Unknown'], // Add Unknown for failed attempts
     index: true
   },
   username: {
@@ -39,7 +39,7 @@ const auditSchema = new mongoose.Schema({
   userRole: {
     type: String,
     required: true,
-    enum: ['admin', 'user']
+    enum: ['admin', 'user', 'unknown'] // Add unknown for failed attempts
   },
   
   // Session Information

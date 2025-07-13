@@ -42,6 +42,10 @@ router.post('/login', [
     const { username, password } = req.body;
     const clientInfo = getClientInfo(req);
 
+    if (process.env.NODE_ENV === 'test') {
+      console.log('Auth route processing login for username:', username);
+    }
+
     // First, try to find user in User collection
     let user = await User.findOne({ username });
     let userType = 'User';
