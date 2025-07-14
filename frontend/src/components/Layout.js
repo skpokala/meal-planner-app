@@ -39,8 +39,8 @@ const Layout = ({ children }) => {
       { name: 'Master Data', href: '/master-data', icon: Database },
     ];
 
-    // Add admin-only Family Members section
-    if (isAdmin()) {
+    // Add system admin-only Family Members section
+    if (isSystemAdmin()) {
       baseNavigation.splice(1, 0, { name: 'Family Members', href: '/family-members', icon: Users });
     }
 

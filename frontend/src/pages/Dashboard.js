@@ -8,7 +8,10 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard = () => {
-  const { user, loading: authLoading, isAdmin } = useAuth();
+  const { user, loading: authLoading, isAdmin, isSystemAdmin } = useAuth();
+  
+
+  
   const [stats, setStats] = useState({
     familyMembers: 0,
     activeMeals: 0,
@@ -27,15 +30,15 @@ const Dashboard = () => {
         api.get('/meal-plans', { params: { future: true } })
       ];
 
-      // Only fetch family members for admin users
-      if (isAdmin()) {
+      // Only fetch family members for system admin users
+      if (isSystemAdmin()) {
         apiCalls.unshift(api.get('/family-members'));
       }
 
       const responses = await Promise.all(apiCalls);
       
       let familyResponse, mealsResponse, mealPlansResponse;
-      if (isAdmin()) {
+      if (isSystemAdmin()) {
         [familyResponse, mealsResponse, mealPlansResponse] = responses;
       } else {
         [mealsResponse, mealPlansResponse] = responses;
@@ -114,7 +117,7 @@ const Dashboard = () => {
   };
 
   const statCards = [
-    ...(isAdmin() ? [{
+    ...(isSystemAdmin() ? [{
       title: 'Family Members',
       value: stats.familyMembers,
       icon: Users,
@@ -174,6 +177,19 @@ const Dashboard = () => {
         <p className="text-primary-100">
           Here's an overview of your family's meal planning activities.
         </p>
+      </div>
+
+      {/* DEBUG: User Role Information */}
+      <div className="bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700 rounded-card p-4 mt-4">
+        <h3 className="font-bold text-yellow-800 dark:text-yellow-200 mb-2">🐛 DEBUG: User Role Information</h3>
+        <div className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
+          <p><strong>User ID:</strong> {user?._id || 'N/A'}</p>
+          <p><strong>Name:</strong> {user?.firstName} {user?.lastName}</p>
+          <p><strong>Role:</strong> {user?.role || 'N/A'}</p>
+          <p><strong>User Type:</strong> {user?.userType || 'N/A'}</p>
+          <p><strong>isAdmin():</strong> {isAdmin() ? 'TRUE' : 'FALSE'}</p>
+          <p><strong>Stats Cards Count:</strong> {statCards.length}</p>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -289,7 +305,7 @@ const Dashboard = () => {
           </div>
           <div className="card-body">
             <div className="grid grid-cols-1 gap-4">
-              {isAdmin() && (
+              {isSystemAdmin() && (
                 <button
                   onClick={() => navigate('/family-members')}
                   className="flex items-center p-4 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/30 rounded-card transition-colors text-left"
