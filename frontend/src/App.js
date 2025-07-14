@@ -29,7 +29,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-                <Route path="/family-members" element={<ProtectedRoute><Layout><FamilyMembers /></Layout></ProtectedRoute>} />
+                <Route path="/family-members" element={<ProtectedRoute requireAdmin={true}><Layout><FamilyMembers /></Layout></ProtectedRoute>} />
                 <Route path="/meals" element={<ProtectedRoute><Layout><Meals /></Layout></ProtectedRoute>} />
                 <Route path="/meal-planner" element={<ProtectedRoute><Layout><MealPlanner /></Layout></ProtectedRoute>} />
                 <Route path="/master-data" element={<ProtectedRoute><Layout><MasterData /></Layout></ProtectedRoute>} />

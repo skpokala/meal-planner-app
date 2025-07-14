@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const [stats, setStats] = useState({
     familyMembers: 0,
     activeMeals: 0,
@@ -22,15 +22,27 @@ const Dashboard = () => {
 
   const fetchDashboardData = async (showRefreshIndicator = false) => {
     try {
-
-      const [familyResponse, mealsResponse, mealPlansResponse] = await Promise.all([
-        api.get('/family-members'),
+      const apiCalls = [
         api.get('/meals', { params: { active: true } }),
         api.get('/meal-plans', { params: { future: true } })
-      ]);
+      ];
+
+      // Only fetch family members for admin users
+      if (isAdmin()) {
+        apiCalls.unshift(api.get('/family-members'));
+      }
+
+      const responses = await Promise.all(apiCalls);
+      
+      let familyResponse, mealsResponse, mealPlansResponse;
+      if (isAdmin()) {
+        [familyResponse, mealsResponse, mealPlansResponse] = responses;
+      } else {
+        [mealsResponse, mealPlansResponse] = responses;
+      }
 
       setStats({
-        familyMembers: familyResponse.data.count || familyResponse.data.familyMembers?.length || 0,
+        familyMembers: isAdmin() ? (familyResponse?.data.count || familyResponse?.data.familyMembers?.length || 0) : 0,
         activeMeals: mealsResponse.data.count || mealsResponse.data.meals?.length || 0,
         futureMealPlans: mealPlansResponse.data.count || mealPlansResponse.data.mealPlans?.length || 0,
       });
@@ -102,14 +114,14 @@ const Dashboard = () => {
   };
 
   const statCards = [
-    {
+    ...(isAdmin() ? [{
       title: 'Family Members',
       value: stats.familyMembers,
       icon: Users,
       color: 'bg-primary-500',
       action: () => navigate('/family-members'),
       description: 'Total family members'
-    },
+    }] : []),
     {
       title: 'Active Meals',
       value: stats.activeMeals,
@@ -164,8 +176,8 @@ const Dashboard = () => {
         </p>
       </div>
 
-      {/* Stats Grid - The 3 requested tiles */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+      {/* Stats Grid */}
+      <div className={`grid grid-cols-1 ${isAdmin() ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-6 mt-6`}>
         {statCards.map((card, index) => {
           const Icon = card.icon;
           return (
@@ -277,20 +289,22 @@ const Dashboard = () => {
           </div>
           <div className="card-body">
             <div className="grid grid-cols-1 gap-4">
-              <button
-                onClick={() => navigate('/family-members')}
-                className="flex items-center p-4 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/30 rounded-card transition-colors text-left"
-              >
-                <Users className="w-6 h-6 text-primary-600 dark:text-primary-400 mr-3" />
-                <div>
-                  <h4 className="font-medium text-secondary-900 dark:text-secondary-100">
-                    Manage Family Members
-                  </h4>
-                  <p className="text-sm text-secondary-600 dark:text-secondary-400">
-                    Add or edit family member profiles
-                  </p>
-                </div>
-              </button>
+              {isAdmin() && (
+                <button
+                  onClick={() => navigate('/family-members')}
+                  className="flex items-center p-4 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/30 rounded-card transition-colors text-left"
+                >
+                  <Users className="w-6 h-6 text-primary-600 dark:text-primary-400 mr-3" />
+                  <div>
+                    <h4 className="font-medium text-secondary-900 dark:text-secondary-100">
+                      Manage Family Members
+                    </h4>
+                    <p className="text-sm text-secondary-600 dark:text-secondary-400">
+                      Add or edit family member profiles
+                    </p>
+                  </div>
+                </button>
+              )}
 
               <button
                 onClick={() => navigate('/meals')}

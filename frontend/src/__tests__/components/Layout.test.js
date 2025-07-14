@@ -25,7 +25,12 @@ const mockUser = {
 const mockAuthContext = {
   user: mockUser,
   logout: jest.fn(),
-  loading: false
+  loading: false,
+  isAdmin: jest.fn(() => false),
+  isSystemAdmin: jest.fn(() => false),
+  isFamilyAdmin: jest.fn(() => false),
+  canManageFamilyMembers: jest.fn(() => false),
+  canAssignAdminRole: jest.fn(() => false)
 };
 
 jest.mock('../../contexts/AuthContext', () => ({
@@ -71,11 +76,12 @@ describe('Layout Component', () => {
   });
 
   describe('Navigation Menu', () => {
-    it('renders all navigation items', () => {
+    it('renders navigation items based on user role', () => {
       renderLayout();
       
       expect(screen.getAllByText('Dashboard')[0]).toBeInTheDocument();
-      expect(screen.getAllByText('Family Members')[0]).toBeInTheDocument();
+      // Family Members should not be visible for non-admin users
+      expect(screen.queryByText('Family Members')).not.toBeInTheDocument();
       expect(screen.getAllByText('Meals')[0]).toBeInTheDocument();
       expect(screen.getAllByText('Meal Planner')[0]).toBeInTheDocument();
       expect(screen.getAllByText('Settings')[0]).toBeInTheDocument();
@@ -84,9 +90,9 @@ describe('Layout Component', () => {
     it('has correct icons for navigation items', () => {
       renderLayout();
       
-      // Check that all navigation items have their respective icons
+      // Check that navigation items for non-admin users have their respective icons
       const navItems = screen.getAllByRole('button').filter(btn => 
-        ['Dashboard', 'Family Members', 'Meals', 'Meal Planner', 'Settings'].includes(btn.textContent)
+        ['Dashboard', 'Meals', 'Meal Planner', 'Master Data', 'Settings'].includes(btn.textContent)
       );
       
       expect(navItems).toHaveLength(5);
@@ -100,10 +106,8 @@ describe('Layout Component', () => {
       fireEvent.click(dashboardButton);
       expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
       
-      // Test Family Members navigation
-      const familyMembersButton = screen.getAllByText('Family Members').find(text => text.closest('button'));
-      fireEvent.click(familyMembersButton);
-      expect(mockNavigate).toHaveBeenCalledWith('/family-members');
+      // Family Members should not be visible for non-admin users
+      expect(screen.queryByText('Family Members')).not.toBeInTheDocument();
       
       // Test Meals navigation (new)
       const mealsButton = screen.getAllByText('Meals').find(text => text.closest('button'));
@@ -121,18 +125,30 @@ describe('Layout Component', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/settings');
     });
 
-    it('displays navigation items in correct order', () => {
+    it('displays navigation items in correct order for non-admin users', () => {
       renderLayout();
       
       const navButtons = screen.getAllByRole('button').filter(btn => 
-        ['Dashboard', 'Family Members', 'Meals', 'Meal Planner', 'Settings'].includes(btn.textContent)
+        ['Dashboard', 'Meals', 'Meal Planner', 'Master Data', 'Settings'].includes(btn.textContent)
       );
       
       expect(navButtons[0]).toHaveTextContent('Dashboard');
-      expect(navButtons[1]).toHaveTextContent('Family Members');
-      expect(navButtons[2]).toHaveTextContent('Meals');
-      expect(navButtons[3]).toHaveTextContent('Meal Planner');
+      expect(navButtons[1]).toHaveTextContent('Meals');
+      expect(navButtons[2]).toHaveTextContent('Meal Planner');
+      expect(navButtons[3]).toHaveTextContent('Master Data');
       expect(navButtons[4]).toHaveTextContent('Settings');
+    });
+
+    it('displays Family Members navigation for admin users', () => {
+      // Override isAdmin to return true for this test
+      mockAuthContext.isAdmin.mockReturnValue(true);
+      
+      renderLayout();
+      
+      expect(screen.getAllByText('Family Members')[0]).toBeInTheDocument();
+      
+      // Reset for other tests
+      mockAuthContext.isAdmin.mockReturnValue(false);
     });
   });
 
