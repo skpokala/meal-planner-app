@@ -119,21 +119,7 @@ const Login = () => {
           </div>
         </div>
 
-        <div className="text-center">
-          <div className="bg-white dark:bg-secondary-800 rounded-card p-4 shadow-card">
-            <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-2">
-              Demo Credentials
-            </h3>
-            <div className="space-y-2 text-sm text-secondary-600 dark:text-secondary-400">
-              <div>
-                <span className="font-medium">Username:</span> admin
-              </div>
-              <div>
-                <span className="font-medium">Password:</span> password
-              </div>
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
   );
