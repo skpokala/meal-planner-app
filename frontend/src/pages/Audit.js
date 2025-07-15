@@ -17,7 +17,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
 
 const Audit = () => {
-  const { isSystemAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   
   // State for audit logs
   const [auditLogs, setAuditLogs] = useState([]);
@@ -50,20 +50,20 @@ const Audit = () => {
     hasPrev: false
   });
 
-  // Redirect if not system admin
+  // Redirect if not admin
   useEffect(() => {
-    if (!loading && !isSystemAdmin()) {
-      toast.error('Access denied: System administrator privileges required');
+    if (!loading && !isAdmin()) {
+      toast.error('Access denied: Administrator privileges required');
       window.location.href = '/dashboard';
     }
-  }, [loading, isSystemAdmin]);
+  }, [loading, isAdmin]);
 
   useEffect(() => {
-    if (isSystemAdmin()) {
+    if (isAdmin()) {
       fetchAuditLogs();
       fetchStats();
     }
-  }, [filters, isSystemAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters, isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchAuditLogs = async () => {
     try {
@@ -216,7 +216,7 @@ const Audit = () => {
     return `${browser?.[1] || 'Unknown Browser'} on ${os?.[1] || 'Unknown OS'}`;
   };
 
-  if (!isSystemAdmin()) {
+  if (!isAdmin()) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -225,7 +225,7 @@ const Audit = () => {
             Access Denied
           </h3>
           <p className="text-secondary-600 dark:text-secondary-400">
-            System administrator privileges required to access audit logs
+            Administrator privileges required to access audit logs
           </p>
         </div>
       </div>

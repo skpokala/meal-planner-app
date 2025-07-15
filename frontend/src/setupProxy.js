@@ -1,12 +1,12 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 module.exports = function(app) {
-  console.log('🔧 Setting up proxy to http://localhost:5002');
+  console.log('🔧 Setting up proxy to http://localhost:5001');
   
   app.use(
     '/api',
     createProxyMiddleware({
-      target: 'http://localhost:5002',
+      target: 'http://localhost:5001',
       changeOrigin: true,
       logLevel: 'debug',
       onProxyReq: (proxyReq, req, res) => {

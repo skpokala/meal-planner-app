@@ -403,7 +403,7 @@ describe('Audit System', () => {
           .expect(403);
 
         expect(response.body.success).toBe(false);
-        expect(response.body.message).toBe('System administrator access required');
+        expect(response.body.message).toBe('Admin access required');
       });
 
       it('should filter audit logs by action', async () => {

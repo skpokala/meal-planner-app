@@ -139,16 +139,16 @@ describe('Layout Component', () => {
       expect(navButtons[4]).toHaveTextContent('Settings');
     });
 
-    it('displays Family Members navigation for system admin users', () => {
-      // Override isSystemAdmin to return true for this test
-      mockAuthContext.isSystemAdmin.mockReturnValue(true);
+    it('displays Family Members navigation for admin users', () => {
+      // Override isAdmin to return true for this test
+      mockAuthContext.isAdmin.mockReturnValue(true);
       
       renderLayout();
       
       expect(screen.getAllByText('Family Members')[0]).toBeInTheDocument();
       
       // Reset for other tests
-      mockAuthContext.isSystemAdmin.mockReturnValue(false);
+      mockAuthContext.isAdmin.mockReturnValue(false);
     });
   });
 

@@ -1,12 +1,12 @@
 const express = require('express');
 const { query, validationResult } = require('express-validator');
 const Audit = require('../models/Audit');
-const { authenticateToken, requireSystemAdmin } = require('../middleware/auth');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
 // Get audit logs with pagination and filtering (admin only)
-router.get('/', authenticateToken, requireSystemAdmin, [
+router.get('/', authenticateToken, requireAdmin, [
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
   query('action').optional().isIn(['login', 'logout', 'failed_login', 'password_change', 'profile_update']).withMessage('Invalid action'),
@@ -116,7 +116,7 @@ router.get('/', authenticateToken, requireSystemAdmin, [
 });
 
 // Get audit statistics (admin only)
-router.get('/stats', authenticateToken, requireSystemAdmin, [
+router.get('/stats', authenticateToken, requireAdmin, [
   query('timeframe').optional().isInt({ min: 1, max: 168 }).withMessage('Timeframe must be between 1 and 168 hours')
 ], async (req, res) => {
   try {
@@ -216,7 +216,7 @@ router.get('/stats', authenticateToken, requireSystemAdmin, [
 });
 
 // Get user activity history (admin only)
-router.get('/user/:userId', authenticateToken, requireSystemAdmin, [
+router.get('/user/:userId', authenticateToken, requireAdmin, [
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100')
 ], async (req, res) => {
   try {
@@ -269,7 +269,7 @@ router.get('/user/:userId', authenticateToken, requireSystemAdmin, [
 });
 
 // Export audit logs (admin only) - CSV format
-router.get('/export', authenticateToken, requireSystemAdmin, [
+router.get('/export', authenticateToken, requireAdmin, [
   query('startDate').optional().isISO8601().withMessage('Invalid start date'),
   query('endDate').optional().isISO8601().withMessage('Invalid end date'),
   query('action').optional().isIn(['login', 'logout', 'failed_login', 'password_change', 'profile_update']).withMessage('Invalid action'),

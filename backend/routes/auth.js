@@ -42,9 +42,7 @@ router.post('/login', [
     const { username, password } = req.body;
     const clientInfo = getClientInfo(req);
 
-    if (process.env.NODE_ENV === 'test') {
-      console.log('Auth route processing login for username:', username);
-    }
+
 
     // First, try to find user in User collection
     let user = await User.findOne({ username });
@@ -58,9 +56,6 @@ router.post('/login', [
 
     if (!user) {
       // Log failed login attempt
-      if (process.env.NODE_ENV === 'test') {
-        console.log('Attempting to log audit event for non-existent user:', username);
-      }
       
       const auditResult = await Audit.logEvent({
         action: 'failed_login',

@@ -33,8 +33,8 @@ function App() {
                 <Route path="/meals" element={<ProtectedRoute><Layout><Meals /></Layout></ProtectedRoute>} />
                 <Route path="/meal-planner" element={<ProtectedRoute><Layout><MealPlanner /></Layout></ProtectedRoute>} />
                 <Route path="/master-data" element={<ProtectedRoute><Layout><MasterData /></Layout></ProtectedRoute>} />
-                <Route path="/audit" element={<ProtectedRoute><Layout><Audit /></Layout></ProtectedRoute>} />
-                <Route path="/release-notes" element={<ProtectedRoute><Layout><ReleaseNotesHistory /></Layout></ProtectedRoute>} />
+                <Route path="/audit" element={<ProtectedRoute requireAdmin={true}><Layout><Audit /></Layout></ProtectedRoute>} />
+                <Route path="/release-notes" element={<ProtectedRoute requireAdmin={true}><Layout><ReleaseNotesHistory /></Layout></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
               </Routes>
             </ReleaseNotesWrapper>

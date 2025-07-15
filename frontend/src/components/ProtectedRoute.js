@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from './LoadingSpinner';
 
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
-  const { user, loading, isSystemAdmin } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
 
   if (loading) {
     return <LoadingSpinner />;
@@ -14,7 +14,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
     return <Navigate to="/login" />;
   }
 
-  if (requireAdmin && !isSystemAdmin()) {
+  if (requireAdmin && !isAdmin()) {
     return <Navigate to="/dashboard" />;
   }
 

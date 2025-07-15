@@ -39,13 +39,13 @@ const Layout = ({ children }) => {
       { name: 'Master Data', href: '/master-data', icon: Database },
     ];
 
-    // Add system admin-only Family Members section
-    if (isSystemAdmin()) {
+    // Add admin-only Family Members section
+    if (isAdmin()) {
       baseNavigation.splice(1, 0, { name: 'Family Members', href: '/family-members', icon: Users });
     }
 
     // Add admin-only sections
-    if (isSystemAdmin && isSystemAdmin()) {
+    if (isAdmin()) {
       baseNavigation.push({ 
         name: 'Audit Logs', 
         href: '/audit', 

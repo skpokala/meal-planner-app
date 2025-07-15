@@ -43,14 +43,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      console.log('Starting login process...', { username, apiBaseURL: api.defaults.baseURL });
-      
       const response = await api.post('/auth/login', {
         username,
         password,
       });
-
-      console.log('Login response received:', response.data);
       
       const { token, user } = response.data;
       
@@ -62,8 +58,6 @@ export const AuthProvider = ({ children }) => {
       
       // Update user state
       setUser(user);
-      
-      console.log('Login successful, user set:', user);
       
       return response.data;
     } catch (error) {
