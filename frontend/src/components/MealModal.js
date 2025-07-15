@@ -162,16 +162,16 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-secondary-200">
-          <h3 className="text-lg font-semibold text-secondary-900">
+        <div className="flex items-center justify-between p-6 border-b border-secondary-200 dark:border-secondary-700">
+          <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
             {isEditMode ? 'Edit Meal' : 'Add New Meal'}
           </h3>
           <button
             onClick={handleClose}
             disabled={loading}
-            className="p-1 text-secondary-400 hover:text-secondary-600 transition-colors"
+            className="p-1 text-secondary-400 hover:text-secondary-600 dark:text-secondary-500 dark:hover:text-secondary-400 transition-colors"
             title="Close"
           >
             <X className="w-5 h-5" />
@@ -182,7 +182,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Meal Name */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-secondary-700 mb-1">
+            <label htmlFor="name" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
               Meal Name *
             </label>
             <input
@@ -200,7 +200,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-secondary-700 mb-1">
+            <label htmlFor="description" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
               Description
             </label>
             <textarea
@@ -217,7 +217,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
 
           {/* Prep Time */}
           <div>
-            <label htmlFor="prepTime" className="block text-sm font-medium text-secondary-700 mb-1">
+            <label htmlFor="prepTime" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
               Prep Time (minutes)
             </label>
             <div className="relative">
@@ -239,7 +239,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
           {/* Ingredients Section */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-medium text-secondary-700">
+              <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">
                 Ingredients (Optional)
               </label>
               <button
@@ -256,11 +256,11 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
             {formData.ingredients.length > 0 && (
               <div className="space-y-3 max-h-60 overflow-y-auto">
                 {formData.ingredients.map((ingredient, index) => (
-                  <div key={index} className="border border-secondary-200 rounded-lg p-3 bg-secondary-50">
+                  <div key={index} className="border border-secondary-200 dark:border-secondary-700 rounded-lg p-3 bg-secondary-50 dark:bg-secondary-900">
                     <div className="grid grid-cols-12 gap-3 items-start">
                       {/* Ingredient Selection */}
                       <div className="col-span-4">
-                        <label className="block text-xs font-medium text-secondary-600 mb-1">
+                        <label className="block text-xs font-medium text-secondary-600 dark:text-secondary-400 mb-1">
                           Ingredient
                         </label>
                         <select
@@ -280,7 +280,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                       
                       {/* Quantity */}
                       <div className="col-span-2">
-                        <label className="block text-xs font-medium text-secondary-600 mb-1">
+                        <label className="block text-xs font-medium text-secondary-600 dark:text-secondary-400 mb-1">
                           Quantity
                         </label>
                         <input
@@ -297,7 +297,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                       
                       {/* Unit */}
                       <div className="col-span-2">
-                        <label className="block text-xs font-medium text-secondary-600 mb-1">
+                        <label className="block text-xs font-medium text-secondary-600 dark:text-secondary-400 mb-1">
                           Unit
                         </label>
                         <select
@@ -322,7 +322,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                       
                       {/* Notes */}
                       <div className="col-span-3">
-                        <label className="block text-xs font-medium text-secondary-600 mb-1">
+                        <label className="block text-xs font-medium text-secondary-600 dark:text-secondary-400 mb-1">
                           Notes
                         </label>
                         <input
@@ -354,7 +354,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
             )}
             
             {formData.ingredients.length === 0 && (
-              <div className="text-center py-4 text-secondary-500 text-sm">
+              <div className="text-center py-4 text-secondary-500 dark:text-secondary-400 text-sm">
                 No ingredients added yet. Click "Add Ingredient" to start.
               </div>
             )}
@@ -371,7 +371,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                 disabled={loading}
                 className="w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
               />
-              <span className="text-sm font-medium text-secondary-700">
+              <span className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
                 Active (available for meal planning)
               </span>
             </label>
