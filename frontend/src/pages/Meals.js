@@ -185,7 +185,7 @@ const Meals = () => {
   }
 
   return (
-    <div>
+    <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
