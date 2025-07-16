@@ -47,9 +47,9 @@ const ListView = ({
     return (
       <div className="card">
         <div className="card-body text-center py-12">
-          <Calendar className="w-16 h-16 text-secondary-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-secondary-900 mb-2">No Meals Planned</h3>
-          <p className="text-secondary-600">
+          <Calendar className="w-16 h-16 text-secondary-400 dark:text-secondary-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-2">No Meals Planned</h3>
+          <p className="text-secondary-600 dark:text-secondary-400">
             Switch to calendar view to start planning your meals.
           </p>
         </div>
@@ -70,16 +70,16 @@ const ListView = ({
                 {/* Date header for new day */}
                 {isNewDay && (
                   <div className="flex items-center mb-3">
-                    <div className="flex-1 border-t border-secondary-200"></div>
-                    <h3 className="px-4 text-sm font-semibold text-secondary-700 bg-white">
+                    <div className="flex-1 border-t border-secondary-200 dark:border-secondary-700"></div>
+                    <h3 className="px-4 text-sm font-semibold text-secondary-700 dark:text-secondary-300 bg-white dark:bg-secondary-800">
                       {formatDate(plannedMeal.date)}
                     </h3>
-                    <div className="flex-1 border-t border-secondary-200"></div>
+                    <div className="flex-1 border-t border-secondary-200 dark:border-secondary-700"></div>
                   </div>
                 )}
                 
                 {/* Meal item */}
-                <div className="flex items-center justify-between p-4 bg-secondary-50 rounded-lg border border-secondary-200 hover:bg-secondary-100 transition-colors">
+                <div className="flex items-center justify-between p-4 bg-secondary-50 dark:bg-secondary-900 rounded-lg border border-secondary-200 dark:border-secondary-700 hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors">
                   <div className="flex items-center space-x-4">
                     {/* Meal type badge */}
                     <div className={`px-3 py-1 rounded-full text-xs font-medium ${getMealTypeColor(plannedMeal.mealType)}`}>
@@ -88,16 +88,16 @@ const ListView = ({
                     
                     {/* Meal details */}
                     <div>
-                      <h4 className="font-semibold text-secondary-900">
+                      <h4 className="font-semibold text-secondary-900 dark:text-secondary-100">
                         {plannedMeal.meal?.name || 'Unknown Meal'}
                       </h4>
                       {plannedMeal.meal?.description && (
-                        <p className="text-sm text-secondary-600 mt-1">
+                        <p className="text-sm text-secondary-600 dark:text-secondary-400 mt-1">
                           {plannedMeal.meal.description}
                         </p>
                       )}
                       {plannedMeal.meal?.prepTime > 0 && (
-                        <div className="flex items-center mt-2 text-sm text-secondary-500">
+                        <div className="flex items-center mt-2 text-sm text-secondary-500 dark:text-secondary-400">
                           <Clock className="w-4 h-4 mr-1" />
                           <span>{plannedMeal.meal.prepTime} minutes</span>
                         </div>
@@ -659,8 +659,8 @@ const MealPlanner = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-secondary-900">Meal Planner</h1>
-          <p className="text-secondary-600">Plan your meals for the week ahead</p>
+          <h1 className="text-2xl font-bold text-secondary-900 dark:text-secondary-100">Meal Planner</h1>
+          <p className="text-secondary-600 dark:text-secondary-400">Plan your meals for the week ahead</p>
         </div>
         
         {/* View Mode Toggles */}
@@ -670,8 +670,8 @@ const MealPlanner = () => {
               onClick={() => setViewMode(VIEW_MODES.MONTHLY)}
               className={`px-3 py-2 text-sm font-medium rounded-l-md border ${
                 viewMode === VIEW_MODES.MONTHLY
-                  ? 'bg-primary-50 border-primary-200 text-primary-700'
-                  : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50'
+                  ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
+                  : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700'
               }`}
             >
               <Calendar className="w-4 h-4" />
@@ -680,8 +680,8 @@ const MealPlanner = () => {
               onClick={() => setViewMode(VIEW_MODES.WEEKLY)}
               className={`px-3 py-2 text-sm font-medium border-t border-b ${
                 viewMode === VIEW_MODES.WEEKLY
-                  ? 'bg-primary-50 border-primary-200 text-primary-700'
-                  : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50'
+                  ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
+                  : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700'
               }`}
             >
               <CalendarDays className="w-4 h-4" />
@@ -690,8 +690,8 @@ const MealPlanner = () => {
               onClick={() => setViewMode(VIEW_MODES.DAILY)}
               className={`px-3 py-2 text-sm font-medium border-t border-b ${
                 viewMode === VIEW_MODES.DAILY
-                  ? 'bg-primary-50 border-primary-200 text-primary-700'
-                  : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50'
+                  ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
+                  : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700'
               }`}
             >
               <CalendarCheck className="w-4 h-4" />
@@ -700,8 +700,8 @@ const MealPlanner = () => {
               onClick={() => setViewMode(VIEW_MODES.LIST)}
               className={`px-3 py-2 text-sm font-medium rounded-r-md border ${
                 viewMode === VIEW_MODES.LIST
-                  ? 'bg-primary-50 border-primary-200 text-primary-700'
-                  : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50'
+                  ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
+                  : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700'
               }`}
             >
               <List className="w-4 h-4" />
@@ -715,18 +715,18 @@ const MealPlanner = () => {
         <div className="flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded transition-colors"
+            className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:text-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           
-          <h2 className="text-lg font-semibold text-secondary-900">
+          <h2 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
             {getViewTitle()}
           </h2>
           
           <button
             onClick={() => navigate(1)}
-            className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded transition-colors"
+            className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:text-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
