@@ -254,18 +254,23 @@ const ReleaseNotesHistory = () => {
           </form>
           
           <div className="flex items-center space-x-2">
-            <Filter className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-            <select
-              value={typeFilter}
-              onChange={(e) => handleTypeFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            >
-              <option value="">All Types</option>
-              <option value="major">Major</option>
-              <option value="minor">Minor</option>
-              <option value="patch">Patch</option>
-              <option value="hotfix">Hotfix</option>
-            </select>
+            <div>
+              <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+                <Filter className="w-4 h-4 inline mr-1" />
+                Type
+              </label>
+              <select
+                value={typeFilter}
+                onChange={(e) => handleTypeFilter(e.target.value)}
+                className="select"
+              >
+                <option value="">All Types</option>
+                <option value="major">Major</option>
+                <option value="minor">Minor</option>
+                <option value="patch">Patch</option>
+                <option value="hotfix">Hotfix</option>
+              </select>
+            </div>
           </div>
         </div>
         
