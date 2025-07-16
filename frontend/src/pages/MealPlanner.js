@@ -659,109 +659,110 @@ const MealPlanner = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Meal Planner</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Plan your meals for the week ahead</p>
-        </div>
-        
-        {/* View Mode Toggles */}
-        <div className="flex items-center space-x-2">
-          <div className="flex rounded-md shadow-sm">
-            <button
-              onClick={() => setViewMode(VIEW_MODES.MONTHLY)}
-              className={`px-3 py-2 text-sm font-medium rounded-l-md border ${
-                viewMode === VIEW_MODES.MONTHLY
-                  ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
-                  : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700'
-              }`}
-            >
-              <Calendar className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode(VIEW_MODES.WEEKLY)}
-              className={`px-3 py-2 text-sm font-medium border-t border-b ${
-                viewMode === VIEW_MODES.WEEKLY
-                  ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
-                  : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700'
-              }`}
-            >
-              <CalendarDays className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode(VIEW_MODES.DAILY)}
-              className={`px-3 py-2 text-sm font-medium border-t border-b ${
-                viewMode === VIEW_MODES.DAILY
-                  ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
-                  : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700'
-              }`}
-            >
-              <CalendarCheck className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode(VIEW_MODES.LIST)}
-              className={`px-3 py-2 text-sm font-medium rounded-r-md border ${
-                viewMode === VIEW_MODES.LIST
-                  ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
-                  : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700'
-              }`}
-            >
-              <List className="w-4 h-4" />
-            </button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Meal Planner</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">Plan your meals for the week ahead</p>
+          </div>
+          
+          {/* View Mode Toggles */}
+          <div className="flex items-center space-x-2">
+            <div className="flex rounded-md shadow-sm">
+              <button
+                onClick={() => setViewMode(VIEW_MODES.MONTHLY)}
+                className={`px-3 py-2 text-sm font-medium rounded-l-md border ${
+                  viewMode === VIEW_MODES.MONTHLY
+                    ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
+                    : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700'
+                }`}
+              >
+                <Calendar className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode(VIEW_MODES.WEEKLY)}
+                className={`px-3 py-2 text-sm font-medium border-t border-b ${
+                  viewMode === VIEW_MODES.WEEKLY
+                    ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
+                    : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700'
+                }`}
+              >
+                <CalendarDays className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode(VIEW_MODES.DAILY)}
+                className={`px-3 py-2 text-sm font-medium border-t border-b ${
+                  viewMode === VIEW_MODES.DAILY
+                    ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
+                    : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700'
+                }`}
+              >
+                <CalendarCheck className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode(VIEW_MODES.LIST)}
+                className={`px-3 py-2 text-sm font-medium rounded-r-md border ${
+                  viewMode === VIEW_MODES.LIST
+                    ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
+                    : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700'
+                }`}
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Navigation */}
+        {viewMode !== VIEW_MODES.LIST && (
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:text-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            
+            <h2 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
+              {getViewTitle()}
+            </h2>
+            
+            <button
+              onClick={() => navigate(1)}
+              className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:text-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
+        {/* Calendar Content */}
+        <CalendarView
+          viewMode={viewMode}
+          days={getCurrentViewDays()}
+          getPlannedMeals={getPlannedMeals}
+          meals={meals}
+          mealTypes={mealTypes}
+          onMealSelect={handleMealSelect}
+          onMealRemove={handleMealRemove}
+          getMealTypeColor={getMealTypeColor}
+          isToday={isToday}
+          isPastDate={isPastDate}
+          savingMeals={savingMeals}
+          removingMeals={removingMeals}
+          plannedMeals={plannedMeals}
+        />
+
+        {/* Meal Modal */}
+        <MealModal
+          isOpen={mealModalOpen}
+          onClose={() => {
+            setMealModalOpen(false);
+            setSelectedDate(null);
+            setSelectedMealType('dinner');
+          }}
+          onMealCreated={handleNewMealCreated}
+          mode="add"
+        />
       </div>
-
-      {/* Navigation */}
-      {viewMode !== VIEW_MODES.LIST && (
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate(-1)}
-            className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:text-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          
-          <h2 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
-            {getViewTitle()}
-          </h2>
-          
-          <button
-            onClick={() => navigate(1)}
-            className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:text-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-      )}
-
-      {/* Calendar Content */}
-      <CalendarView
-        viewMode={viewMode}
-        days={getCurrentViewDays()}
-        getPlannedMeals={getPlannedMeals}
-        meals={meals}
-        mealTypes={mealTypes}
-        onMealSelect={handleMealSelect}
-        onMealRemove={handleMealRemove}
-        getMealTypeColor={getMealTypeColor}
-        isToday={isToday}
-        isPastDate={isPastDate}
-        savingMeals={savingMeals}
-        removingMeals={removingMeals}
-        plannedMeals={plannedMeals}
-      />
-
-      {/* Meal Modal */}
-      <MealModal
-        isOpen={mealModalOpen}
-        onClose={() => {
-          setMealModalOpen(false);
-          setSelectedDate(null);
-          setSelectedMealType('dinner');
-        }}
-        onMealCreated={handleNewMealCreated}
-        mode="add"
-      />
     </div>
   );
 };
@@ -986,7 +987,6 @@ const DayCell = ({
           </div>
         </div>
       )}
-      </div>
     </div>
   );
 };

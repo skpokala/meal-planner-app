@@ -609,7 +609,6 @@ const Audit = () => {
         )}
       </div>
       </div>
-      </div>
     </div>
   );
 };
