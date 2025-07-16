@@ -292,10 +292,10 @@ const FamilyMembers = () => {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-secondary-900 dark:text-secondary-100">Family Members</h1>
-          <p className="text-secondary-600 dark:text-secondary-400">Manage your family member profiles and access</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Family Members</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">Manage your family member profiles and access</p>
         </div>
         {canManageFamilyMembers() && (
           <button

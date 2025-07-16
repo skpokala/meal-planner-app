@@ -140,9 +140,11 @@ const Settings = () => {
   return (
     <div>
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-secondary-900">Settings</h1>
-        <p className="text-secondary-600">Manage your account settings and preferences</p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">Manage your account settings and preferences</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">

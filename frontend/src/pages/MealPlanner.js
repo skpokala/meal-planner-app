@@ -657,10 +657,10 @@ const MealPlanner = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-secondary-900 dark:text-secondary-100">Meal Planner</h1>
-          <p className="text-secondary-600 dark:text-secondary-400">Plan your meals for the week ahead</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Meal Planner</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">Plan your meals for the week ahead</p>
         </div>
         
         {/* View Mode Toggles */}
