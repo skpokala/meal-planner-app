@@ -159,8 +159,8 @@ const Settings = () => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-card transition-colors ${
                     activeTab === tab.id
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'text-secondary-700 hover:bg-secondary-100 hover:text-secondary-900'
+                      ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
+                      : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800 hover:text-secondary-900 dark:hover:text-secondary-100'
                   }`}
                 >
                   <Icon className="w-5 h-5 mr-3" />
@@ -176,10 +176,10 @@ const Settings = () => {
           {activeTab === 'profile' && (
             <div className="card">
               <div className="card-header">
-                <h3 className="text-lg font-semibold text-secondary-900">
+                <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
                   Profile Information
                 </h3>
-                <p className="text-sm text-secondary-600">
+                <p className="text-sm text-secondary-600 dark:text-secondary-400">
                   Update your account profile information
                 </p>
               </div>
@@ -187,9 +187,9 @@ const Settings = () => {
                 <form onSubmit={handleProfileSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-secondary-700 mb-1">
-                        First Name
-                      </label>
+                                      <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+                  First Name
+                </label>
                       <input
                         type="text"
                         name="firstName"
@@ -200,9 +200,9 @@ const Settings = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-secondary-700 mb-1">
-                        Last Name
-                      </label>
+                                      <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+                  Last Name
+                </label>
                       <input
                         type="text"
                         name="lastName"
@@ -215,7 +215,7 @@ const Settings = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                       Email
                     </label>
                     <input
@@ -229,7 +229,7 @@ const Settings = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                       Username
                     </label>
                     <input
@@ -238,13 +238,13 @@ const Settings = () => {
                       className="input bg-secondary-50"
                       disabled
                     />
-                    <p className="text-xs text-secondary-500 mt-1">
+                    <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
                       Username cannot be changed
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                       Role
                     </label>
                     <input
@@ -282,17 +282,17 @@ const Settings = () => {
           {activeTab === 'password' && (
             <div className="card">
               <div className="card-header">
-                <h3 className="text-lg font-semibold text-secondary-900">
+                <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
                   Change Password
                 </h3>
-                <p className="text-sm text-secondary-600">
+                <p className="text-sm text-secondary-600 dark:text-secondary-400">
                   Update your password to keep your account secure
                 </p>
               </div>
               <div className="card-body">
                 <form onSubmit={handlePasswordSubmit} className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                       Current Password
                     </label>
                     <input
@@ -306,7 +306,7 @@ const Settings = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                       New Password
                     </label>
                     <input
@@ -318,13 +318,13 @@ const Settings = () => {
                       required
                       minLength={6}
                     />
-                    <p className="text-xs text-secondary-500 mt-1">
+                    <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
                       Password must be at least 6 characters long
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                       Confirm New Password
                     </label>
                     <input
@@ -365,10 +365,10 @@ const Settings = () => {
           {activeTab === 'masterPassword' && user?.role === 'admin' && (
             <div className="card">
               <div className="card-header">
-                <h3 className="text-lg font-semibold text-secondary-900">
+                <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
                   Master Password
                 </h3>
-                <p className="text-sm text-secondary-600">
+                <p className="text-sm text-secondary-600 dark:text-secondary-400">
                   Set or update your master password for enhanced admin access
                 </p>
               </div>
@@ -388,7 +388,7 @@ const Settings = () => {
 
                 <form onSubmit={handleMasterPasswordSubmit} className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                       Current Password
                     </label>
                     <input
@@ -400,13 +400,13 @@ const Settings = () => {
                       required
                       placeholder="Enter your current password"
                     />
-                    <p className="text-xs text-secondary-500 mt-1">
+                    <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
                       Required for security verification
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                       Master Password
                     </label>
                     <input
@@ -419,13 +419,13 @@ const Settings = () => {
                       minLength={6}
                       placeholder="Enter your new master password"
                     />
-                    <p className="text-xs text-secondary-500 mt-1">
+                    <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
                       Must be at least 6 characters long and different from your regular password
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                       Confirm Master Password
                     </label>
                     <input
