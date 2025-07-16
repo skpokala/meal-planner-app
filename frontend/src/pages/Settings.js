@@ -159,7 +159,7 @@ const Settings = () => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-card transition-colors ${
                     activeTab === tab.id
-                      ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
+                      ? 'bg-primary-100 text-primary-700 dark:bg-primary-800 dark:text-primary-100'
                       : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800 hover:text-secondary-900 dark:hover:text-secondary-100'
                   }`}
                 >
