@@ -122,15 +122,15 @@ const ReleaseNotesHistory = () => {
   const getReleaseTypeColor = (type) => {
     switch (type) {
       case 'major':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-700';
       case 'minor':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-700';
       case 'patch':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-200 dark:border-green-700';
       case 'hotfix':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        return 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-700';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700';
     }
   };
 
@@ -176,7 +176,7 @@ const ReleaseNotesHistory = () => {
           className={`px-3 py-2 mx-1 rounded ${
             i === currentPage
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
           }`}
         >
           {i}
@@ -189,7 +189,7 @@ const ReleaseNotesHistory = () => {
         <button
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="flex items-center px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ChevronLeft className="w-4 h-4 mr-1" />
           Previous
@@ -200,7 +200,7 @@ const ReleaseNotesHistory = () => {
         <button
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="flex items-center px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next
           <ChevronRight className="w-4 h-4 ml-1" />
@@ -221,8 +221,8 @@ const ReleaseNotesHistory = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Release Notes History</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Release Notes History</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
             Browse all release notes and updates for the Family Meal Planner
           </p>
         </div>
@@ -238,27 +238,27 @@ const ReleaseNotesHistory = () => {
       </div>
 
       {/* Search and Filter Bar */}
-      <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <form onSubmit={handleSearch} className="flex-1 max-w-md">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
               <input
                 type="text"
                 placeholder="Search by version..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
               />
             </div>
           </form>
           
           <div className="flex items-center space-x-2">
-            <Filter className="w-4 h-4 text-gray-400" />
+            <Filter className="w-4 h-4 text-gray-400 dark:text-gray-500" />
             <select
               value={typeFilter}
               onChange={(e) => handleTypeFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="">All Types</option>
               <option value="major">Major</option>
@@ -269,8 +269,8 @@ const ReleaseNotesHistory = () => {
           </div>
         </div>
         
-        <div className="flex items-center justify-between mt-4 pt-4 border-t">
-          <span className="text-sm text-gray-600">
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <span className="text-sm text-gray-600 dark:text-gray-400">
             {totalResults} release{totalResults !== 1 ? 's' : ''} found
           </span>
           <div className="flex space-x-2">
@@ -281,7 +281,7 @@ const ReleaseNotesHistory = () => {
                 className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                   typeFilter === type
                     ? getReleaseTypeColor(type)
-                    : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
                 {getReleaseTypeIcon(type)}
@@ -294,20 +294,20 @@ const ReleaseNotesHistory = () => {
 
       {/* Release Notes List */}
       {error ? (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-600">{error}</p>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <p className="text-red-600 dark:text-red-400">{error}</p>
         </div>
       ) : releaseNotes.length === 0 ? (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-          <Tag className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">No release notes found</p>
+        <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center">
+          <Tag className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">No release notes found</p>
         </div>
       ) : (
         <div className="space-y-4">
           {releaseNotes.map((release) => (
             <div
               key={release._id}
-              className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
             >
               <div className="p-6">
                 <div className="flex items-start justify-between">
@@ -317,16 +317,16 @@ const ReleaseNotesHistory = () => {
                       <span className={`px-2 py-1 rounded text-xs font-medium border ${getReleaseTypeColor(release.type)}`}>
                         {release.type.toUpperCase()}
                       </span>
-                      <span className="text-lg font-semibold text-gray-900">
+                      <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                         v{release.version}
                       </span>
                     </div>
                     
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                       {release.title}
                     </h3>
                     
-                    <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
+                    <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
                       <div className="flex items-center space-x-1">
                         <Calendar className="w-4 h-4" />
                         <span>{formatDate(release.releaseDate)}</span>
@@ -341,33 +341,33 @@ const ReleaseNotesHistory = () => {
                       </div>
                     </div>
                     
-                    <p className="text-gray-700 mb-3 line-clamp-3">
+                    <p className="text-gray-700 dark:text-gray-300 mb-3 line-clamp-3">
                       {release.content.length > 200 
                         ? `${release.content.substring(0, 200)}...` 
                         : release.content}
                     </p>
                     
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
                       <span className="font-medium">Changes:</span> {getSummaryText(release)}
                     </div>
                     
                     {release.githubPullRequests && release.githubPullRequests.length > 0 && (
                       <div className="mt-3 flex items-center space-x-2">
-                        <span className="text-sm text-gray-600">Related PRs:</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Related PRs:</span>
                         {release.githubPullRequests.slice(0, 3).map((pr, index) => (
                           <a
                             key={index}
                             href={pr.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs text-gray-700 transition-colors"
+                            className="inline-flex items-center px-2 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-xs text-gray-700 dark:text-gray-300 transition-colors"
                           >
                             <ExternalLink className="w-3 h-3 mr-1" />
                             #{pr.number}
                           </a>
                         ))}
                         {release.githubPullRequests.length > 3 && (
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
                             +{release.githubPullRequests.length - 3} more
                           </span>
                         )}
@@ -378,7 +378,7 @@ const ReleaseNotesHistory = () => {
                   <div className="flex items-center space-x-2 ml-4">
                     <button
                       onClick={() => handleViewRelease(release)}
-                      className="flex items-center px-3 py-2 text-blue-600 hover:text-blue-800 transition-colors"
+                      className="flex items-center px-3 py-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                     >
                       <Eye className="w-4 h-4 mr-1" />
                       View
@@ -390,14 +390,14 @@ const ReleaseNotesHistory = () => {
                             setEditingRelease(release);
                             setShowCreateModal(true);
                           }}
-                          className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                          className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
                         >
                           <Edit className="w-4 h-4 mr-1" />
                           Edit
                         </button>
                         <button
                           onClick={() => handleDeleteRelease(release._id)}
-                          className="flex items-center px-3 py-2 text-red-600 hover:text-red-800 transition-colors"
+                          className="flex items-center px-3 py-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
                         >
                           <Trash2 className="w-4 h-4 mr-1" />
                           Delete
