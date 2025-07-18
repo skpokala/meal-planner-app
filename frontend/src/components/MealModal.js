@@ -187,7 +187,12 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
           description: formData.description,
           prepTime: parseInt(formData.prepTime) || 0,
           active: formData.active,
-          ingredients: formData.ingredients.filter(ing => ing.ingredient) // Only include ingredients with selected ingredient
+          ingredients: formData.ingredients
+            .filter(ing => ing.ingredient) // Only include ingredients with selected ingredient
+            .map(ing => ({
+              ...ing,
+              quantity: ing.quantity === '' ? null : parseFloat(ing.quantity) || null
+            }))
         };
         response = await api.put(`/meals/${meal._id}`, mealData);
         toast.success('Meal updated successfully');
@@ -198,7 +203,12 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
           description: formData.description,
           prepTime: parseInt(formData.prepTime) || 0,
           active: formData.active,
-          ingredients: formData.ingredients.filter(ing => ing.ingredient) // Only include ingredients with selected ingredient
+          ingredients: formData.ingredients
+            .filter(ing => ing.ingredient) // Only include ingredients with selected ingredient
+            .map(ing => ({
+              ...ing,
+              quantity: ing.quantity === '' ? null : parseFloat(ing.quantity) || null
+            }))
         };
         response = await api.post('/meals', mealData);
         toast.success('Meal created successfully');
@@ -387,15 +397,15 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                       {/* Quantity */}
                       <div className="col-span-2">
                         <label className="block text-xs font-medium text-secondary-600 dark:text-secondary-400 mb-1">
-                          Quantity
+                          Quantity (Optional)
                         </label>
                         <input
                           type="number"
-                          value={ingredient.quantity}
+                          value={ingredient.quantity || ''}
                           onChange={(e) => updateIngredient(index, 'quantity', e.target.value)}
                           disabled={loading}
                           className="input text-sm w-full"
-                          placeholder="0"
+                          placeholder="Amount"
                           min="0"
                           step="0.1"
                         />
