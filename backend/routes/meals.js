@@ -109,18 +109,22 @@ router.post('/', [
     }
     return true;
   }),
-  body('ingredients.*.quantity').optional().custom(value => {
-    if (value === null || value === undefined || value === '') {
-      return true; // Allow null, undefined, or empty string
+  body('ingredients.*.quantity').optional().custom((value) => {
+    // Allow null, undefined, empty string
+    if (value === null || value === undefined || value === '' || value === 'null') {
+      return true;
     }
-    if (isNaN(value) || value < 0) {
+    // Convert to number for validation
+    const numValue = parseFloat(value);
+    if (isNaN(numValue) || numValue < 0) {
       throw new Error('Quantity must be a positive number or empty');
     }
     return true;
   }),
-  body('ingredients.*.unit').optional().custom(value => {
-    if (value === null || value === undefined || value === '') {
-      return true; // Allow null, undefined, or empty string
+  body('ingredients.*.unit').optional().custom((value) => {
+    // Allow null, undefined, empty string
+    if (value === null || value === undefined || value === '' || value === 'null') {
+      return true;
     }
     const validUnits = ['lbs', 'oz', 'kg', 'g', 'count', 'cups', 'tbsp', 'tsp', 'ml', 'l'];
     if (!validUnits.includes(value)) {
@@ -242,18 +246,22 @@ router.put('/:id', [
     }
     return true;
   }),
-  body('ingredients.*.quantity').optional().custom(value => {
-    if (value === null || value === undefined || value === '') {
-      return true; // Allow null, undefined, or empty string
+  body('ingredients.*.quantity').optional().custom((value) => {
+    // Allow null, undefined, empty string
+    if (value === null || value === undefined || value === '' || value === 'null') {
+      return true;
     }
-    if (isNaN(value) || value < 0) {
+    // Convert to number for validation
+    const numValue = parseFloat(value);
+    if (isNaN(numValue) || numValue < 0) {
       throw new Error('Quantity must be a positive number or empty');
     }
     return true;
   }),
-  body('ingredients.*.unit').optional().custom(value => {
-    if (value === null || value === undefined || value === '') {
-      return true; // Allow null, undefined, or empty string
+  body('ingredients.*.unit').optional().custom((value) => {
+    // Allow null, undefined, empty string
+    if (value === null || value === undefined || value === '' || value === 'null') {
+      return true;
     }
     const validUnits = ['lbs', 'oz', 'kg', 'g', 'count', 'cups', 'tbsp', 'tsp', 'ml', 'l'];
     if (!validUnits.includes(value)) {
