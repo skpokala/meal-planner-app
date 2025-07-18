@@ -100,7 +100,15 @@ router.post('/', [
   body('active').optional().isBoolean().withMessage('Active must be a boolean'),
   body('ingredients').optional().isArray().withMessage('Ingredients must be an array'),
   body('ingredients.*.ingredient').optional().isMongoId().withMessage('Invalid ingredient ID'),
-  body('ingredients.*.quantity').optional().isNumeric().withMessage('Quantity must be a number'),
+  body('ingredients.*.quantity').optional().custom(value => {
+    if (value === null || value === undefined || value === '') {
+      return true; // Allow null, undefined, or empty string
+    }
+    if (isNaN(value) || value < 0) {
+      throw new Error('Quantity must be a positive number or empty');
+    }
+    return true;
+  }),
   body('ingredients.*.unit').optional().isIn(['lbs', 'oz', 'kg', 'g', 'count', 'cups', 'tbsp', 'tsp', 'ml', 'l']).withMessage('Invalid unit'),
   body('recipe.cookTime').optional().isNumeric().withMessage('Cook time must be a number'),
   body('recipe.servings').optional().isNumeric().withMessage('Servings must be a number'),
@@ -207,7 +215,15 @@ router.put('/:id', [
   body('active').optional().isBoolean().withMessage('Active must be a boolean'),
   body('ingredients').optional().isArray().withMessage('Ingredients must be an array'),
   body('ingredients.*.ingredient').optional().isMongoId().withMessage('Invalid ingredient ID'),
-  body('ingredients.*.quantity').optional().isNumeric().withMessage('Quantity must be a number'),
+  body('ingredients.*.quantity').optional().custom(value => {
+    if (value === null || value === undefined || value === '') {
+      return true; // Allow null, undefined, or empty string
+    }
+    if (isNaN(value) || value < 0) {
+      throw new Error('Quantity must be a positive number or empty');
+    }
+    return true;
+  }),
   body('ingredients.*.unit').optional().isIn(['lbs', 'oz', 'kg', 'g', 'count', 'cups', 'tbsp', 'tsp', 'ml', 'l']).withMessage('Invalid unit'),
   body('recipe.cookTime').optional().isNumeric().withMessage('Cook time must be a number'),
   body('recipe.servings').optional().isNumeric().withMessage('Servings must be a number'),
