@@ -99,7 +99,16 @@ router.post('/', [
   body('prepTime').optional().isNumeric().withMessage('Prep time must be a number'),
   body('active').optional().isBoolean().withMessage('Active must be a boolean'),
   body('ingredients').optional().isArray().withMessage('Ingredients must be an array'),
-  body('ingredients.*.ingredient').optional().isMongoId().withMessage('Invalid ingredient ID'),
+  body('ingredients.*.ingredient').optional().custom(value => {
+    if (value === null || value === undefined || value === '') {
+      return true; // Allow null, undefined, or empty string
+    }
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(value)) {
+      throw new Error('Invalid ingredient ID');
+    }
+    return true;
+  }),
   body('ingredients.*.quantity').optional().custom(value => {
     if (value === null || value === undefined || value === '') {
       return true; // Allow null, undefined, or empty string
@@ -223,7 +232,16 @@ router.put('/:id', [
   body('prepTime').optional().isNumeric().withMessage('Prep time must be a number'),
   body('active').optional().isBoolean().withMessage('Active must be a boolean'),
   body('ingredients').optional().isArray().withMessage('Ingredients must be an array'),
-  body('ingredients.*.ingredient').optional().isMongoId().withMessage('Invalid ingredient ID'),
+  body('ingredients.*.ingredient').optional().custom(value => {
+    if (value === null || value === undefined || value === '') {
+      return true; // Allow null, undefined, or empty string
+    }
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(value)) {
+      throw new Error('Invalid ingredient ID');
+    }
+    return true;
+  }),
   body('ingredients.*.quantity').optional().custom(value => {
     if (value === null || value === undefined || value === '') {
       return true; // Allow null, undefined, or empty string

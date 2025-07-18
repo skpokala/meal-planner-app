@@ -212,6 +212,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
               unit: ing.unit === '' || ing.unit === null || ing.unit === undefined ? null : ing.unit
             }))
         };
+        console.log('Creating meal with data:', JSON.stringify(mealData, null, 2));
         response = await api.post('/meals', mealData);
         toast.success('Meal created successfully');
       }
@@ -242,7 +243,12 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
       console.log('MealModal: Modal close completed');
     } catch (error) {
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} meal:`, error);
-      toast.error(`Failed to ${isEditMode ? 'update' : 'create'} meal`);
+      console.error('Error response data:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Validation errors:', error.response?.data?.errors);
+      
+      const errorMessage = error.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} meal`;
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
