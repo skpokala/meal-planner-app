@@ -34,7 +34,21 @@ const mealSchema = new mongoose.Schema({
     unit: {
       type: String,
       required: false, // Optional - unit can be empty
-      enum: ['lbs', 'oz', 'kg', 'g', 'count', 'cups', 'tbsp', 'tsp', 'ml', 'l'],
+      enum: {
+        values: ['lbs', 'oz', 'kg', 'g', 'count', 'cups', 'tbsp', 'tsp', 'ml', 'l'],
+        message: 'Invalid unit. Must be one of: lbs, oz, kg, g, count, cups, tbsp, tsp, ml, l'
+      },
+      validate: {
+        validator: function(value) {
+          // Allow empty values
+          if (value === null || value === undefined || value === '') {
+            return true;
+          }
+          // Check if value is in enum
+          return ['lbs', 'oz', 'kg', 'g', 'count', 'cups', 'tbsp', 'tsp', 'ml', 'l'].includes(value);
+        },
+        message: 'Invalid unit. Must be one of: lbs, oz, kg, g, count, cups, tbsp, tsp, ml, l'
+      },
       trim: true
     },
     notes: {

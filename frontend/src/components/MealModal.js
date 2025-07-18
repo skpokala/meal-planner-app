@@ -191,7 +191,8 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
             .filter(ing => ing.ingredient) // Only include ingredients with selected ingredient
             .map(ing => ({
               ...ing,
-              quantity: ing.quantity === '' || ing.quantity === null || ing.quantity === undefined ? null : parseFloat(ing.quantity)
+              quantity: ing.quantity === '' || ing.quantity === null || ing.quantity === undefined ? null : parseFloat(ing.quantity),
+              unit: ing.unit === '' || ing.unit === null || ing.unit === undefined ? null : ing.unit
             }))
         };
         response = await api.put(`/meals/${meal._id}`, mealData);
@@ -207,7 +208,8 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
             .filter(ing => ing.ingredient) // Only include ingredients with selected ingredient
             .map(ing => ({
               ...ing,
-              quantity: ing.quantity === '' || ing.quantity === null || ing.quantity === undefined ? null : parseFloat(ing.quantity)
+              quantity: ing.quantity === '' || ing.quantity === null || ing.quantity === undefined ? null : parseFloat(ing.quantity),
+              unit: ing.unit === '' || ing.unit === null || ing.unit === undefined ? null : ing.unit
             }))
         };
         response = await api.post('/meals', mealData);

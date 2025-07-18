@@ -109,7 +109,16 @@ router.post('/', [
     }
     return true;
   }),
-  body('ingredients.*.unit').optional().isIn(['lbs', 'oz', 'kg', 'g', 'count', 'cups', 'tbsp', 'tsp', 'ml', 'l']).withMessage('Invalid unit'),
+  body('ingredients.*.unit').optional().custom(value => {
+    if (value === null || value === undefined || value === '') {
+      return true; // Allow null, undefined, or empty string
+    }
+    const validUnits = ['lbs', 'oz', 'kg', 'g', 'count', 'cups', 'tbsp', 'tsp', 'ml', 'l'];
+    if (!validUnits.includes(value)) {
+      throw new Error('Invalid unit. Must be one of: ' + validUnits.join(', '));
+    }
+    return true;
+  }),
   body('recipe.cookTime').optional().isNumeric().withMessage('Cook time must be a number'),
   body('recipe.servings').optional().isNumeric().withMessage('Servings must be a number'),
   body('recipe.difficulty').optional().isIn(['easy', 'medium', 'hard']).withMessage('Invalid difficulty level')
@@ -224,7 +233,16 @@ router.put('/:id', [
     }
     return true;
   }),
-  body('ingredients.*.unit').optional().isIn(['lbs', 'oz', 'kg', 'g', 'count', 'cups', 'tbsp', 'tsp', 'ml', 'l']).withMessage('Invalid unit'),
+  body('ingredients.*.unit').optional().custom(value => {
+    if (value === null || value === undefined || value === '') {
+      return true; // Allow null, undefined, or empty string
+    }
+    const validUnits = ['lbs', 'oz', 'kg', 'g', 'count', 'cups', 'tbsp', 'tsp', 'ml', 'l'];
+    if (!validUnits.includes(value)) {
+      throw new Error('Invalid unit. Must be one of: ' + validUnits.join(', '));
+    }
+    return true;
+  }),
   body('recipe.cookTime').optional().isNumeric().withMessage('Cook time must be a number'),
   body('recipe.servings').optional().isNumeric().withMessage('Servings must be a number'),
   body('recipe.difficulty').optional().isIn(['easy', 'medium', 'hard']).withMessage('Invalid difficulty level'),
