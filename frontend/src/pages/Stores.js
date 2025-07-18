@@ -3,6 +3,7 @@ import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AddressAutocomplete from '../components/AddressAutocomplete';
 import { Plus, Edit, Trash2, Search, MapPin, Store as StoreIcon } from 'lucide-react';
+import { dispatchStoreAdded, dispatchStoreUpdated, dispatchStoreDeleted } from '../utils/storeEvents';
 import toast from 'react-hot-toast';
 
 const Stores = () => {
@@ -73,6 +74,8 @@ const Stores = () => {
           toast.success('Store updated successfully');
           fetchStores();
           resetForm();
+          // Dispatch event to update global stores context
+          dispatchStoreUpdated(response.data.store);
         }
       } else {
         // Create new store
@@ -81,6 +84,8 @@ const Stores = () => {
           toast.success('Store created successfully');
           fetchStores();
           resetForm();
+          // Dispatch event to update global stores context
+          dispatchStoreAdded(response.data.store);
         }
       }
     } catch (err) {
@@ -121,6 +126,8 @@ const Stores = () => {
       if (response.data.success) {
         toast.success('Store deleted successfully');
         fetchStores();
+        // Dispatch event to update global stores context
+        dispatchStoreDeleted(storeId);
       }
     } catch (err) {
       console.error('Error deleting store:', err);

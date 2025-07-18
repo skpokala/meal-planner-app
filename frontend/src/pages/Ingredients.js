@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Package, Plus, Edit, Trash2, Search, RotateCcw } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { Plus, Edit, Trash2, Search, Package } from 'lucide-react';
+import { useStores } from '../contexts/StoresContext';
 import toast from 'react-hot-toast';
 
 const Ingredients = () => {
@@ -18,7 +19,17 @@ const Ingredients = () => {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [storeFilter, setStoreFilter] = useState('');
-  const [stores, setStores] = useState([]);
+  
+  // Use global stores context
+  const { stores, fetchStores } = useStores();
+
+  // Force re-render when stores change and modal is open
+  useEffect(() => {
+    if (showModal && stores.length > 0) {
+      // Force component to re-render by updating a dummy state
+      setFormData(prev => ({ ...prev }));
+    }
+  }, [stores, showModal]);
 
   const units = [
     { value: 'lbs', label: 'Pounds (lbs)' },
@@ -36,23 +47,17 @@ const Ingredients = () => {
   useEffect(() => {
     fetchIngredients();
     fetchStores();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchIngredients = async () => {
     try {
       setLoading(true);
       setError('');
-      const params = new URLSearchParams();
-      if (searchTerm) params.append('search', searchTerm);
-      if (storeFilter) params.append('store', storeFilter);
-      params.append('active', 'true');
-      
-      const response = await api.get(`/ingredients?${params}`);
+      const response = await api.get('/ingredients');
       if (response.data.success) {
         setIngredients(response.data.ingredients);
       } else {
         setError('Failed to fetch ingredients');
-        toast.error('Failed to load ingredients');
       }
     } catch (err) {
       console.error('Error fetching ingredients:', err);
@@ -61,18 +66,6 @@ const Ingredients = () => {
       toast.error(errorMessage);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchStores = async () => {
-    try {
-      const response = await api.get('/ingredients/stores/list');
-      if (response.data.success) {
-        setStores(response.data.stores);
-      }
-    } catch (err) {
-      console.error('Error fetching stores:', err);
-      toast.error('Failed to load stores');
     }
   };
 
@@ -85,8 +78,6 @@ const Ingredients = () => {
     }
 
     try {
-      setError('');
-      
       const payload = {
         name: formData.name.trim(),
         quantity: parseFloat(formData.quantity),
@@ -94,20 +85,17 @@ const Ingredients = () => {
         store: formData.store
       };
 
+      let response;
       if (editingIngredient) {
-        const response = await api.put(`/ingredients/${editingIngredient._id}`, payload);
-        if (response.data.success) {
-          toast.success('Ingredient updated successfully');
-          fetchIngredients();
-          resetForm();
-        }
+        response = await api.put(`/ingredients/${editingIngredient._id}`, payload);
       } else {
-        const response = await api.post('/ingredients', payload);
-        if (response.data.success) {
-          toast.success('Ingredient created successfully');
-          fetchIngredients();
-          resetForm();
-        }
+        response = await api.post('/ingredients', payload);
+      }
+
+      if (response.data.success) {
+        toast.success(`Ingredient ${editingIngredient ? 'updated' : 'added'} successfully`);
+        await fetchIngredients();
+        resetForm();
       }
     } catch (err) {
       console.error('Error saving ingredient:', err);
@@ -122,7 +110,7 @@ const Ingredients = () => {
       name: ingredient.name,
       quantity: ingredient.quantity.toString(),
       unit: ingredient.unit,
-      store: ingredient.store?._id || ''
+      store: ingredient.store
     });
     setShowModal(true);
   };
@@ -136,7 +124,7 @@ const Ingredients = () => {
       const response = await api.delete(`/ingredients/${ingredientId}`);
       if (response.data.success) {
         toast.success('Ingredient deleted successfully');
-        fetchIngredients();
+        await fetchIngredients();
       }
     } catch (err) {
       console.error('Error deleting ingredient:', err);
@@ -154,28 +142,35 @@ const Ingredients = () => {
     });
     setEditingIngredient(null);
     setShowModal(false);
-    setError('');
   };
 
   const handleSearch = () => {
+    // Filter ingredients based on search term and store filter
+    // This would typically be done on the server side
+    // For now, we'll re-fetch to get fresh data
     fetchIngredients();
   };
 
   const handleClearFilters = () => {
     setSearchTerm('');
     setStoreFilter('');
-    // Trigger refetch after clearing filters
-    setTimeout(() => {
-      fetchIngredients();
-    }, 100);
+    fetchIngredients();
   };
 
-  if (loading && ingredients.length === 0) {
+  // Filter ingredients based on search term and store filter
+  const filteredIngredients = ingredients.filter(ingredient => {
+    const matchesSearch = ingredient.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStore = !storeFilter || ingredient.store === storeFilter;
+    return matchesSearch && matchesStore;
+  });
+
+  if (loading) {
     return <LoadingSpinner />;
   }
 
   return (
     <div className="py-6">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           <Package className="w-8 h-8 text-primary-600" />
@@ -193,13 +188,14 @@ const Ingredients = () => {
         </button>
       </div>
 
+      {/* Error Display */}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
         </div>
       )}
 
-      {/* Search and Filter Section */}
+      {/* Search and Filter */}
       <div className="card mb-6">
         <div className="card-body">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -268,7 +264,7 @@ const Ingredients = () => {
               </tr>
             </thead>
             <tbody className="table-body">
-              {ingredients.length === 0 ? (
+              {filteredIngredients.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="text-center text-gray-500 py-8">
                     <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -276,38 +272,29 @@ const Ingredients = () => {
                   </td>
                 </tr>
               ) : (
-                ingredients.map((ingredient) => (
+                filteredIngredients.map(ingredient => (
                   <tr key={ingredient._id}>
+                    <td className="font-medium text-gray-900">{ingredient.name}</td>
+                    <td>{ingredient.quantity}</td>
+                    <td>{ingredient.unit}</td>
                     <td>
-                      <div className="flex items-center space-x-2">
-                        <Package className="w-4 h-4 text-gray-400" />
-                        <span className="font-medium text-gray-900">{ingredient.name}</span>
-                      </div>
+                      <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                        {ingredient.storeName || 'Unknown Store'}
+                      </span>
                     </td>
-                    <td className="text-gray-600">
-                      {ingredient.quantity}
-                    </td>
-                    <td className="text-gray-600">
-                      {units.find(u => u.value === ingredient.unit)?.label || ingredient.unit}
-                    </td>
-                    <td className="text-gray-600">
-                      {ingredient.store?.name || 'Unknown Store'}
-                    </td>
-                    <td className="text-gray-500">
-                      {new Date(ingredient.createdAt).toLocaleDateString()}
-                    </td>
+                    <td>{new Date(ingredient.createdAt).toLocaleDateString()}</td>
                     <td>
                       <div className="flex space-x-2">
                         <button
                           onClick={() => handleEdit(ingredient)}
-                          className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 transition-colors"
+                          className="text-blue-600 hover:text-blue-800"
                           title="Edit ingredient"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(ingredient._id)}
-                          className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
+                          className="text-red-600 hover:text-red-800"
                           title="Delete ingredient"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -322,7 +309,7 @@ const Ingredients = () => {
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Modal */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content max-w-md">
@@ -341,9 +328,9 @@ const Ingredients = () => {
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     required
+                    maxLength={100}
                     className="input w-full"
                     placeholder="Enter ingredient name"
-                    maxLength={100}
                   />
                 </div>
 
@@ -384,19 +371,29 @@ const Ingredients = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Store *
                   </label>
-                  <select
-                    value={formData.store}
-                    onChange={(e) => setFormData({...formData, store: e.target.value})}
-                    required
-                    className="select w-full"
-                  >
-                    <option value="">Select a store...</option>
-                    {stores.map(store => (
-                      <option key={store._id} value={store._id}>
-                        {store.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center space-x-2">
+                    <select
+                      value={formData.store}
+                      onChange={(e) => setFormData({...formData, store: e.target.value})}
+                      required
+                      className="select flex-1"
+                    >
+                      <option value="">Select a store...</option>
+                      {stores.map(store => (
+                        <option key={store._id} value={store._id}>
+                          {store.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => fetchStores(true)}
+                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                      title="Refresh stores"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </button>
+                  </div>
                   {stores.length === 0 && (
                     <p className="text-sm text-gray-500 mt-1">
                       No stores available. Please add stores in Master Data → Stores first.
@@ -414,7 +411,6 @@ const Ingredients = () => {
                   </button>
                   <button
                     type="submit"
-                    disabled={stores.length === 0}
                     className="btn-primary"
                   >
                     {editingIngredient ? 'Update' : 'Add'} Ingredient
