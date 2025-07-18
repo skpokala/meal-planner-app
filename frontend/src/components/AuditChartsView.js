@@ -67,9 +67,44 @@ const AuditChartsView = ({ filters = {} }) => {
       console.log('Fetching chart data with timeframe:', timeframe, 'filters:', filters);
       
       // Fetch comprehensive audit data for charts
+      // Clean and validate filters to ensure they pass backend validation
+      const cleanFilters = {};
+      if (filters.action && ['login', 'logout', 'failed_login', 'password_change', 'profile_update'].includes(filters.action)) {
+        cleanFilters.action = filters.action;
+      }
+      if (filters.status && ['success', 'failure'].includes(filters.status)) {
+        cleanFilters.status = filters.status;
+      }
+      if (filters.userType && ['User', 'FamilyMember'].includes(filters.userType)) {
+        cleanFilters.userType = filters.userType;
+      }
+      if (filters.username) {
+        cleanFilters.username = filters.username;
+      }
+      if (filters.ipAddress) {
+        cleanFilters.ipAddress = filters.ipAddress;
+      }
+      if (filters.startDate) {
+        cleanFilters.startDate = filters.startDate;
+      }
+      if (filters.endDate) {
+        cleanFilters.endDate = filters.endDate;
+      }
+      
+      // Use limit=100 (max allowed by backend) instead of 1000
+      const auditParams = new URLSearchParams({ ...cleanFilters, limit: '100' });
+      
+      // Validate timeframe is within allowed range (1-168 hours)
+      const validTimeframe = Math.max(1, Math.min(168, parseInt(timeframe)));
+      
+      console.log('Making API calls with:');
+      console.log('- Stats endpoint: /audit/stats?timeframe=' + validTimeframe);
+      console.log('- Audit endpoint: /audit?' + auditParams.toString());
+      console.log('- Clean filters:', cleanFilters);
+      
       const [statsResponse, logsResponse] = await Promise.all([
-        api.get(`/audit/stats?timeframe=${timeframe}`),
-        api.get(`/audit?limit=1000&${new URLSearchParams(filters).toString()}`)
+        api.get(`/audit/stats?timeframe=${validTimeframe}`),
+        api.get(`/audit?${auditParams.toString()}`)
       ]);
 
       console.log('Stats response:', statsResponse.data);
