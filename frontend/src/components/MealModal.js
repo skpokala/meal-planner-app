@@ -367,7 +367,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
 
           {/* Ingredients Section */}
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">
                 Ingredients (Optional)
               </label>
@@ -381,6 +381,9 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                 Add Ingredient
               </button>
             </div>
+            <p className="text-xs text-secondary-500 dark:text-secondary-400 mb-3">
+              Only ingredient selection is required. Quantity, unit, and notes are optional.
+            </p>
             
             {formData.ingredients.length > 0 && (
               <div className="space-y-3 max-h-60 overflow-y-auto">
@@ -390,7 +393,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                       {/* Ingredient Selection */}
                       <div className="col-span-4">
                         <label className="block text-xs font-medium text-secondary-600 dark:text-secondary-400 mb-1">
-                          Ingredient
+                          Ingredient *
                         </label>
                         <div className="flex items-center space-x-1">
                           <select
@@ -448,7 +451,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                       {/* Unit */}
                       <div className="col-span-2">
                         <label className="block text-xs font-medium text-secondary-600 dark:text-secondary-400 mb-1">
-                          Unit
+                          Unit (Optional)
                         </label>
                         <select
                           value={ingredient.unit}
@@ -456,7 +459,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                           disabled={loading}
                           className="select select-sm w-full"
                         >
-                          <option value="">Unit</option>
+                          <option value="">Select unit...</option>
                           <option value="lbs">lbs</option>
                           <option value="oz">oz</option>
                           <option value="kg">kg</option>
@@ -473,7 +476,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                       {/* Notes */}
                       <div className="col-span-3">
                         <label className="block text-xs font-medium text-secondary-600 dark:text-secondary-400 mb-1">
-                          Notes
+                          Notes (Optional)
                         </label>
                         <input
                           type="text"
@@ -481,7 +484,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                           onChange={(e) => updateIngredient(index, 'notes', e.target.value)}
                           disabled={loading}
                           className="input text-sm w-full"
-                          placeholder="Optional notes"
+                          placeholder="Add notes about this ingredient..."
                         />
                       </div>
                       
