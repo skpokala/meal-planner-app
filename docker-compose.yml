@@ -52,7 +52,7 @@ services:
       dockerfile: Dockerfile
       args:
         REACT_APP_API_URL: http://localhost:5002/api
-        REACT_APP_VERSION: "1.1.61"
+        REACT_APP_VERSION: "1.1.62"
     container_name: meal-planner-frontend
     restart: unless-stopped
     depends_on:
