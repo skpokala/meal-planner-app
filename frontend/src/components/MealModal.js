@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Clock, Plus, Trash2 } from 'lucide-react';
+import { X, Save, Clock, Plus, Trash2, RotateCcw } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -14,9 +14,34 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
   const [loading, setLoading] = useState(false);
   const [availableIngredients, setAvailableIngredients] = useState([]);
   const [loadingIngredients, setLoadingIngredients] = useState(false);
+  
+  // New ingredient modal state
+  const [showNewIngredientModal, setShowNewIngredientModal] = useState(false);
+  const [newIngredientData, setNewIngredientData] = useState({
+    name: '',
+    quantity: '',
+    unit: 'lbs',
+    store: ''
+  });
+  const [stores, setStores] = useState([]);
+  const [loadingStores, setLoadingStores] = useState(false);
+  const [currentIngredientIndex, setCurrentIngredientIndex] = useState(null);
 
   const isEditMode = mode === 'edit';
   const isAddMode = mode === 'add';
+
+  const units = [
+    { value: 'lbs', label: 'Pounds (lbs)' },
+    { value: 'oz', label: 'Ounces (oz)' },
+    { value: 'kg', label: 'Kilograms (kg)' },
+    { value: 'g', label: 'Grams (g)' },
+    { value: 'count', label: 'Count' },
+    { value: 'cups', label: 'Cups' },
+    { value: 'tbsp', label: 'Tablespoons (tbsp)' },
+    { value: 'tsp', label: 'Teaspoons (tsp)' },
+    { value: 'ml', label: 'Milliliters (ml)' },
+    { value: 'l', label: 'Liters (l)' }
+  ];
 
   useEffect(() => {
     if (isOpen) {
@@ -38,8 +63,9 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
           ingredients: [],
         });
       }
-      // Load available ingredients
+      // Load available ingredients and stores
       loadAvailableIngredients();
+      loadStores();
     }
   }, [meal, isOpen, mode, isEditMode, isAddMode]);
 
@@ -53,6 +79,64 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
       toast.error('Failed to load ingredients');
     } finally {
       setLoadingIngredients(false);
+    }
+  };
+
+  const loadStores = async () => {
+    try {
+      setLoadingStores(true);
+      const response = await api.get('/ingredients/stores/list');
+      if (response.data.success) {
+        setStores(response.data.stores || []);
+      }
+    } catch (error) {
+      console.error('Error loading stores:', error);
+      toast.error('Failed to load stores');
+    } finally {
+      setLoadingStores(false);
+    }
+  };
+
+  const handleCreateNewIngredient = async () => {
+    if (!newIngredientData.name.trim() || !newIngredientData.quantity || !newIngredientData.store) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const payload = {
+        name: newIngredientData.name.trim(),
+        quantity: parseFloat(newIngredientData.quantity),
+        unit: newIngredientData.unit,
+        store: newIngredientData.store
+      };
+
+      const response = await api.post('/ingredients', payload);
+      if (response.data.success) {
+        toast.success('Ingredient created successfully');
+        
+        // Refresh ingredients list
+        await loadAvailableIngredients();
+        
+        // Auto-select the newly created ingredient if we have a current index
+        if (currentIngredientIndex !== null && response.data.ingredient) {
+          updateIngredient(currentIngredientIndex, 'ingredient', response.data.ingredient._id);
+        }
+        
+        // Reset form
+        setNewIngredientData({
+          name: '',
+          quantity: '',
+          unit: 'lbs',
+          store: ''
+        });
+        setShowNewIngredientModal(false);
+        setCurrentIngredientIndex(null);
+      }
+    } catch (error) {
+      console.error('Error creating ingredient:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to create ingredient';
+      toast.error(errorMessage);
     }
   };
 
@@ -161,8 +245,9 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+    <>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-secondary-200 dark:border-secondary-700">
           <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
@@ -263,19 +348,40 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                         <label className="block text-xs font-medium text-secondary-600 dark:text-secondary-400 mb-1">
                           Ingredient
                         </label>
-                        <select
-                          value={ingredient.ingredient}
-                          onChange={(e) => updateIngredient(index, 'ingredient', e.target.value)}
-                          disabled={loading || loadingIngredients}
-                          className="select select-sm w-full"
-                        >
-                          <option value="">Select ingredient...</option>
-                          {availableIngredients.map(ing => (
-                            <option key={ing._id} value={ing._id}>
-                              {ing.name}
+                        <div className="flex items-center space-x-1">
+                          <select
+                            value={ingredient.ingredient}
+                            onChange={(e) => {
+                              if (e.target.value === 'create-new') {
+                                setCurrentIngredientIndex(index);
+                                setShowNewIngredientModal(true);
+                              } else {
+                                updateIngredient(index, 'ingredient', e.target.value);
+                              }
+                            }}
+                            disabled={loading || loadingIngredients}
+                            className="select select-sm flex-1"
+                          >
+                            <option value="">Select ingredient...</option>
+                            <option value="create-new" className="text-blue-600 font-medium">
+                              + Create New Ingredient
                             </option>
-                          ))}
-                        </select>
+                            {availableIngredients.map(ing => (
+                              <option key={ing._id} value={ing._id}>
+                                {ing.name}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => loadAvailableIngredients()}
+                            disabled={loadingIngredients}
+                            className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                            title="Refresh ingredients"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                       
                       {/* Quantity */}
@@ -406,8 +512,131 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
             </button>
           </div>
         </form>
+        </div>
       </div>
-    </div>
+
+      {/* New Ingredient Modal */}
+      {showNewIngredientModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                Create New Ingredient
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Ingredient Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={newIngredientData.name}
+                    onChange={(e) => setNewIngredientData({...newIngredientData, name: e.target.value})}
+                    className="input w-full"
+                    placeholder="Enter ingredient name"
+                    maxLength={100}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Quantity *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={newIngredientData.quantity}
+                    onChange={(e) => setNewIngredientData({...newIngredientData, quantity: e.target.value})}
+                    className="input w-full"
+                    placeholder="Enter quantity"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Unit *
+                  </label>
+                  <select
+                    value={newIngredientData.unit}
+                    onChange={(e) => setNewIngredientData({...newIngredientData, unit: e.target.value})}
+                    className="select w-full"
+                  >
+                    {units.map(unit => (
+                      <option key={unit.value} value={unit.value}>
+                        {unit.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Store *
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <select
+                      value={newIngredientData.store}
+                      onChange={(e) => setNewIngredientData({...newIngredientData, store: e.target.value})}
+                      required
+                      className="select flex-1"
+                    >
+                      <option value="">Select a store...</option>
+                      {stores.map(store => (
+                        <option key={store._id} value={store._id}>
+                          {store.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => loadStores()}
+                      disabled={loadingStores}
+                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                      title="Refresh stores"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {stores.length === 0 && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      No stores available. Please add stores in Master Data → Stores first.
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewIngredientModal(false);
+                      setNewIngredientData({
+                        name: '',
+                        quantity: '',
+                        unit: 'lbs',
+                        store: ''
+                      });
+                      setCurrentIngredientIndex(null);
+                    }}
+                    className="btn-outline"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCreateNewIngredient}
+                    className="btn-primary"
+                  >
+                    Create Ingredient
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
