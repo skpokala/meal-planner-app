@@ -56,50 +56,76 @@ const AuditChartsView = ({ filters = {} }) => {
     try {
       setLoading(true);
       
+      // Check if user is authenticated
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No authentication token found');
+        toast.error('Please login to view charts');
+        return;
+      }
+
+      console.log('Fetching chart data with timeframe:', timeframe, 'filters:', filters);
+      
       // Fetch comprehensive audit data for charts
       const [statsResponse, logsResponse] = await Promise.all([
         api.get(`/audit/stats?timeframe=${timeframe}`),
         api.get(`/audit?limit=1000&${new URLSearchParams(filters).toString()}`)
       ]);
 
+      console.log('Stats response:', statsResponse.data);
+      console.log('Logs response:', logsResponse.data);
+
       const stats = statsResponse.data.stats;
       const logs = logsResponse.data.auditLogs;
 
       // Process data for charts
       const processedData = processAuditDataForCharts(stats, logs);
+      console.log('Processed data:', processedData);
       setChartData(processedData);
     } catch (error) {
       console.error('Error fetching chart data:', error);
-      toast.error('Failed to load chart data');
+      console.error('Error details:', error.response?.data || error.message);
+      toast.error(`Failed to load chart data: ${error.response?.data?.message || error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
   const processAuditDataForCharts = (stats, logs) => {
+    // Provide default values for missing data
+    const safeStats = {
+      trends: stats?.trends || [],
+      summary: stats?.summary || [],
+      topUsers: stats?.topUsers || [],
+      failedLogins: stats?.failedLogins || []
+    };
+    const safeLogs = logs || [];
+
+    console.log('Processing data with safe stats:', safeStats, 'and safe logs:', safeLogs);
+
     // Activity trends over time (last 7 days)
-    const activityTrends = processActivityTrends(stats.trends);
+    const activityTrends = processActivityTrends(safeStats.trends);
     
     // Action distribution
-    const actionDistribution = processActionDistribution(stats.summary);
+    const actionDistribution = processActionDistribution(safeStats.summary);
     
     // Status distribution
-    const statusDistribution = processStatusDistribution(stats.summary);
+    const statusDistribution = processStatusDistribution(safeStats.summary);
     
     // User activity
-    const userActivity = processUserActivity(stats.topUsers);
+    const userActivity = processUserActivity(safeStats.topUsers);
     
     // Failed login attempts
-    const failedLogins = processFailedLogins(stats.failedLogins);
+    const failedLogins = processFailedLogins(safeStats.failedLogins);
     
     // Hourly activity pattern
-    const hourlyPattern = processHourlyPattern(logs);
+    const hourlyPattern = processHourlyPattern(safeLogs);
     
     // User type distribution
-    const userTypeDistribution = processUserTypeDistribution(stats.summary);
+    const userTypeDistribution = processUserTypeDistribution(safeStats.summary);
     
     // IP address activity
-    const ipActivity = processIpActivity(logs);
+    const ipActivity = processIpActivity(safeLogs);
 
     return {
       activityTrends,
