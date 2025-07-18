@@ -188,11 +188,24 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
           prepTime: parseInt(formData.prepTime) || 0,
           active: formData.active,
           ingredients: formData.ingredients
-            .filter(ing => ing.ingredient) // Only include ingredients with selected ingredient
+            .filter(ing => {
+              // Only include ingredients with valid selected ingredient
+              if (!ing.ingredient || ing.ingredient.trim() === '') {
+                return false;
+              }
+              // Basic check for valid ObjectId format (24 character hex string)
+              const trimmedId = ing.ingredient.trim();
+              if (!/^[0-9a-fA-F]{24}$/.test(trimmedId)) {
+                console.warn('Invalid ingredient ID format:', trimmedId);
+                return false;
+              }
+              return true;
+            })
             .map(ing => ({
-              ...ing,
+              ingredient: ing.ingredient.trim(),
               quantity: ing.quantity === '' || ing.quantity === null || ing.quantity === undefined ? null : parseFloat(ing.quantity),
-              unit: ing.unit === '' || ing.unit === null || ing.unit === undefined ? null : ing.unit
+              unit: ing.unit === '' || ing.unit === null || ing.unit === undefined ? null : ing.unit,
+              notes: ing.notes === '' || ing.notes === null || ing.notes === undefined ? null : ing.notes
             }))
         };
         response = await api.put(`/meals/${meal._id}`, mealData);
@@ -205,11 +218,24 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
           prepTime: parseInt(formData.prepTime) || 0,
           active: formData.active,
           ingredients: formData.ingredients
-            .filter(ing => ing.ingredient) // Only include ingredients with selected ingredient
+            .filter(ing => {
+              // Only include ingredients with valid selected ingredient
+              if (!ing.ingredient || ing.ingredient.trim() === '') {
+                return false;
+              }
+              // Basic check for valid ObjectId format (24 character hex string)
+              const trimmedId = ing.ingredient.trim();
+              if (!/^[0-9a-fA-F]{24}$/.test(trimmedId)) {
+                console.warn('Invalid ingredient ID format:', trimmedId);
+                return false;
+              }
+              return true;
+            })
             .map(ing => ({
-              ...ing,
+              ingredient: ing.ingredient.trim(),
               quantity: ing.quantity === '' || ing.quantity === null || ing.quantity === undefined ? null : parseFloat(ing.quantity),
-              unit: ing.unit === '' || ing.unit === null || ing.unit === undefined ? null : ing.unit
+              unit: ing.unit === '' || ing.unit === null || ing.unit === undefined ? null : ing.unit,
+              notes: ing.notes === '' || ing.notes === null || ing.notes === undefined ? null : ing.notes
             }))
         };
         console.log('Creating meal with data:', JSON.stringify(mealData, null, 2));
