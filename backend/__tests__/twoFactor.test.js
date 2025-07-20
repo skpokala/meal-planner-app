@@ -309,9 +309,9 @@ describe('Two-Factor Authentication', () => {
     });
 
     it('should work with backup code', async () => {
-      // Mock the verifyBackupCode method to return true
-      const originalVerifyBackupCode = testUser.verifyBackupCode;
-      testUser.verifyBackupCode = jest.fn().mockReturnValue(true);
+      // Mock the User prototype verifyBackupCode method to return true
+      const originalVerifyBackupCode = User.prototype.verifyBackupCode;
+      User.prototype.verifyBackupCode = jest.fn().mockReturnValue(true);
 
       const response = await request(app)
         .post('/api/2fa/disable')
@@ -325,7 +325,7 @@ describe('Two-Factor Authentication', () => {
       expect(response.body.success).toBe(true);
 
       // Restore original method
-      testUser.verifyBackupCode = originalVerifyBackupCode;
+      User.prototype.verifyBackupCode = originalVerifyBackupCode;
     });
   });
 

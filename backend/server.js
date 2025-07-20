@@ -55,7 +55,10 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/meal_plan
 })
 .then(() => {
   logger.info('Connected to MongoDB');
-  initializeAdmin();
+  // Only initialize admin if not in test environment
+  if (process.env.NODE_ENV !== 'test') {
+    initializeAdmin();
+  }
 })
 .catch((error) => {
   logger.error('MongoDB connection error:', error);
@@ -129,8 +132,11 @@ app.use('*', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`);
-});
+// Only start the server if this file is run directly (not when imported for tests)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    logger.info(`Server running on port ${PORT}`);
+  });
+}
 
 module.exports = app; 
