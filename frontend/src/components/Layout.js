@@ -222,9 +222,24 @@ const Layout = ({ children }) => {
               >
                 <Menu className="w-6 h-6" />
               </button>
-              <h1 className="text-xl font-semibold text-secondary-900 dark:text-secondary-100 truncate">
-                {navigation.find(item => isActivePath(item.href))?.name || 'Dashboard'}
-              </h1>
+              
+              {/* Section Icon and Title */}
+              <div className="flex items-center min-w-0">
+                {(() => {
+                  const currentNav = navigation.find(item => isActivePath(item.href)) || navigation[0];
+                  const IconComponent = currentNav.icon;
+                  return (
+                    <>
+                      <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                        <IconComponent className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                      </div>
+                      <h1 className="text-xl font-semibold text-secondary-900 dark:text-secondary-100 truncate">
+                        {currentNav.name}
+                      </h1>
+                    </>
+                  );
+                })()}
+              </div>
             </div>
 
             {/* Theme toggle and User menu */}
