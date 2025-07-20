@@ -154,6 +154,29 @@ router.post('/login', [
       });
     }
 
+    // Check if 2FA is enabled
+    if (user.twoFactorEnabled) {
+      // Generate temporary token for 2FA verification
+      const temporaryToken = jwt.sign(
+        { 
+          userId: user._id, 
+          username: user.username, 
+          role: user.role,
+          userType: userType,
+          temp2FA: true
+        },
+        process.env.JWT_SECRET || 'fallback-secret',
+        { expiresIn: '10m' } // Short expiration for 2FA verification
+      );
+
+      return res.json({
+        success: true,
+        requiresTwoFactor: true,
+        message: 'Please enter your 2FA code',
+        temporaryToken: temporaryToken
+      });
+    }
+
     // Update last login
     user.lastLogin = new Date();
     await user.save();

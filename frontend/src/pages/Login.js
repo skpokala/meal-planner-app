@@ -4,12 +4,16 @@ import { useAuth } from '../contexts/AuthContext';
 import { Calendar, Eye, EyeOff, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ThemeToggle from '../components/ThemeToggle';
+import TwoFactorVerification from '../components/TwoFactorVerification';
+import api from '../services/api';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showTwoFactor, setShowTwoFactor] = useState(false);
+  const [temporaryToken, setTemporaryToken] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -18,9 +22,21 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await login(username, password);
-      toast.success('Welcome back!');
-      navigate('/dashboard');
+      const response = await api.post('/auth/login', { username, password });
+      
+      if (response.data.requiresTwoFactor) {
+        // 2FA is required, show verification screen
+        setTemporaryToken(response.data.temporaryToken);
+        setShowTwoFactor(true);
+        toast.info(response.data.message);
+      } else {
+        // No 2FA required, proceed with login
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        toast.success('Welcome back!');
+        window.location.href = '/dashboard';
+      }
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
       toast.error(errorMessage);
@@ -28,6 +44,33 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  const handleTwoFactorSuccess = (data) => {
+    // 2FA verification successful, complete login
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+    // Reload the page to trigger the AuthContext to load the user
+    window.location.href = '/dashboard';
+  };
+
+  const handleTwoFactorCancel = () => {
+    // User cancelled 2FA, return to login form
+    setShowTwoFactor(false);
+    setTemporaryToken('');
+    setPassword('');
+  };
+
+  // Show 2FA verification if required
+  if (showTwoFactor) {
+    return (
+      <TwoFactorVerification
+        temporaryToken={temporaryToken}
+        onSuccess={handleTwoFactorSuccess}
+        onCancel={handleTwoFactorCancel}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-100 dark:from-secondary-900 dark:to-secondary-800 flex items-center justify-center px-4 sm:px-6 lg:px-8">

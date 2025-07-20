@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, Lock, Save, Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import TwoFactorSetup from '../components/TwoFactorSetup';
 import toast from 'react-hot-toast';
 
 const Settings = () => {
@@ -130,6 +131,7 @@ const Settings = () => {
   const baseTabs = [
     { id: 'profile', name: 'Profile', icon: User },
     { id: 'password', name: 'Password', icon: Lock },
+    { id: 'twoFactor', name: '2FA', icon: Shield },
   ];
 
   // Add master password tab for admin users
@@ -358,6 +360,22 @@ const Settings = () => {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'twoFactor' && (
+            <div className="card">
+              <div className="card-header">
+                <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
+                  Two-Factor Authentication
+                </h3>
+                <p className="text-sm text-secondary-600 dark:text-secondary-400">
+                  Secure your account with an extra layer of protection
+                </p>
+              </div>
+              <div className="card-body p-0">
+                <TwoFactorSetup />
               </div>
             </div>
           )}

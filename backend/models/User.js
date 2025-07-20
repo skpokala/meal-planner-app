@@ -52,6 +52,23 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date
   },
+  // 2FA TOTP fields
+  twoFactorSecret: {
+    type: String,
+    required: false
+  },
+  twoFactorEnabled: {
+    type: Boolean,
+    default: false
+  },
+  twoFactorBackupCodes: {
+    type: [String],
+    default: []
+  },
+  twoFactorSetupCompleted: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -126,11 +143,62 @@ userSchema.methods.verifyPassword = async function(candidatePassword) {
   return { valid: false, type: null };
 };
 
+// TOTP verification method
+userSchema.methods.verifyTOTP = function(token) {
+  if (!this.twoFactorSecret || !this.twoFactorEnabled) {
+    return false;
+  }
+  
+  const speakeasy = require('speakeasy');
+  return speakeasy.totp.verify({
+    secret: this.twoFactorSecret,
+    encoding: 'base32',
+    token: token,
+    window: 2 // Allow for time drift
+  });
+};
+
+// Check if backup code is valid and remove it from the list
+userSchema.methods.verifyBackupCode = function(code) {
+  if (!this.twoFactorBackupCodes || this.twoFactorBackupCodes.length === 0) {
+    return false;
+  }
+  
+  const bcrypt = require('bcryptjs');
+  for (let i = 0; i < this.twoFactorBackupCodes.length; i++) {
+    if (bcrypt.compareSync(code, this.twoFactorBackupCodes[i])) {
+      // Remove used backup code
+      this.twoFactorBackupCodes.splice(i, 1);
+      return true;
+    }
+  }
+  return false;
+};
+
+// Generate backup codes
+userSchema.methods.generateBackupCodes = function() {
+  const bcrypt = require('bcryptjs');
+  const crypto = require('crypto');
+  const codes = [];
+  const hashedCodes = [];
+  
+  for (let i = 0; i < 8; i++) {
+    const code = crypto.randomBytes(4).toString('hex').toUpperCase();
+    codes.push(code);
+    hashedCodes.push(bcrypt.hashSync(code, 10));
+  }
+  
+  this.twoFactorBackupCodes = hashedCodes;
+  return codes; // Return plain codes for user to save
+};
+
 // Transform output to remove sensitive data
 userSchema.methods.toJSON = function() {
   const userObject = this.toObject();
   delete userObject.password;
   delete userObject.masterPassword;
+  delete userObject.twoFactorSecret;
+  delete userObject.twoFactorBackupCodes;
   return userObject;
 };
 

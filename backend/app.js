@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 
 // Import routes
 const authRoutes = require('./routes/auth');
+const twoFactorRoutes = require('./routes/twoFactor');
 const familyMemberRoutes = require('./routes/familyMembers');
 const mealRoutes = require('./routes/meals');
 const mealPlanRoutes = require('./routes/mealPlans');
@@ -73,6 +74,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/2fa', twoFactorRoutes);
 app.use('/api/family-members', familyMemberRoutes);
 app.use('/api/meals', mealRoutes);
 app.use('/api/meal-plans', mealPlanRoutes);
