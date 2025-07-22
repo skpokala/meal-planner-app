@@ -63,7 +63,7 @@ jobs:
     
     - name: Run backend tests
       working-directory: ./backend
-      run: npm run test:coverage
+      run: npm run test:ci
       timeout-minutes: 15
       env:
         NODE_ENV: test
