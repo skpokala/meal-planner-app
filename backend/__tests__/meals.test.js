@@ -642,7 +642,7 @@ describe('Meals API Endpoints', () => {
         expect.arrayContaining([
           expect.objectContaining({
             path: 'ingredients[0].quantity',
-            msg: 'Quantity must be a number'
+            msg: 'Quantity must be a positive number or empty'
           })
         ])
       );
@@ -670,7 +670,7 @@ describe('Meals API Endpoints', () => {
         expect.arrayContaining([
           expect.objectContaining({
             path: 'ingredients[0].unit',
-            msg: 'Invalid unit'
+            msg: 'Invalid unit. Must be one of: lbs, oz, kg, g, count, cups, tbsp, tsp, ml, l'
           })
         ])
       );
