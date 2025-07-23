@@ -14,6 +14,7 @@ import MasterData from './pages/MasterData';
 import Settings from './pages/Settings';
 import Audit from './pages/Audit';
 import ReleaseNotesHistory from './pages/ReleaseNotesHistory';
+import BugManagement from './pages/BugManagement';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import ReleaseNotesWrapper from './components/ReleaseNotesWrapper';
@@ -37,6 +38,7 @@ function App() {
                 <Route path="/master-data" element={<ProtectedRoute><Layout><MasterData /></Layout></ProtectedRoute>} />
                 <Route path="/audit" element={<ProtectedRoute requireAdmin={true}><Layout><Audit /></Layout></ProtectedRoute>} />
                 <Route path="/release-notes" element={<ProtectedRoute requireAdmin={true}><Layout><ReleaseNotesHistory /></Layout></ProtectedRoute>} />
+                <Route path="/bugs" element={<ProtectedRoute><Layout><BugManagement /></Layout></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
               </Routes>
             </ReleaseNotesWrapper>

@@ -16,6 +16,7 @@ const storeRoutes = require('./routes/stores');
 const versionRoutes = require('./routes/version');
 const auditRoutes = require('./routes/audit');
 const releaseNotesRoutes = require('./routes/releaseNotes');
+const bugRoutes = require('./routes/bugs');
 
 const app = express();
 
@@ -102,6 +103,7 @@ app.use('/api/stores', storeRoutes);
 app.use('/api/version', versionRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/release-notes', releaseNotesRoutes);
+app.use('/api/bugs', bugRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

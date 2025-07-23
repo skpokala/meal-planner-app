@@ -1,7 +1,7 @@
-const User = require('../../models/User');
-const Store = require('../../models/Store');
-const Ingredient = require('../../models/Ingredient');
-const Meal = require('../../models/Meal');
+const User = require('../models/User');
+const Store = require('../models/Store');
+const Ingredient = require('../models/Ingredient');
+const Meal = require('../models/Meal');
 
 /**
  * Create a test user with default values

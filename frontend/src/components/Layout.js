@@ -19,6 +19,7 @@ import {
   Database,
   Shield,
   FileText,
+  Bug,
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
@@ -43,6 +44,9 @@ const Layout = ({ children }) => {
     if (isAdmin()) {
       baseNavigation.splice(1, 0, { name: 'Family Members', href: '/family-members', icon: Users });
     }
+
+    // Add bug management for all users
+    baseNavigation.push({ name: 'Bug Reports', href: '/bugs', icon: Bug });
 
     // Add admin-only sections
     if (isAdmin()) {
