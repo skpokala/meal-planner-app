@@ -162,7 +162,7 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
                     <textarea
                       value={item[field.name] || ''}
                       onChange={(e) => handleArrayItemChange(arrayName, index, field.name, e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-secondary-700 dark:text-gray-100"
+                      className="input"
                       rows="2"
                       placeholder={field.placeholder}
                     />
@@ -171,7 +171,7 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
                       type={field.type || 'text'}
                       value={item[field.name] || ''}
                       onChange={(e) => handleArrayItemChange(arrayName, index, field.name, e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-secondary-700 dark:text-gray-100"
+                      className="input"
                       placeholder={field.placeholder}
                     />
                   )}
@@ -242,7 +242,7 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
                 name="version"
                 value={formData.version}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-secondary-700 dark:text-gray-100"
+                className="input"
                 placeholder="e.g., 1.2.0"
                 required
               />
@@ -256,7 +256,7 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
                 name="type"
                 value={formData.type}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-secondary-700 dark:text-gray-100"
+                className="select"
                 required
               >
                 <option value="patch">Patch</option>
@@ -276,7 +276,7 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
               name="title"
               value={formData.title}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-secondary-700 dark:text-gray-100"
+              className="input"
               placeholder="e.g., New Features and Bug Fixes"
               required
             />
@@ -290,7 +290,7 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
               name="content"
               value={formData.content}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-secondary-700 dark:text-gray-100"
+              className="input"
               rows="4"
               placeholder="Describe the main highlights of this release..."
               required
@@ -307,7 +307,7 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
                 name="author"
                 value={formData.author}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-secondary-700 dark:text-gray-100"
+                className="input"
                 placeholder="Leave empty to use current user"
               />
             </div>
