@@ -81,15 +81,15 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
   const getReleaseTypeColor = (type) => {
     switch (type) {
       case 'major':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800';
       case 'minor':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800';
       case 'patch':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800';
       case 'hotfix':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
     }
   };
 
@@ -109,37 +109,37 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
         role="dialog" 
         aria-modal="true" 
         aria-labelledby="release-notes-title"
-        className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden"
+        className="bg-white dark:bg-secondary-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden"
       >
         {loading ? (
           <div className="p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading release notes...</p>
+            <p className="mt-2 text-gray-600 dark:text-gray-300">Loading release notes...</p>
           </div>
         ) : error ? (
           <div className="p-8 text-center">
             <div className="text-red-500 mb-2">
               <X className="w-8 h-8 mx-auto" />
             </div>
-            <p className="text-red-600">{error}</p>
+            <p className="text-red-600 dark:text-red-400">{error}</p>
             <button
               onClick={onClose}
               aria-label="Close release notes modal"
-              className="mt-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+              className="mt-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700"
             >
               Close
             </button>
           </div>
         ) : releaseNotes.length === 0 ? (
           <div className="p-8 text-center">
-            <div className="text-gray-400 mb-2">
+            <div className="text-gray-400 dark:text-gray-500 mb-2">
               <Tag className="w-8 h-8 mx-auto" />
             </div>
-            <p className="text-gray-600">No new release notes available</p>
+            <p className="text-gray-600 dark:text-gray-300">No new release notes available</p>
             <button
               onClick={onClose}
               aria-label="Close release notes modal"
-              className="mt-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+              className="mt-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700"
             >
               Close
             </button>
@@ -181,15 +181,15 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
 
             {/* Progress indicator */}
             {releaseNotes.length > 1 && (
-              <div className="bg-gray-50 px-6 py-2 border-b">
-                <div className="flex justify-between items-center text-sm text-gray-600">
+              <div className="bg-gray-50 dark:bg-secondary-700 px-6 py-2 border-b border-gray-200 dark:border-secondary-600">
+                <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-300">
                   <span>Release {currentIndex + 1} of {releaseNotes.length}</span>
                   <div className="flex space-x-1">
                     {releaseNotes.map((_, index) => (
                       <div
                         key={index}
                         className={`w-2 h-2 rounded-full ${
-                          index === currentIndex ? 'bg-blue-500' : 'bg-gray-300'
+                          index === currentIndex ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
                         }`}
                       />
                     ))}
@@ -201,7 +201,7 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
             {/* Content */}
             <div className="p-6 max-h-[60vh] overflow-y-auto">
               {/* Main content */}
-              <div className="prose prose-sm max-w-none mb-6">
+              <div className="prose prose-sm max-w-none mb-6 text-gray-800 dark:text-gray-200">
                 <div dangerouslySetInnerHTML={{ __html: currentRelease.content.replace(/\n/g, '<br />') }} />
               </div>
 
@@ -209,7 +209,7 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
               <div className="space-y-6">
                 {currentRelease.features && currentRelease.features.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-green-700 mb-3 flex items-center">
+                    <h3 className="text-lg font-semibold text-green-700 dark:text-green-400 mb-3 flex items-center">
                       <Zap className="w-5 h-5 mr-2" />
                       New Features
                     </h3>
@@ -218,9 +218,9 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
                         <li key={index} className="flex items-start">
                           <span className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
                           <div>
-                            <span className="font-medium">{feature.type}</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-100">{feature.type}</span>
                             {feature.description && (
-                              <p className="text-gray-600 text-sm mt-1">{feature.description}</p>
+                              <p className="text-gray-600 dark:text-gray-300 text-sm mt-1">{feature.description}</p>
                             )}
                           </div>
                         </li>
@@ -231,7 +231,7 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
 
                 {currentRelease.bugFixes && currentRelease.bugFixes.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-red-700 mb-3 flex items-center">
+                    <h3 className="text-lg font-semibold text-red-700 dark:text-red-400 mb-3 flex items-center">
                       <Bug className="w-5 h-5 mr-2" />
                       Bug Fixes
                     </h3>
@@ -240,9 +240,9 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
                         <li key={index} className="flex items-start">
                           <span className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
                           <div>
-                            <span className="font-medium">{fix.type}</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-100">{fix.type}</span>
                             {fix.description && (
-                              <p className="text-gray-600 text-sm mt-1">{fix.description}</p>
+                              <p className="text-gray-600 dark:text-gray-300 text-sm mt-1">{fix.description}</p>
                             )}
                           </div>
                         </li>
@@ -253,7 +253,7 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
 
                 {currentRelease.improvements && currentRelease.improvements.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-blue-700 mb-3 flex items-center">
+                    <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400 mb-3 flex items-center">
                       <Wrench className="w-5 h-5 mr-2" />
                       Improvements
                     </h3>
@@ -262,9 +262,9 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
                         <li key={index} className="flex items-start">
                           <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
                           <div>
-                            <span className="font-medium">{improvement.type}</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-100">{improvement.type}</span>
                             {improvement.description && (
-                              <p className="text-gray-600 text-sm mt-1">{improvement.description}</p>
+                              <p className="text-gray-600 dark:text-gray-300 text-sm mt-1">{improvement.description}</p>
                             )}
                           </div>
                         </li>
@@ -276,8 +276,8 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
 
               {/* GitHub links */}
               {currentRelease.githubPullRequests && currentRelease.githubPullRequests.length > 0 && (
-                <div className="mt-6 pt-4 border-t">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Related Pull Requests:</h4>
+                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Related Pull Requests:</h4>
                   <div className="flex flex-wrap gap-2">
                     {currentRelease.githubPullRequests.map((pr, index) => (
                       <a
@@ -285,7 +285,7 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
                         href={pr.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs text-gray-700 transition-colors"
+                        className="inline-flex items-center px-2 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded text-xs text-gray-700 dark:text-gray-300 transition-colors"
                       >
                         <ExternalLink className="w-3 h-3 mr-1" />
                         #{pr.number}
@@ -297,12 +297,12 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
             </div>
 
             {/* Footer */}
-            <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t">
+            <div className="bg-gray-50 dark:bg-secondary-700 px-6 py-4 flex justify-between items-center border-t border-gray-200 dark:border-secondary-600">
               <div className="flex space-x-2">
                 {releaseNotes.length > 1 && currentIndex > 0 && (
                   <button
                     onClick={handlePrevious}
-                    className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                    className="flex items-center px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 transition-colors"
                   >
                     <ChevronLeft className="w-4 h-4 mr-1" />
                     Previous
@@ -314,7 +314,7 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
                 {releaseNotes.length > 1 && currentIndex < releaseNotes.length - 1 ? (
                   <button
                     onClick={handleNext}
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
                   >
                     Next
                     <ChevronRight className="w-4 h-4 ml-1" />
@@ -322,7 +322,7 @@ const ReleaseNotesModal = ({ isOpen, onClose, releaseNotes: initialReleaseNotes 
                 ) : (
                   <button
                     onClick={handleClose}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
                   >
                     Got it!
                   </button>

@@ -129,40 +129,40 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
         <button
           type="button"
           onClick={() => addArrayItem(arrayName)}
-          className="flex items-center px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+          className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
         >
-          <Plus className="w-4 h-4 mr-1" />
+          <Plus className="w-4 h-4 mr-2 inline" />
           Add {title.slice(0, -1)}
         </button>
       </div>
-      
-      <div className="space-y-3">
+
+      {/* Items */}
+      <div className="space-y-4">
         {formData[arrayName].map((item, index) => (
-          <div key={index} className="border rounded-lg p-4 bg-gray-50">
-            <div className="flex items-start justify-between mb-3">
-              <span className="text-sm font-medium text-gray-700">
-                {title.slice(0, -1)} {index + 1}
-              </span>
+          <div key={index} className="bg-gray-50 dark:bg-secondary-700 p-4 rounded-lg border border-gray-200 dark:border-secondary-600">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="font-medium text-gray-900 dark:text-gray-100">{title.slice(0, -1)} {index + 1}</h4>
               <button
                 type="button"
                 onClick={() => removeArrayItem(arrayName, index)}
-                className="text-red-600 hover:text-red-800"
+                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
+
             
             <div className="grid grid-cols-1 gap-3">
               {fields.map((field) => (
                 <div key={field.name}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {field.label}
                   </label>
                   {field.type === 'textarea' ? (
                     <textarea
                       value={item[field.name] || ''}
                       onChange={(e) => handleArrayItemChange(arrayName, index, field.name, e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-secondary-700 dark:text-gray-100"
                       rows="2"
                       placeholder={field.placeholder}
                     />
@@ -171,7 +171,7 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
                       type={field.type || 'text'}
                       value={item[field.name] || ''}
                       onChange={(e) => handleArrayItemChange(arrayName, index, field.name, e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-secondary-700 dark:text-gray-100"
                       placeholder={field.placeholder}
                     />
                   )}
@@ -182,7 +182,7 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
         ))}
         
         {formData[arrayName].length === 0 && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             <p>No {title.toLowerCase()} added yet.</p>
             <p className="text-sm">Click "Add {title.slice(0, -1)}" to get started.</p>
           </div>
@@ -195,7 +195,7 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+      <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
           <div className="flex justify-between items-center">
@@ -218,10 +218,23 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
+          {/* Success/Error Messages */}
+          {success && (
+            <div className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-400 px-4 py-3 rounded">
+              {success}
+            </div>
+          )}
+          
+          {error && (
+            <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-400 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Version *
               </label>
               <input
@@ -229,21 +242,21 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
                 name="version"
                 value={formData.version}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-secondary-700 dark:text-gray-100"
                 placeholder="e.g., 1.2.0"
                 required
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Release Type *
               </label>
               <select
                 name="type"
                 value={formData.type}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-secondary-700 dark:text-gray-100"
                 required
               >
                 <option value="patch">Patch</option>
@@ -254,8 +267,8 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
             </div>
           </div>
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="mb-8">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Title *
             </label>
             <input
@@ -263,30 +276,30 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
               name="title"
               value={formData.title}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-secondary-700 dark:text-gray-100"
               placeholder="e.g., New Features and Bug Fixes"
               required
             />
           </div>
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="mb-8">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Content *
             </label>
             <textarea
               name="content"
               value={formData.content}
               onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-secondary-700 dark:text-gray-100"
               rows="4"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Describe the main changes and improvements in this release..."
+              placeholder="Describe the main highlights of this release..."
               required
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Author
               </label>
               <input
@@ -294,7 +307,7 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
                 name="author"
                 value={formData.author}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-secondary-700 dark:text-gray-100"
                 placeholder="Leave empty to use current user"
               />
             </div>
@@ -308,7 +321,7 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
                   onChange={handleInputChange}
                   className="mr-2"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Show modal popup to users
                 </span>
               </label>
@@ -334,7 +347,7 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
           {/* Improvements */}
           <div className="mb-8">
             {renderArraySection('improvements', 'Improvements', [
-              { name: 'type', label: 'Improvement Type', placeholder: 'e.g., Performance, Accessibility' },
+              { name: 'type', label: 'Improvement Type', placeholder: 'e.g., Performance, UX' },
               { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Describe the improvement...' }
             ])}
           </div>
@@ -343,37 +356,23 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
           <div className="mb-8">
             {renderArraySection('githubPullRequests', 'GitHub Pull Requests', [
               { name: 'number', label: 'PR Number', type: 'number', placeholder: 'e.g., 123' },
-              { name: 'title', label: 'PR Title', placeholder: 'e.g., Add new dashboard feature' },
-              { name: 'url', label: 'PR URL', placeholder: 'e.g., https://github.com/user/repo/pull/123' }
+              { name: 'url', label: 'PR URL', placeholder: 'https://github.com/...' }
             ])}
           </div>
 
-          {/* Messages */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-600">{error}</p>
-            </div>
-          )}
-
-          {success && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
-              <p className="text-green-600">{success}</p>
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex justify-end space-x-4 pt-6 border-t">
+          {/* Submit Button */}
+          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-600">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? (
                 <>
