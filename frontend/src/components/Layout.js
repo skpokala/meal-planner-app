@@ -20,6 +20,7 @@ import {
   Shield,
   FileText,
   Bug,
+  HardDrive,
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
@@ -60,6 +61,12 @@ const Layout = ({ children }) => {
         name: 'Release Notes', 
         href: '/release-notes', 
         icon: FileText,
+        adminOnly: true 
+      });
+      baseNavigation.push({ 
+        name: 'Backup Management', 
+        href: '/backup', 
+        icon: HardDrive,
         adminOnly: true 
       });
     }
