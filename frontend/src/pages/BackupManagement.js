@@ -178,7 +178,10 @@ const BackupManagement = () => {
       } else {
         // Handle MongoDB script execution permission case
         if (response.data.message === 'MongoDB script requires explicit execution permission') {
-          toast.info('MongoDB script validation completed - execution options provided');
+          toast('MongoDB script validation completed - execution options provided', {
+            icon: 'ℹ️',
+            duration: 4000,
+          });
         } else {
           toast.error('Script import completed with errors - see details below');
         }
@@ -188,13 +191,16 @@ const BackupManagement = () => {
       console.error('Error importing script:', error);
       const errorMessage = error.response?.data?.message || error.message;
       
-      // Handle specific case where MongoDB execution is not allowed
-      if (error.response?.status === 200 && error.response?.data?.message === 'MongoDB script requires explicit execution permission') {
-        setImportState(prev => ({
-          ...prev,
-          results: error.response.data
-        }));
-        toast.info('MongoDB script requires execution permission - see options below');
+             // Handle specific case where MongoDB execution is not allowed
+       if (error.response?.status === 200 && error.response?.data?.message === 'MongoDB script requires explicit execution permission') {
+         setImportState(prev => ({
+           ...prev,
+           results: error.response.data
+         }));
+         toast('MongoDB script requires execution permission - see options below', {
+           icon: 'ℹ️',
+           duration: 4000,
+         });
       } else {
         toast.error(`Failed to import script: ${errorMessage}`);
         
