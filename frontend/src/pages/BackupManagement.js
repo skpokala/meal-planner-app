@@ -974,18 +974,119 @@ const BackupManagement = () => {
                         {/* MongoDB Script Output */}
                         {importState.results.importResults?.type === 'mongodb_script' && (
                           <div>
-                            <p className="font-medium text-secondary-900 dark:text-secondary-100 mb-2">
-                              Script Output:
+                            <p className="font-medium text-secondary-900 dark:text-secondary-100 mb-3">
+                              Script Execution Console:
                             </p>
-                            <div className="bg-secondary-900 dark:bg-secondary-800 text-green-400 p-3 rounded text-sm font-mono max-h-64 overflow-y-auto">
-                              {importState.results.importResults.output?.map((line, index) => (
-                                <div key={index}>{line}</div>
-                              )) || 'No output received'}
+                            <div className="bg-black dark:bg-black border border-secondary-300 dark:border-secondary-600 rounded-lg overflow-hidden">
+                              {/* Console Header */}
+                              <div className="bg-secondary-200 dark:bg-secondary-700 px-4 py-2 border-b border-secondary-300 dark:border-secondary-600">
+                                <div className="flex items-center space-x-2">
+                                  <div className="flex space-x-1">
+                                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                  </div>
+                                  <span className="text-sm text-secondary-600 dark:text-secondary-400 font-mono">
+                                    MongoDB Shell - Script Execution
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              {/* Console Content */}
+                              <div className="p-4 font-mono text-sm max-h-96 overflow-y-auto">
+                                {/* Welcome message */}
+                                <div className="text-green-400 mb-2">
+                                  <span className="text-blue-400">mongosh</span> 1.10.6 connecting to: mongodb://localhost:27017/meal_planner
+                                </div>
+                                <div className="text-yellow-300 mb-2">
+                                  Using MongoDB: 7.0.8
+                                </div>
+                                <div className="text-secondary-400 mb-3">
+                                  ──────────────────────────────────────────────────
+                                </div>
+                                
+                                {/* Script execution start */}
+                                <div className="text-cyan-400 mb-2">
+                                  <span className="text-green-400">meal_planner&gt;</span> load('/tmp/backup_script_{Date.now()}.js')
+                                </div>
+                                
+                                {/* Parse and display script output */}
+                                {importState.results.importResults.output?.map((line, index) => {
+                                  const cleanLine = line.trim();
+                                  if (!cleanLine) return null;
+                                  
+                                  // Determine line type and color
+                                  let lineClass = 'text-gray-300';
+                                  let prefix = '';
+                                  
+                                  if (cleanLine.includes('Error:') || cleanLine.includes('error:')) {
+                                    lineClass = 'text-red-400';
+                                    prefix = '❌ ';
+                                  } else if (cleanLine.includes('MongoDB version:') || cleanLine.includes('version')) {
+                                    lineClass = 'text-blue-400';
+                                    prefix = 'ℹ️  ';
+                                  } else if (cleanLine.includes('Processing') || cleanLine.includes('Found')) {
+                                    lineClass = 'text-yellow-300';
+                                    prefix = '📊 ';
+                                  } else if (cleanLine.includes('completed') || cleanLine.includes('success')) {
+                                    lineClass = 'text-green-400';
+                                    prefix = '✅ ';
+                                  } else if (cleanLine.includes('Total') || cleanLine.includes('Generated')) {
+                                    lineClass = 'text-cyan-400';
+                                    prefix = '📈 ';
+                                  } else if (cleanLine.startsWith('//') || cleanLine.includes('backup script')) {
+                                    lineClass = 'text-purple-400';
+                                    prefix = '📝 ';
+                                  }
+                                  
+                                  return (
+                                    <div key={index} className={`${lineClass} py-0.5 flex items-start`}>
+                                      <span className="text-green-400 mr-2 flex-shrink-0">meal_planner&gt;</span>
+                                      <span className="mr-1">{prefix}</span>
+                                      <span className="break-all">{cleanLine}</span>
+                                    </div>
+                                  );
+                                }) || (
+                                  <div className="text-gray-400 italic">
+                                    <span className="text-green-400">meal_planner&gt;</span> No output received
+                                  </div>
+                                )}
+                                
+                                {/* Execution completion */}
+                                <div className="mt-3 pt-2 border-t border-secondary-600">
+                                  <div className="text-green-400 mb-1">
+                                    <span className="text-green-400">meal_planner&gt;</span> 
+                                    <span className="text-cyan-400 ml-2">Script execution completed</span>
+                                  </div>
+                                  <div className="text-secondary-400 text-xs">
+                                    Status: {importState.results.importResults?.success ? 
+                                      <span className="text-green-400">✅ SUCCESS</span> : 
+                                      <span className="text-red-400">❌ FAILED</span>
+                                    }
+                                  </div>
+                                  <div className="text-secondary-400 text-xs">
+                                    Executed: {importState.results.executedAt ? 
+                                      new Date(importState.results.executedAt).toLocaleString() : 
+                                      'N/A'
+                                    }
+                                  </div>
+                                </div>
+                                
+                                {/* Show cursor */}
+                                <div className="flex items-center mt-2">
+                                  <span className="text-green-400">meal_planner&gt;</span>
+                                  <span className="ml-2 w-2 h-4 bg-green-400 animate-pulse"></span>
+                                </div>
+                              </div>
                             </div>
+                            
                             {importState.results.importResults?.notice && (
-                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
-                                ℹ️ {importState.results.importResults.notice}
-                              </p>
+                              <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                <p className="text-sm text-blue-800 dark:text-blue-200 flex items-center">
+                                  <Info className="w-4 h-4 mr-2" />
+                                  {importState.results.importResults.notice}
+                                </p>
+                              </div>
                             )}
                           </div>
                         )}

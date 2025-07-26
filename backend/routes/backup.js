@@ -426,17 +426,29 @@ const executeMongoScript = async (scriptContent, options = {}) => {
     success: true,
     output: [],
     errors: [],
-    warnings: []
+    warnings: [],
+    executionStart: new Date().toISOString(),
+    executionEnd: null
   };
 
   try {
+    // Add initial execution info
+    results.output.push(`Script execution started at ${new Date().toLocaleTimeString()}`);
+    results.output.push(`Container: meal-planner-mongo`);
+    results.output.push(`Database: meal_planner`);
+    results.output.push(''); // Empty line
+    
     // Create temporary script file
     const tempDir = '/tmp';
     const scriptId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     const tempScriptPath = path.join(tempDir, `backup_script_${scriptId}.js`);
     
+    // Add script preparation info
+    results.output.push(`Preparing script file: backup_script_${scriptId}.js`);
+    
     // Write script to temporary file
     await fs.writeFile(tempScriptPath, scriptContent);
+    results.output.push('Script file written successfully');
     
     // Execute script in MongoDB container using mongosh
     const containerName = 'meal-planner-mongo';
@@ -446,7 +458,16 @@ const executeMongoScript = async (scriptContent, options = {}) => {
     
     // Copy script to container
     const containerScriptPath = `/tmp/backup_script_${scriptId}.js`;
+    results.output.push(`Copying script to container: ${containerScriptPath}`);
+    
     execSync(`docker cp "${tempScriptPath}" "${containerName}:${containerScriptPath}"`);
+    results.output.push('Script copied to container successfully');
+    results.output.push(''); // Empty line
+    
+    // Add execution command info
+    results.output.push('Executing MongoDB script...');
+    results.output.push(`Command: mongosh ${dbName} --eval "load('${containerScriptPath}')"`);
+    results.output.push(''); // Empty line
     
     // Execute script in container
     const command = `docker-compose exec -T mongo mongosh ${dbName} --eval "load('${containerScriptPath}')" --quiet`;
@@ -458,31 +479,101 @@ const executeMongoScript = async (scriptContent, options = {}) => {
         maxBuffer: 10 * 1024 * 1024 // 10MB buffer
       });
       
-      results.output.push(output);
+      // Process and format the output
+      if (output && output.trim()) {
+        // Split output into lines and process each
+        const outputLines = output.trim().split('\n');
+        
+        results.output.push('=== SCRIPT OUTPUT START ===');
+        
+        outputLines.forEach(line => {
+          const trimmedLine = line.trim();
+          if (trimmedLine) {
+            // Add timestamp to important lines
+            if (trimmedLine.includes('Processing') || 
+                trimmedLine.includes('Found') || 
+                trimmedLine.includes('completed') ||
+                trimmedLine.includes('Generated')) {
+              results.output.push(`[${new Date().toLocaleTimeString()}] ${trimmedLine}`);
+            } else {
+              results.output.push(trimmedLine);
+            }
+          }
+        });
+        
+        results.output.push('=== SCRIPT OUTPUT END ===');
+      } else {
+        results.output.push('Script executed but produced no output');
+      }
       
       // Check for common error patterns in output
-      if (output.includes('Error:') || output.includes('error:')) {
+      const fullOutput = output.toLowerCase();
+      if (fullOutput.includes('error:') || fullOutput.includes('exception')) {
         results.warnings.push('Script execution completed but may contain errors - check output carefully');
       }
       
+      results.output.push(''); // Empty line
+      results.output.push('Script execution completed successfully');
+      
     } catch (execError) {
       results.success = false;
+      results.output.push('=== EXECUTION ERROR ===');
       results.errors.push(`Script execution failed: ${execError.message}`);
-      if (execError.stdout) results.output.push(execError.stdout);
-      if (execError.stderr) results.errors.push(execError.stderr);
+      
+      if (execError.stdout) {
+        results.output.push('STDOUT:');
+        execError.stdout.split('\n').forEach(line => {
+          if (line.trim()) results.output.push(`  ${line.trim()}`);
+        });
+      }
+      
+      if (execError.stderr) {
+        results.output.push('STDERR:');
+        results.errors.push(execError.stderr);
+        execError.stderr.split('\n').forEach(line => {
+          if (line.trim()) results.output.push(`  ERROR: ${line.trim()}`);
+        });
+      }
     }
     
     // Cleanup: Remove temporary files
+    results.output.push(''); // Empty line
+    results.output.push('Cleaning up temporary files...');
+    
     try {
       await fs.unlink(tempScriptPath);
       execSync(`docker-compose exec -T mongo rm -f "${containerScriptPath}"`);
+      results.output.push('Temporary files cleaned up successfully');
     } catch (cleanupError) {
       results.warnings.push('Temporary file cleanup failed - files may remain in /tmp');
+      results.output.push(`Cleanup warning: ${cleanupError.message}`);
+    }
+    
+    // Add execution summary
+    results.executionEnd = new Date().toISOString();
+    const executionTime = Date.now() - new Date(results.executionStart).getTime();
+    
+    results.output.push(''); // Empty line
+    results.output.push('=== EXECUTION SUMMARY ===');
+    results.output.push(`Status: ${results.success ? 'SUCCESS' : 'FAILED'}`);
+    results.output.push(`Execution time: ${(executionTime / 1000).toFixed(2)} seconds`);
+    results.output.push(`Completed at: ${new Date().toLocaleTimeString()}`);
+    
+    if (results.errors.length > 0) {
+      results.output.push(`Errors: ${results.errors.length}`);
+    }
+    
+    if (results.warnings.length > 0) {
+      results.output.push(`Warnings: ${results.warnings.length}`);
     }
     
   } catch (error) {
     results.success = false;
+    results.executionEnd = new Date().toISOString();
     results.errors.push(`Failed to execute MongoDB script: ${error.message}`);
+    results.output.push('=== CRITICAL ERROR ===');
+    results.output.push(`Error: ${error.message}`);
+    results.output.push(`Time: ${new Date().toLocaleTimeString()}`);
   }
   
   return results;
