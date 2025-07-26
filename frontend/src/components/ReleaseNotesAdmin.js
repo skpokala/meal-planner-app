@@ -129,9 +129,9 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
         <button
           type="button"
           onClick={() => addArrayItem(arrayName)}
-          className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
+          className="btn-primary"
         >
-          <Plus className="w-4 h-4 mr-2 inline" />
+          <Plus className="w-4 h-4 mr-2" />
           Add {title.slice(0, -1)}
         </button>
       </div>
@@ -145,7 +145,8 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
               <button
                 type="button"
                 onClick={() => removeArrayItem(arrayName, index)}
-                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 transition-colors p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                title="Remove item"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -365,14 +366,14 @@ const ReleaseNotesAdmin = ({ isOpen, onClose, editingRelease = null }) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+              className="btn-secondary"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="btn-primary"
             >
               {loading ? (
                 <>
