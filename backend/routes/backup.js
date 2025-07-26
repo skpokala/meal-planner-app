@@ -257,6 +257,7 @@ const generateMongoBackupScript = async (collections = [], includeIndexes = true
   const stats = await getDatabaseStats();
   const version = getCurrentVersion();
   const timestamp = new Date().toISOString();
+  const requiredMongoVersion = "4.0"; // Define the required MongoDB version
   
   let script = `// Generated backup script for Meal Planner App
 // Version: ${version}
@@ -271,7 +272,7 @@ if (!db) {
 
 // Version compatibility check
 const appVersion = "${version}";
-const requiredMongoVersion = "4.0";
+const requiredMongoVersion = "${requiredMongoVersion}";
 const currentVersion = db.version();
 print("Current MongoDB version: " + currentVersion);
 print("Required MongoDB version: " + requiredMongoVersion);
