@@ -6,6 +6,7 @@ const { body, validationResult } = require('express-validator');
 const multer = require('multer');
 const fs = require('fs').promises;
 const path = require('path');
+const { execSync } = require('child_process');
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -419,6 +420,74 @@ const generateJsonExport = async (collections = []) => {
   return exportData;
 };
 
+// Helper function to execute MongoDB script in container
+const executeMongoScript = async (scriptContent, options = {}) => {
+  const results = {
+    success: true,
+    output: [],
+    errors: [],
+    warnings: []
+  };
+
+  try {
+    // Create temporary script file
+    const tempDir = '/tmp';
+    const scriptId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const tempScriptPath = path.join(tempDir, `backup_script_${scriptId}.js`);
+    
+    // Write script to temporary file
+    await fs.writeFile(tempScriptPath, scriptContent);
+    
+    // Execute script in MongoDB container using mongosh
+    const containerName = 'meal-planner-mongo';
+    const dbName = process.env.MONGODB_URI ? 
+      process.env.MONGODB_URI.split('/').pop().split('?')[0] : 
+      'meal_planner';
+    
+    // Copy script to container
+    const containerScriptPath = `/tmp/backup_script_${scriptId}.js`;
+    execSync(`docker cp "${tempScriptPath}" "${containerName}:${containerScriptPath}"`);
+    
+    // Execute script in container
+    const command = `docker-compose exec -T mongo mongosh ${dbName} --eval "load('${containerScriptPath}')" --quiet`;
+    
+    try {
+      const output = execSync(command, { 
+        encoding: 'utf8',
+        timeout: 300000, // 5 minute timeout
+        maxBuffer: 10 * 1024 * 1024 // 10MB buffer
+      });
+      
+      results.output.push(output);
+      
+      // Check for common error patterns in output
+      if (output.includes('Error:') || output.includes('error:')) {
+        results.warnings.push('Script execution completed but may contain errors - check output carefully');
+      }
+      
+    } catch (execError) {
+      results.success = false;
+      results.errors.push(`Script execution failed: ${execError.message}`);
+      if (execError.stdout) results.output.push(execError.stdout);
+      if (execError.stderr) results.errors.push(execError.stderr);
+    }
+    
+    // Cleanup: Remove temporary files
+    try {
+      await fs.unlink(tempScriptPath);
+      execSync(`docker-compose exec -T mongo rm -f "${containerScriptPath}"`);
+    } catch (cleanupError) {
+      results.warnings.push('Temporary file cleanup failed - files may remain in /tmp');
+    }
+    
+  } catch (error) {
+    results.success = false;
+    results.errors.push(`Failed to execute MongoDB script: ${error.message}`);
+  }
+  
+  return results;
+};
+
 // POST /api/backup/generate-script
 // Generate backup script
 router.post('/generate-script', [
@@ -537,6 +606,7 @@ router.post('/import-script', [
   upload.single('script'),
   body('options.clearExisting').optional().isBoolean().withMessage('Clear existing must be boolean'),
   body('options.createBackup').optional().isBoolean().withMessage('Create backup must be boolean'),
+  body('options.allowMongoExecution').optional().isBoolean().withMessage('Allow mongo execution must be boolean'),
   body('confirmed').isBoolean().withMessage('Confirmation is required')
 ], async (req, res) => {
   try {
@@ -606,26 +676,45 @@ router.post('/import-script', [
       const jsonData = JSON.parse(scriptContent);
       importResults = await executeJsonImport(jsonData, options);
     } else {
-      // For MongoDB scripts, we can't execute them directly in Node.js
-      // We'll return instructions for manual execution
-      return res.status(400).json({
-        success: false,
-        message: 'MongoDB script execution not supported',
-        info: 'MongoDB scripts must be executed manually using the mongo shell',
-        instructions: [
-          '1. Connect to your MongoDB database using mongo shell',
-          '2. Use the load() function to execute the script',
-          '3. Example: load("/path/to/script.js")',
-          '4. Monitor the output for any errors'
-        ]
-      });
+      // MongoDB script execution
+      if (options.allowMongoExecution === true) {
+        // Execute MongoDB script in controlled environment
+        importResults = await executeMongoScript(scriptContent, options);
+        importResults.type = 'mongodb_script';
+        importResults.notice = 'MongoDB script executed in container environment';
+      } else {
+        // Return instructions for manual execution (existing behavior)
+        return res.status(200).json({
+          success: false,
+          message: 'MongoDB script requires explicit execution permission',
+          info: 'MongoDB scripts can be executed automatically or manually',
+          automaticExecution: {
+            enabled: false,
+            instructions: 'Check "Allow automatic MongoDB script execution" in import options to enable',
+            warning: 'Automatic execution runs scripts in the MongoDB container environment'
+          },
+          manualExecution: {
+            instructions: [
+              '1. Copy script to MongoDB container: docker cp script.js meal-planner-mongo:/tmp/',
+              '2. Connect to MongoDB: docker-compose exec mongo mongosh meal_planner',
+              '3. Execute script: load("/tmp/script.js")',
+              '4. Monitor output for errors and completion status'
+            ]
+          },
+          validation,
+          preRestoreBackup: preRestoreBackup ? {
+            filename: preRestoreBackup.filename,
+            timestamp: preRestoreBackup.timestamp
+          } : null
+        });
+      }
     }
 
     // Log the import operation
     console.log(`Data import completed by ${user.email || user.name}:`, {
       filename: req.file.originalname,
       type: scriptType,
-      totalImported: importResults.totalImported,
+      totalImported: importResults.totalImported || 'N/A',
       success: importResults.success
     });
 

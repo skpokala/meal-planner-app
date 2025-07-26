@@ -21,7 +21,8 @@ const BackupManagement = () => {
     validation: null,
     options: {
       clearExisting: false,
-      createBackup: true
+      createBackup: true,
+      allowMongoExecution: false // Add new option for MongoDB script execution
     },
     confirmed: false,
     results: null
@@ -167,7 +168,7 @@ const BackupManagement = () => {
 
       setImportState(prev => ({
         ...prev,
-        results: response.data.data
+        results: response.data.data || response.data
       }));
 
       if (response.data.success) {
@@ -175,25 +176,40 @@ const BackupManagement = () => {
         // Refresh database info to reflect changes
         fetchDatabaseInfo();
       } else {
-        toast.error('Script import completed with errors - see details below');
+        // Handle MongoDB script execution permission case
+        if (response.data.message === 'MongoDB script requires explicit execution permission') {
+          toast.info('MongoDB script validation completed - execution options provided');
+        } else {
+          toast.error('Script import completed with errors - see details below');
+        }
       }
 
     } catch (error) {
       console.error('Error importing script:', error);
       const errorMessage = error.response?.data?.message || error.message;
-      toast.error(`Failed to import script: ${errorMessage}`);
       
-      setImportState(prev => ({
-        ...prev,
-        results: {
-          importResults: {
-            success: false,
-            errors: [errorMessage],
-            totalImported: 0,
-            collections: {}
+      // Handle specific case where MongoDB execution is not allowed
+      if (error.response?.status === 200 && error.response?.data?.message === 'MongoDB script requires explicit execution permission') {
+        setImportState(prev => ({
+          ...prev,
+          results: error.response.data
+        }));
+        toast.info('MongoDB script requires execution permission - see options below');
+      } else {
+        toast.error(`Failed to import script: ${errorMessage}`);
+        
+        setImportState(prev => ({
+          ...prev,
+          results: {
+            importResults: {
+              success: false,
+              errors: [errorMessage],
+              totalImported: 0,
+              collections: {}
+            }
           }
-        }
-      }));
+        }));
+      }
     } finally {
       setImporting(false);
     }
@@ -214,7 +230,8 @@ const BackupManagement = () => {
       validation: null,
       options: {
         clearExisting: false,
-        createBackup: true
+        createBackup: true,
+        allowMongoExecution: false // Reset the new option too
       },
       confirmed: false,
       results: null
@@ -787,6 +804,32 @@ const BackupManagement = () => {
                           Clear existing data before import (destructive operation)
                         </span>
                       </label>
+
+                      {/* MongoDB Script Execution Option */}
+                      {importState.validation.type === 'mongodb' && (
+                        <div className="border-t border-secondary-200 dark:border-secondary-600 pt-3">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={importState.options.allowMongoExecution}
+                              onChange={(e) => setImportState(prev => ({
+                                ...prev,
+                                options: { ...prev.options, allowMongoExecution: e.target.checked }
+                              }))}
+                              className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-secondary-300 rounded"
+                            />
+                            <span className="ml-2 text-sm text-secondary-700 dark:text-secondary-300">
+                              Allow automatic MongoDB script execution
+                            </span>
+                          </label>
+                          <div className="ml-6 mt-1">
+                            <p className="text-xs text-orange-600 dark:text-orange-400">
+                              ⚠️ MongoDB scripts will be executed in the container environment.
+                              {!importState.options.allowMongoExecution && ' Uncheck for manual execution instructions.'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
                     <div className="border-t border-secondary-200 dark:border-secondary-600 pt-4">
@@ -842,98 +885,180 @@ const BackupManagement = () => {
                     Import Results
                   </h3>
                   
-                  <div className={`border rounded-lg p-4 ${
-                    importState.results.importResults.success
-                      ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
-                      : 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20'
-                  }`}>
-                    <div className="flex items-center mb-3">
-                      {importState.results.importResults.success ? (
-                        <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                      ) : (
-                        <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-                      )}
-                      <h4 className={`font-medium ${
-                        importState.results.importResults.success
-                          ? 'text-green-800 dark:text-green-200'
-                          : 'text-red-800 dark:text-red-200'
-                      }`}>
-                        {importState.results.importResults.success ? 'Import Successful' : 'Import Failed'}
-                      </h4>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <span className="text-secondary-600 dark:text-secondary-400">Total Imported:</span>
-                          <span className="ml-2 font-medium text-secondary-900 dark:text-secondary-100">
-                            {importState.results.importResults.totalImported}
-                          </span>
+                  {/* Handle MongoDB script execution permission case */}
+                  {importState.results.message === 'MongoDB script requires explicit execution permission' ? (
+                    <div className="space-y-4">
+                      <div className="border border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20 rounded-lg p-4">
+                        <div className="flex items-center mb-3">
+                          <AlertCircle className="w-5 h-5 text-orange-500 mr-2" />
+                          <h4 className="font-medium text-orange-800 dark:text-orange-200">
+                            MongoDB Script Execution Options
+                          </h4>
                         </div>
-                        <div>
-                          <span className="text-secondary-600 dark:text-secondary-400">Collections:</span>
-                          <span className="ml-2 font-medium text-secondary-900 dark:text-secondary-100">
-                            {Object.keys(importState.results.importResults.collections).length}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-secondary-600 dark:text-secondary-400">Executed At:</span>
-                          <span className="ml-2 font-medium text-secondary-900 dark:text-secondary-100">
-                            {new Date(importState.results.executedAt).toLocaleString()}
-                          </span>
+                        
+                        <div className="space-y-4">
+                          {/* Automatic Execution Option */}
+                          <div className="bg-white dark:bg-secondary-800 border border-orange-200 dark:border-orange-700 rounded p-3">
+                            <h5 className="font-medium text-secondary-900 dark:text-secondary-100 mb-2">
+                              🔄 Automatic Execution
+                            </h5>
+                            <p className="text-sm text-orange-800 dark:text-orange-200 mb-2">
+                              {importState.results.automaticExecution.instructions}
+                            </p>
+                            <p className="text-xs text-orange-600 dark:text-orange-400">
+                              ⚠️ {importState.results.automaticExecution.warning}
+                            </p>
+                          </div>
+                          
+                          {/* Manual Execution Instructions */}
+                          <div className="bg-white dark:bg-secondary-800 border border-orange-200 dark:border-orange-700 rounded p-3">
+                            <h5 className="font-medium text-secondary-900 dark:text-secondary-100 mb-2">
+                              🛠️ Manual Execution
+                            </h5>
+                            <div className="space-y-2">
+                              {importState.results.manualExecution.instructions.map((instruction, index) => (
+                                <div key={index} className="flex items-start space-x-2">
+                                  <span className="flex-shrink-0 w-5 h-5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full text-xs flex items-center justify-center font-medium">
+                                    {index + 1}
+                                  </span>
+                                  <code className="text-xs text-secondary-700 dark:text-secondary-300 bg-secondary-100 dark:bg-secondary-700 px-2 py-1 rounded flex-1">
+                                    {instruction.split(':')[1]?.trim() || instruction}
+                                  </code>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          {/* Pre-restore Backup Info */}
+                          {importState.results.preRestoreBackup && (
+                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-3">
+                              <p className="text-sm text-blue-800 dark:text-blue-200">
+                                <Info className="w-4 h-4 inline mr-1" />
+                                Pre-restore backup created: {importState.results.preRestoreBackup.filename}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
-                      
-                      {importState.results.preRestoreBackup && (
-                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-3">
-                          <p className="text-sm text-blue-800 dark:text-blue-200">
-                            <Info className="w-4 h-4 inline mr-1" />
-                            Pre-restore backup created: {importState.results.preRestoreBackup.filename}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {Object.keys(importState.results.importResults.collections).length > 0 && (
-                        <div>
-                          <p className="font-medium text-secondary-900 dark:text-secondary-100 mb-2">
-                            Collections Processed:
-                          </p>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {Object.entries(importState.results.importResults.collections).map(([collection, stats]) => (
-                              <div key={collection} className="flex justify-between items-center text-sm bg-white dark:bg-secondary-800 p-2 rounded">
-                                <span className="text-secondary-900 dark:text-secondary-100">{collection}</span>
-                                <span className="text-secondary-600 dark:text-secondary-400">
-                                  {stats.imported}/{stats.total}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {importState.results.importResults.errors?.length > 0 && (
-                        <div>
-                          <p className="font-medium text-red-800 dark:text-red-200 mb-2">Errors:</p>
-                          <ul className="list-disc list-inside space-y-1 text-sm text-red-700 dark:text-red-300">
-                            {importState.results.importResults.errors.map((error, index) => (
-                              <li key={index}>{error}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      
-                      {importState.results.importResults.warnings?.length > 0 && (
-                        <div>
-                          <p className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">Warnings:</p>
-                          <ul className="list-disc list-inside space-y-1 text-sm text-yellow-700 dark:text-yellow-300">
-                            {importState.results.importResults.warnings.map((warning, index) => (
-                              <li key={index}>{warning}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
                     </div>
-                  </div>
+                  ) : (
+                    /* Regular import results for JSON imports or successful MongoDB executions */
+                    <div className={`border rounded-lg p-4 ${
+                      importState.results.importResults?.success
+                        ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
+                        : 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20'
+                    }`}>
+                      <div className="flex items-center mb-3">
+                        {importState.results.importResults?.success ? (
+                          <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                        ) : (
+                          <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+                        )}
+                        <h4 className={`font-medium ${
+                          importState.results.importResults?.success
+                            ? 'text-green-800 dark:text-green-200'
+                            : 'text-red-800 dark:text-red-200'
+                        }`}>
+                          {importState.results.importResults?.success ? 'Import Successful' : 'Import Failed'}
+                          {importState.results.importResults?.type === 'mongodb_script' && ' (MongoDB Script)'}
+                        </h4>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        {/* MongoDB Script Output */}
+                        {importState.results.importResults?.type === 'mongodb_script' && (
+                          <div>
+                            <p className="font-medium text-secondary-900 dark:text-secondary-100 mb-2">
+                              Script Output:
+                            </p>
+                            <div className="bg-secondary-900 dark:bg-secondary-800 text-green-400 p-3 rounded text-sm font-mono max-h-64 overflow-y-auto">
+                              {importState.results.importResults.output?.map((line, index) => (
+                                <div key={index}>{line}</div>
+                              )) || 'No output received'}
+                            </div>
+                            {importState.results.importResults?.notice && (
+                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                                ℹ️ {importState.results.importResults.notice}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Regular import statistics */}
+                        {importState.results.importResults?.totalImported !== undefined && (
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <span className="text-secondary-600 dark:text-secondary-400">Total Imported:</span>
+                              <span className="ml-2 font-medium text-secondary-900 dark:text-secondary-100">
+                                {importState.results.importResults.totalImported}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-secondary-600 dark:text-secondary-400">Collections:</span>
+                              <span className="ml-2 font-medium text-secondary-900 dark:text-secondary-100">
+                                {Object.keys(importState.results.importResults.collections || {}).length}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-secondary-600 dark:text-secondary-400">Executed At:</span>
+                              <span className="ml-2 font-medium text-secondary-900 dark:text-secondary-100">
+                                {importState.results.executedAt ? new Date(importState.results.executedAt).toLocaleString() : 'N/A'}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {importState.results.preRestoreBackup && (
+                          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-3">
+                            <p className="text-sm text-blue-800 dark:text-blue-200">
+                              <Info className="w-4 h-4 inline mr-1" />
+                              Pre-restore backup created: {importState.results.preRestoreBackup.filename}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {Object.keys(importState.results.importResults?.collections || {}).length > 0 && (
+                          <div>
+                            <p className="font-medium text-secondary-900 dark:text-secondary-100 mb-2">
+                              Collections Processed:
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {Object.entries(importState.results.importResults.collections).map(([collection, stats]) => (
+                                <div key={collection} className="flex justify-between items-center text-sm bg-white dark:bg-secondary-800 p-2 rounded">
+                                  <span className="text-secondary-900 dark:text-secondary-100">{collection}</span>
+                                  <span className="text-secondary-600 dark:text-secondary-400">
+                                    {stats.imported}/{stats.total}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {importState.results.importResults?.errors?.length > 0 && (
+                          <div>
+                            <p className="font-medium text-red-800 dark:text-red-200 mb-2">Errors:</p>
+                            <ul className="list-disc list-inside space-y-1 text-sm text-red-700 dark:text-red-300">
+                              {importState.results.importResults.errors.map((error, index) => (
+                                <li key={index}>{error}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        
+                        {importState.results.importResults?.warnings?.length > 0 && (
+                          <div>
+                            <p className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">Warnings:</p>
+                            <ul className="list-disc list-inside space-y-1 text-sm text-yellow-700 dark:text-yellow-300">
+                              {importState.results.importResults.warnings.map((warning, index) => (
+                                <li key={index}>{warning}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
