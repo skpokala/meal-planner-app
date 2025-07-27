@@ -4,6 +4,7 @@ import { Users, Calendar, ChefHat, Plus, Clock } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MealModal from '../components/MealModal';
+import MealRecommendations from '../components/MealRecommendations';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -214,8 +215,17 @@ const Dashboard = () => {
         })}
       </div>
 
-      {/* Recent Meals and Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      {/* AI Meal Recommendations Section */}
+      <div className="mt-6">
+        <MealRecommendations 
+          className="w-full" 
+          maxRecommendations={5}
+          showFeedback={true}
+        />
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card">
           <div className="card-header">
             <div className="flex items-center justify-between">

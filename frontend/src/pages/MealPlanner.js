@@ -3,6 +3,7 @@ import { Calendar, ChevronLeft, ChevronRight, Clock, Trash2, CalendarDays, Calen
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MealModal from '../components/MealModal';
+import MealRecommendations from '../components/MealRecommendations';
 import toast from 'react-hot-toast';
 
 const VIEW_MODES = {
@@ -734,22 +735,36 @@ const MealPlanner = () => {
           </div>
         )}
 
-        {/* Calendar Content */}
-        <CalendarView
-          viewMode={viewMode}
-          days={getCurrentViewDays()}
-          getPlannedMeals={getPlannedMeals}
-          meals={meals}
-          mealTypes={mealTypes}
-          onMealSelect={handleMealSelect}
-          onMealRemove={handleMealRemove}
-          getMealTypeColor={getMealTypeColor}
-          isToday={isToday}
-          isPastDate={isPastDate}
-          savingMeals={savingMeals}
-          removingMeals={removingMeals}
-          plannedMeals={plannedMeals}
-        />
+        {/* Main Content - Two Column Layout */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          {/* Calendar Content - Takes up 3/4 of the space */}
+          <div className="xl:col-span-3">
+            <CalendarView
+              viewMode={viewMode}
+              days={getCurrentViewDays()}
+              getPlannedMeals={getPlannedMeals}
+              meals={meals}
+              mealTypes={mealTypes}
+              onMealSelect={handleMealSelect}
+              onMealRemove={handleMealRemove}
+              getMealTypeColor={getMealTypeColor}
+              isToday={isToday}
+              isPastDate={isPastDate}
+              savingMeals={savingMeals}
+              removingMeals={removingMeals}
+              plannedMeals={plannedMeals}
+            />
+          </div>
+          
+          {/* AI Recommendations Sidebar - Takes up 1/4 of the space */}
+          <div className="xl:col-span-1">
+            <MealRecommendations 
+              className="sticky top-4" 
+              maxRecommendations={4}
+              showFeedback={true}
+            />
+          </div>
+        </div>
 
         {/* Meal Modal */}
         <MealModal

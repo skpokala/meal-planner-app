@@ -3,6 +3,7 @@ import { Plus, ChefHat, Clock, Search, Edit, Trash2, CheckCircle, XCircle } from
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MealModal from '../components/MealModal';
+import MealRecommendations from '../components/MealRecommendations';
 import toast from 'react-hot-toast';
 
 const Meals = () => {
@@ -262,7 +263,16 @@ const Meals = () => {
         </div>
       </div>
 
-      {/* Meals Table */}
+      {/* AI Meal Recommendations */}
+      <div className="mb-6">
+        <MealRecommendations 
+          className="w-full"
+          maxRecommendations={5}
+          showFeedback={true}
+        />
+      </div>
+
+      {/* Meals List */}
       <div className="card">
         <div className="card-header">
           <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
