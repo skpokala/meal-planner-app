@@ -38,11 +38,35 @@ services:
       - PORT=5000
       - NODE_ENV=development
       - FRONTEND_URL=http://localhost:3001
+      - ML_SERVICE_URL=http://ml-service:5003
     ports:
       - "5002:5000"
     volumes:
       - ./backend:/app
       - /app/node_modules
+    networks:
+      - meal-planner-network
+
+  ml-service:
+    build:
+      context: ./ml
+      dockerfile: Dockerfile
+    container_name: meal-planner-ml-service
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/meal_planner
+      - ML_SERVICE_PORT=5003
+      - ML_SERVICE_HOST=0.0.0.0
+      - DEBUG=false
+    ports:
+      - "5003:5003"
+    volumes:
+      - ./ml:/app
+      - ml-models:/app/models
+      - ml-data:/app/data
     networks:
       - meal-planner-network
 
@@ -69,6 +93,8 @@ services:
 
 volumes:
   mongo-data:
+  ml-models:
+  ml-data:
 
 networks:
   meal-planner-network:
