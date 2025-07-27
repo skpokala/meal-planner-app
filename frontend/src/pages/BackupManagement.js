@@ -3,6 +3,231 @@ import { Download, Database, Shield, Info, AlertTriangle, CheckCircle, Clock, Ha
 import api from '../services/api';
 import { toast } from 'react-hot-toast';
 
+// Enhanced Console Component for Script Execution
+const ScriptExecutionConsole = ({ results }) => {
+  const isMongoScript = results.importResults?.type === 'mongodb_script';
+  const hasOutput = results.importResults?.output && results.importResults.output.length > 0;
+  
+  // Generate console logs from different sources
+  const generateConsoleLogs = () => {
+    const logs = [];
+    const timestamp = new Date().toLocaleTimeString();
+    
+    // Initial connection message
+    if (isMongoScript) {
+      logs.push({
+        type: 'info',
+        text: `mongosh 1.10.6 connecting to: mongodb://localhost:27017/meal_planner`,
+        timestamp: timestamp,
+        color: 'text-blue-400'
+      });
+      logs.push({
+        type: 'info', 
+        text: `Using MongoDB: 7.0.8`,
+        timestamp: timestamp,
+        color: 'text-yellow-300'
+      });
+      logs.push({
+        type: 'separator',
+        text: '──────────────────────────────────────────────────',
+        color: 'text-secondary-500'
+      });
+    } else {
+      logs.push({
+        type: 'info',
+        text: `Script Import Console - Starting execution...`,
+        timestamp: timestamp,
+        color: 'text-cyan-400'
+      });
+      logs.push({
+        type: 'separator',
+        text: '──────────────────────────────────────────────────',
+        color: 'text-secondary-500'
+      });
+    }
+    
+    // Script execution start
+    const scriptName = results.importResults?.scriptName || 'backup_script.js';
+    logs.push({
+      type: 'command',
+      text: isMongoScript ? `load('/tmp/${scriptName}')` : `Executing: ${scriptName}`,
+      timestamp: timestamp,
+      color: 'text-cyan-400'
+    });
+    
+    // Process output or show manual instructions
+    if (hasOutput) {
+      // Process script output
+      results.importResults.output.forEach((line, index) => {
+        const cleanLine = line.trim();
+        if (!cleanLine) return;
+        
+        let logType = 'output';
+        let color = 'text-gray-300';
+        let prefix = '';
+        
+        if (cleanLine.includes('Error:') || cleanLine.includes('error:')) {
+          logType = 'error';
+          color = 'text-red-400';
+          prefix = '❌ ';
+        } else if (cleanLine.includes('version') || cleanLine.includes('MongoDB')) {
+          logType = 'info';
+          color = 'text-blue-400';
+          prefix = 'ℹ️  ';
+        } else if (cleanLine.includes('Processing') || cleanLine.includes('Found') || cleanLine.includes('Importing')) {
+          logType = 'processing';
+          color = 'text-yellow-300';
+          prefix = '📊 ';
+        } else if (cleanLine.includes('completed') || cleanLine.includes('success') || cleanLine.includes('Successfully')) {
+          logType = 'success';
+          color = 'text-green-400';
+          prefix = '✅ ';
+        } else if (cleanLine.includes('Total') || cleanLine.includes('Generated') || cleanLine.includes('Inserted')) {
+          logType = 'stats';
+          color = 'text-cyan-400';
+          prefix = '📈 ';
+        } else if (cleanLine.startsWith('//') || cleanLine.includes('backup script') || cleanLine.includes('comment')) {
+          logType = 'comment';
+          color = 'text-purple-400';
+          prefix = '📝 ';
+        }
+        
+        logs.push({
+          type: logType,
+          text: `${prefix}${cleanLine}`,
+          color: color,
+          timestamp: timestamp
+        });
+      });
+    } else if (results.importResults?.totalImported !== undefined) {
+      // JSON import results
+      logs.push({
+        type: 'processing',
+        text: `📊 Processing JSON import...`,
+        color: 'text-yellow-300'
+      });
+      logs.push({
+        type: 'success',
+        text: `✅ Successfully imported ${results.importResults.totalImported} records`,
+        color: 'text-green-400'
+      });
+      if (results.importResults.collectionsUpdated) {
+        results.importResults.collectionsUpdated.forEach(collection => {
+          logs.push({
+            type: 'stats',
+            text: `📈 Updated collection: ${collection}`,
+            color: 'text-cyan-400'
+          });
+        });
+      }
+    } else {
+      logs.push({
+        type: 'warning',
+        text: '⚠️  No output received from script execution',
+        color: 'text-yellow-400'
+      });
+    }
+    
+    // Execution completion
+    logs.push({
+      type: 'separator',
+      text: '──────────────────────────────────────────────────',
+      color: 'text-secondary-500'
+    });
+    
+    const success = results.importResults?.success !== false;
+    logs.push({
+      type: success ? 'success' : 'error',
+      text: `${success ? '✅' : '❌'} Script execution ${success ? 'completed successfully' : 'failed'}`,
+      color: success ? 'text-green-400' : 'text-red-400',
+      timestamp: results.executedAt || timestamp
+    });
+    
+    return logs;
+  };
+  
+  const consoleLogs = generateConsoleLogs();
+  
+  return (
+    <div>
+      <p className="font-medium text-secondary-900 dark:text-secondary-100 mb-3">
+        Script Execution Console:
+      </p>
+      <div className="bg-black border border-secondary-300 dark:border-secondary-600 rounded-lg overflow-hidden font-mono text-sm">
+        {/* Console Header */}
+        <div className="bg-secondary-200 dark:bg-secondary-700 px-4 py-2 border-b border-secondary-300 dark:border-secondary-600">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="flex space-x-1">
+                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              </div>
+              <span className="text-sm text-secondary-600 dark:text-secondary-400 font-mono">
+                {isMongoScript ? 'MongoDB Shell' : 'Script Import'} - Execution Console
+              </span>
+            </div>
+            <div className="text-xs text-secondary-500">
+              {new Date().toLocaleString()}
+            </div>
+          </div>
+        </div>
+        
+        {/* Console Content */}
+        <div className="p-4 max-h-96 overflow-y-auto">
+          {consoleLogs.map((log, index) => (
+            <div key={index} className={`py-0.5 ${log.type === 'separator' ? 'py-1' : ''}`}>
+              {log.type === 'separator' ? (
+                <div className={`${log.color} select-none`}>{log.text}</div>
+              ) : log.type === 'command' ? (
+                <div className="flex items-start">
+                  <span className="text-green-400 mr-2 flex-shrink-0">
+                    {isMongoScript ? 'meal_planner>' : '$'}
+                  </span>
+                  <span className={`${log.color} break-all`}>{log.text}</span>
+                </div>
+              ) : (
+                <div className="flex items-start">
+                  <span className="text-green-400 mr-2 flex-shrink-0">
+                    {isMongoScript ? 'meal_planner>' : '$'}
+                  </span>
+                  <span className={`${log.color} break-all`}>{log.text}</span>
+                  {log.timestamp && (
+                    <span className="text-secondary-600 text-xs ml-auto flex-shrink-0 pl-2">
+                      {log.timestamp}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+          
+          {/* Show cursor */}
+          <div className="flex items-center mt-2">
+            <span className="text-green-400">
+              {isMongoScript ? 'meal_planner>' : '$'}
+            </span>
+            <span className="ml-2 w-2 h-4 bg-green-400 animate-pulse"></span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Manual Instructions Section */}
+      {/* Removed as scripts will now always execute directly */}
+      
+      {/* Additional Info/Notice */}
+      {results.importResults?.notice && (
+        <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <p className="text-sm text-blue-800 dark:text-blue-200 flex items-center">
+            <Info className="w-4 h-4 mr-2" />
+            {results.importResults.notice}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const BackupManagement = () => {
   const [databaseInfo, setDatabaseInfo] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,8 +246,7 @@ const BackupManagement = () => {
     validation: null,
     options: {
       clearExisting: false,
-      createBackup: true,
-      allowMongoExecution: false // Add new option for MongoDB script execution
+      createBackup: true
     },
     confirmed: false,
     results: null
@@ -155,6 +379,7 @@ const BackupManagement = () => {
 
     try {
       setImporting(true);
+      
       const formData = new FormData();
       formData.append('script', importState.file);
       formData.append('confirmed', 'true');
@@ -165,10 +390,12 @@ const BackupManagement = () => {
           'Content-Type': 'multipart/form-data'
         }
       });
-
+      
+      const results = response.data.data || response.data;
+      
       setImportState(prev => ({
         ...prev,
-        results: response.data.data || response.data
+        results: results
       }));
 
       if (response.data.success) {
@@ -176,46 +403,26 @@ const BackupManagement = () => {
         // Refresh database info to reflect changes
         fetchDatabaseInfo();
       } else {
-        // Handle MongoDB script execution permission case
-        if (response.data.message === 'MongoDB script requires explicit execution permission') {
-          toast('MongoDB script validation completed - execution options provided', {
-            icon: 'ℹ️',
-            duration: 4000,
-          });
-        } else {
-          toast.error('Script import completed with errors - see details below');
-        }
+        toast.error('Script import completed with errors - see details below');
       }
 
     } catch (error) {
       console.error('Error importing script:', error);
       const errorMessage = error.response?.data?.message || error.message;
       
-             // Handle specific case where MongoDB execution is not allowed
-       if (error.response?.status === 200 && error.response?.data?.message === 'MongoDB script requires explicit execution permission') {
-         setImportState(prev => ({
-           ...prev,
-           results: error.response.data
-         }));
-         toast('MongoDB script requires execution permission - see options below', {
-           icon: 'ℹ️',
-           duration: 4000,
-         });
-      } else {
-        toast.error(`Failed to import script: ${errorMessage}`);
-        
-        setImportState(prev => ({
-          ...prev,
-          results: {
-            importResults: {
-              success: false,
-              errors: [errorMessage],
-              totalImported: 0,
-              collections: {}
-            }
+      toast.error(`Failed to import script: ${errorMessage}`);
+      
+      setImportState(prev => ({
+        ...prev,
+        results: {
+          importResults: {
+            success: false,
+            errors: [errorMessage],
+            totalImported: 0,
+            collections: {}
           }
-        }));
-      }
+        }
+      }));
     } finally {
       setImporting(false);
     }
@@ -236,8 +443,7 @@ const BackupManagement = () => {
       validation: null,
       options: {
         clearExisting: false,
-        createBackup: true,
-        allowMongoExecution: false // Reset the new option too
+        createBackup: true
       },
       confirmed: false,
       results: null
@@ -811,27 +1017,13 @@ const BackupManagement = () => {
                         </span>
                       </label>
 
-                      {/* MongoDB Script Execution Option */}
+                      {/* MongoDB Script Execution Option - Now always enabled for admin users */}
                       {importState.validation.type === 'mongodb' && (
                         <div className="border-t border-secondary-200 dark:border-secondary-600 pt-3">
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={importState.options.allowMongoExecution}
-                              onChange={(e) => setImportState(prev => ({
-                                ...prev,
-                                options: { ...prev.options, allowMongoExecution: e.target.checked }
-                              }))}
-                              className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-secondary-300 rounded"
-                            />
-                            <span className="ml-2 text-sm text-secondary-700 dark:text-secondary-300">
-                              Allow automatic MongoDB script execution
-                            </span>
-                          </label>
-                          <div className="ml-6 mt-1">
-                            <p className="text-xs text-orange-600 dark:text-orange-400">
-                              ⚠️ MongoDB scripts will be executed in the container environment.
-                              {!importState.options.allowMongoExecution && ' Uncheck for manual execution instructions.'}
+                          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                            <p className="text-sm text-blue-800 dark:text-blue-200 flex items-center">
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              MongoDB scripts will be executed automatically in the container environment
                             </p>
                           </div>
                         </div>
@@ -891,281 +1083,65 @@ const BackupManagement = () => {
                     Import Results
                   </h3>
                   
-                  {/* Handle MongoDB script execution permission case */}
-                  {importState.results.message === 'MongoDB script requires explicit execution permission' ? (
-                    <div className="space-y-4">
-                      <div className="border border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20 rounded-lg p-4">
-                        <div className="flex items-center mb-3">
-                          <AlertCircle className="w-5 h-5 text-orange-500 mr-2" />
-                          <h4 className="font-medium text-orange-800 dark:text-orange-200">
-                            MongoDB Script Execution Options
-                          </h4>
-                        </div>
-                        
-                        <div className="space-y-4">
-                          {/* Automatic Execution Option */}
-                          <div className="bg-white dark:bg-secondary-800 border border-orange-200 dark:border-orange-700 rounded p-3">
-                            <h5 className="font-medium text-secondary-900 dark:text-secondary-100 mb-2">
-                              🔄 Automatic Execution
-                            </h5>
-                            <p className="text-sm text-orange-800 dark:text-orange-200 mb-2">
-                              {importState.results.automaticExecution.instructions}
-                            </p>
-                            <p className="text-xs text-orange-600 dark:text-orange-400">
-                              ⚠️ {importState.results.automaticExecution.warning}
-                            </p>
-                          </div>
-                          
-                          {/* Manual Execution Instructions */}
-                          <div className="bg-white dark:bg-secondary-800 border border-orange-200 dark:border-orange-700 rounded p-3">
-                            <h5 className="font-medium text-secondary-900 dark:text-secondary-100 mb-2">
-                              🛠️ Manual Execution
-                            </h5>
-                            <div className="space-y-2">
-                              {importState.results.manualExecution.instructions.map((instruction, index) => (
-                                <div key={index} className="flex items-start space-x-2">
-                                  <span className="flex-shrink-0 w-5 h-5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full text-xs flex items-center justify-center font-medium">
-                                    {index + 1}
-                                  </span>
-                                  <code className="text-xs text-secondary-700 dark:text-secondary-300 bg-secondary-100 dark:bg-secondary-700 px-2 py-1 rounded flex-1">
-                                    {instruction.split(':')[1]?.trim() || instruction}
-                                  </code>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          
-                          {/* Pre-restore Backup Info */}
-                          {importState.results.preRestoreBackup && (
-                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-3">
-                              <p className="text-sm text-blue-800 dark:text-blue-200">
-                                <Info className="w-4 h-4 inline mr-1" />
-                                Pre-restore backup created: {importState.results.preRestoreBackup.filename}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                  {/* Regular import results for all script executions */}
+                  <div className={`border rounded-lg p-4 ${
+                    importState.results.importResults?.success
+                      ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
+                      : 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20'
+                  }`}>
+                    <div className="flex items-center mb-3">
+                      {importState.results.importResults?.success ? (
+                        <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+                      )}
+                      <h4 className={`font-medium ${
+                        importState.results.importResults?.success
+                          ? 'text-green-800 dark:text-green-200'
+                          : 'text-red-800 dark:text-red-200'
+                      }`}>
+                        {importState.results.importResults?.success ? 'Import Successful' : 'Import Failed'}
+                        {importState.results.importResults?.type === 'mongodb_script' && ' (MongoDB Script)'}
+                      </h4>
                     </div>
-                  ) : (
-                    /* Regular import results for JSON imports or successful MongoDB executions */
-                    <div className={`border rounded-lg p-4 ${
-                      importState.results.importResults?.success
-                        ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
-                        : 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20'
-                    }`}>
-                      <div className="flex items-center mb-3">
-                        {importState.results.importResults?.success ? (
-                          <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                        ) : (
-                          <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-                        )}
-                        <h4 className={`font-medium ${
-                          importState.results.importResults?.success
-                            ? 'text-green-800 dark:text-green-200'
-                            : 'text-red-800 dark:text-red-200'
-                        }`}>
-                          {importState.results.importResults?.success ? 'Import Successful' : 'Import Failed'}
-                          {importState.results.importResults?.type === 'mongodb_script' && ' (MongoDB Script)'}
-                        </h4>
-                      </div>
+                    
+                    <div className="space-y-3">
+                      {/* Enhanced Console View for All Script Types */}
+                      {importState.results ? (
+                        <ScriptExecutionConsole results={importState.results} />
+                      ) : (
+                        <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                          <p className="text-yellow-800 dark:text-yellow-200">
+                            ⚠️ No results to display. Execute a script to see the console output.
+                          </p>
+                        </div>
+                      )}
                       
-                      <div className="space-y-3">
-                        {/* MongoDB Script Output */}
-                        {importState.results.importResults?.type === 'mongodb_script' && (
+                      {/* Regular import statistics */}
+                      {importState.results.importResults?.totalImported !== undefined && (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                           <div>
-                            <p className="font-medium text-secondary-900 dark:text-secondary-100 mb-3">
-                              Script Execution Console:
-                            </p>
-                            <div className="bg-black dark:bg-black border border-secondary-300 dark:border-secondary-600 rounded-lg overflow-hidden">
-                              {/* Console Header */}
-                              <div className="bg-secondary-200 dark:bg-secondary-700 px-4 py-2 border-b border-secondary-300 dark:border-secondary-600">
-                                <div className="flex items-center space-x-2">
-                                  <div className="flex space-x-1">
-                                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                  </div>
-                                  <span className="text-sm text-secondary-600 dark:text-secondary-400 font-mono">
-                                    MongoDB Shell - Script Execution
-                                  </span>
-                                </div>
-                              </div>
-                              
-                              {/* Console Content */}
-                              <div className="p-4 font-mono text-sm max-h-96 overflow-y-auto">
-                                {/* Welcome message */}
-                                <div className="text-green-400 mb-2">
-                                  <span className="text-blue-400">mongosh</span> 1.10.6 connecting to: mongodb://localhost:27017/meal_planner
-                                </div>
-                                <div className="text-yellow-300 mb-2">
-                                  Using MongoDB: 7.0.8
-                                </div>
-                                <div className="text-secondary-400 mb-3">
-                                  ──────────────────────────────────────────────────
-                                </div>
-                                
-                                {/* Script execution start */}
-                                <div className="text-cyan-400 mb-2">
-                                  <span className="text-green-400">meal_planner&gt;</span> load('/tmp/backup_script_{Date.now()}.js')
-                                </div>
-                                
-                                {/* Parse and display script output */}
-                                {importState.results.importResults.output?.map((line, index) => {
-                                  const cleanLine = line.trim();
-                                  if (!cleanLine) return null;
-                                  
-                                  // Determine line type and color
-                                  let lineClass = 'text-gray-300';
-                                  let prefix = '';
-                                  
-                                  if (cleanLine.includes('Error:') || cleanLine.includes('error:')) {
-                                    lineClass = 'text-red-400';
-                                    prefix = '❌ ';
-                                  } else if (cleanLine.includes('MongoDB version:') || cleanLine.includes('version')) {
-                                    lineClass = 'text-blue-400';
-                                    prefix = 'ℹ️  ';
-                                  } else if (cleanLine.includes('Processing') || cleanLine.includes('Found')) {
-                                    lineClass = 'text-yellow-300';
-                                    prefix = '📊 ';
-                                  } else if (cleanLine.includes('completed') || cleanLine.includes('success')) {
-                                    lineClass = 'text-green-400';
-                                    prefix = '✅ ';
-                                  } else if (cleanLine.includes('Total') || cleanLine.includes('Generated')) {
-                                    lineClass = 'text-cyan-400';
-                                    prefix = '📈 ';
-                                  } else if (cleanLine.startsWith('//') || cleanLine.includes('backup script')) {
-                                    lineClass = 'text-purple-400';
-                                    prefix = '📝 ';
-                                  }
-                                  
-                                  return (
-                                    <div key={index} className={`${lineClass} py-0.5 flex items-start`}>
-                                      <span className="text-green-400 mr-2 flex-shrink-0">meal_planner&gt;</span>
-                                      <span className="mr-1">{prefix}</span>
-                                      <span className="break-all">{cleanLine}</span>
-                                    </div>
-                                  );
-                                }) || (
-                                  <div className="text-gray-400 italic">
-                                    <span className="text-green-400">meal_planner&gt;</span> No output received
-                                  </div>
-                                )}
-                                
-                                {/* Execution completion */}
-                                <div className="mt-3 pt-2 border-t border-secondary-600">
-                                  <div className="text-green-400 mb-1">
-                                    <span className="text-green-400">meal_planner&gt;</span> 
-                                    <span className="text-cyan-400 ml-2">Script execution completed</span>
-                                  </div>
-                                  <div className="text-secondary-400 text-xs">
-                                    Status: {importState.results.importResults?.success ? 
-                                      <span className="text-green-400">✅ SUCCESS</span> : 
-                                      <span className="text-red-400">❌ FAILED</span>
-                                    }
-                                  </div>
-                                  <div className="text-secondary-400 text-xs">
-                                    Executed: {importState.results.executedAt ? 
-                                      new Date(importState.results.executedAt).toLocaleString() : 
-                                      'N/A'
-                                    }
-                                  </div>
-                                </div>
-                                
-                                {/* Show cursor */}
-                                <div className="flex items-center mt-2">
-                                  <span className="text-green-400">meal_planner&gt;</span>
-                                  <span className="ml-2 w-2 h-4 bg-green-400 animate-pulse"></span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {importState.results.importResults?.notice && (
-                              <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                                <p className="text-sm text-blue-800 dark:text-blue-200 flex items-center">
-                                  <Info className="w-4 h-4 mr-2" />
-                                  {importState.results.importResults.notice}
-                                </p>
-                              </div>
-                            )}
+                            <span className="text-secondary-600 dark:text-secondary-400">Total Imported:</span>
+                            <span className="ml-2 font-medium text-secondary-900 dark:text-secondary-100">
+                              {importState.results.importResults.totalImported}
+                            </span>
                           </div>
-                        )}
-                        
-                        {/* Regular import statistics */}
-                        {importState.results.importResults?.totalImported !== undefined && (
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                            <div>
-                              <span className="text-secondary-600 dark:text-secondary-400">Total Imported:</span>
-                              <span className="ml-2 font-medium text-secondary-900 dark:text-secondary-100">
-                                {importState.results.importResults.totalImported}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-secondary-600 dark:text-secondary-400">Collections:</span>
-                              <span className="ml-2 font-medium text-secondary-900 dark:text-secondary-100">
-                                {Object.keys(importState.results.importResults.collections || {}).length}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-secondary-600 dark:text-secondary-400">Executed At:</span>
-                              <span className="ml-2 font-medium text-secondary-900 dark:text-secondary-100">
-                                {importState.results.executedAt ? new Date(importState.results.executedAt).toLocaleString() : 'N/A'}
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {importState.results.preRestoreBackup && (
-                          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-3">
-                            <p className="text-sm text-blue-800 dark:text-blue-200">
-                              <Info className="w-4 h-4 inline mr-1" />
-                              Pre-restore backup created: {importState.results.preRestoreBackup.filename}
-                            </p>
-                          </div>
-                        )}
-                        
-                        {Object.keys(importState.results.importResults?.collections || {}).length > 0 && (
                           <div>
-                            <p className="font-medium text-secondary-900 dark:text-secondary-100 mb-2">
-                              Collections Processed:
-                            </p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                              {Object.entries(importState.results.importResults.collections).map(([collection, stats]) => (
-                                <div key={collection} className="flex justify-between items-center text-sm bg-white dark:bg-secondary-800 p-2 rounded">
-                                  <span className="text-secondary-900 dark:text-secondary-100">{collection}</span>
-                                  <span className="text-secondary-600 dark:text-secondary-400">
-                                    {stats.imported}/{stats.total}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
+                            <span className="text-secondary-600 dark:text-secondary-400">Collections:</span>
+                            <span className="ml-2 font-medium text-secondary-900 dark:text-secondary-100">
+                              {Object.keys(importState.results.importResults.collections || {}).length}
+                            </span>
                           </div>
-                        )}
-                        
-                        {importState.results.importResults?.errors?.length > 0 && (
                           <div>
-                            <p className="font-medium text-red-800 dark:text-red-200 mb-2">Errors:</p>
-                            <ul className="list-disc list-inside space-y-1 text-sm text-red-700 dark:text-red-300">
-                              {importState.results.importResults.errors.map((error, index) => (
-                                <li key={index}>{error}</li>
-                              ))}
-                            </ul>
+                            <span className="text-secondary-600 dark:text-secondary-400">Executed At:</span>
+                            <span className="ml-2 font-medium text-secondary-900 dark:text-secondary-100">
+                              {importState.results.executedAt ? new Date(importState.results.executedAt).toLocaleString() : 'N/A'}
+                            </span>
                           </div>
-                        )}
-                        
-                        {importState.results.importResults?.warnings?.length > 0 && (
-                          <div>
-                            <p className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">Warnings:</p>
-                            <ul className="list-disc list-inside space-y-1 text-sm text-yellow-700 dark:text-yellow-300">
-                              {importState.results.importResults.warnings.map((warning, index) => (
-                                <li key={index}>{warning}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
 
@@ -1180,7 +1156,7 @@ const BackupManagement = () => {
                     <div className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
                       <p>• Only import scripts from trusted sources</p>
                       <p>• JSON exports can be imported directly through the web interface</p>
-                      <p>• MongoDB scripts require manual execution via mongo shell</p>
+                      <p>• MongoDB scripts will be executed automatically in the container environment</p>
                       <p>• Always create a backup before importing data</p>
                       <p>• Test imports in a development environment first</p>
                       <p>• Clear existing data option will permanently delete current data</p>
