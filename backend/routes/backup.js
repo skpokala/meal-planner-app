@@ -430,20 +430,28 @@ const executeMongoScript = async (scriptContent, options = {}) => {
   };
 
   try {
-    // Add initial execution info
-    results.output.push(`Script execution started at ${new Date().toLocaleTimeString()}`);
-    results.output.push(`Database: ${mongoose.connection.db.databaseName}`);
-    results.output.push(`Connection: Direct MongoDB connection`);
+    // Initial status updates
+    results.output.push(`[${new Date().toLocaleTimeString()}] 🚀 Script execution initiated`);
+    results.output.push(`[${new Date().toLocaleTimeString()}] 📋 Database: ${mongoose.connection.db.databaseName}`);
+    results.output.push(`[${new Date().toLocaleTimeString()}] 🔗 Connection: Direct MongoDB connection`);
     results.output.push(''); // Empty line
     
     // Create a custom execution context with MongoDB utilities
     const scriptId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    results.output.push(`Script ID: ${scriptId}`);
-    results.output.push('Preparing execution context...');
+    results.output.push(`[${new Date().toLocaleTimeString()}] 🆔 Script ID: ${scriptId}`);
+    results.output.push(`[${new Date().toLocaleTimeString()}] ⚙️  Preparing execution environment...`);
+    
+    // Validate script content
+    if (!scriptContent || scriptContent.trim().length === 0) {
+      throw new Error('Script content is empty');
+    }
+    results.output.push(`[${new Date().toLocaleTimeString()}] ✅ Script content validated (${scriptContent.length} characters)`);
     
     // Create a context for script execution with db and print functions
     const rawDb = mongoose.connection.db;
     const executionLogs = [];
+    
+    results.output.push(`[${new Date().toLocaleTimeString()}] 🛠️  Setting up MongoDB shell interface...`);
     
     // Create a MongoDB shell-like db object with common methods
     const db = {
@@ -540,6 +548,9 @@ const executeMongoScript = async (scriptContent, options = {}) => {
       }
     });
     
+    results.output.push(`[${new Date().toLocaleTimeString()}] ✅ MongoDB shell interface ready`);
+    results.output.push(`[${new Date().toLocaleTimeString()}] 📚 Setting up utility functions...`);
+    
     // MongoDB shell utility functions
     const printjson = (obj) => {
       const logMessage = `[${new Date().toLocaleTimeString()}] ${JSON.stringify(obj, null, 2)}`;
@@ -623,7 +634,10 @@ Available functions:
     const use = (dbName) => {
       print(`Cannot switch databases in web execution environment. Current: ${rawDb.databaseName}, Requested: ${dbName}`);
     };
-    
+
+    results.output.push(`[${new Date().toLocaleTimeString()}] ✅ Utility functions initialized`);
+    results.output.push(`[${new Date().toLocaleTimeString()}] 🔧 Setting up logging capture...`);
+
     // Mock print function to capture output
     const print = (message) => {
       const logMessage = `[${new Date().toLocaleTimeString()}] ${message}`;
@@ -640,12 +654,15 @@ Available functions:
       originalConsoleLog(...args);
     };
     
-    results.output.push('Execution context prepared');
+    results.output.push(`[${new Date().toLocaleTimeString()}] ✅ Logging capture active`);
+    results.output.push(`[${new Date().toLocaleTimeString()}] 🚀 Parsing and preparing script function...`);
     results.output.push(''); // Empty line
     results.output.push('=== SCRIPT EXECUTION START ===');
     
     try {
       // Execute the script in a controlled environment
+      results.output.push(`[${new Date().toLocaleTimeString()}] ▶️  Starting script execution...`);
+      
       // Wrap the script in an async function to handle database operations properly
       const scriptFunction = new Function(
         'db', 'print', 'console', 'printjson', 'printjsononeline', 
@@ -657,6 +674,8 @@ Available functions:
         })();
       `);
       
+      results.output.push(`[${new Date().toLocaleTimeString()}] ⚡ Executing script with MongoDB context...`);
+      
       await scriptFunction(
         dbProxy, print, { log: console.log },
         printjson, printjsononeline,
@@ -664,31 +683,35 @@ Available functions:
         help, show, use, load, quit, exit
       );
       
+      results.output.push(`[${new Date().toLocaleTimeString()}] ✅ Script execution completed successfully`);
       results.output.push('=== SCRIPT EXECUTION END ===');
       results.output.push(''); // Empty line
       
       // Add captured logs to output
       if (executionLogs.length > 0) {
+        results.output.push(`[${new Date().toLocaleTimeString()}] 📝 Processing print output (${executionLogs.length} entries)...`);
         results.output.push('=== PRINT OUTPUT ===');
         results.output.push(...executionLogs);
       }
       
       if (consoleLogs.length > 0) {
+        results.output.push(`[${new Date().toLocaleTimeString()}] 📋 Processing console output (${consoleLogs.length} entries)...`);
         results.output.push('=== CONSOLE OUTPUT ===');
         results.output.push(...consoleLogs);
       }
       
       results.output.push(''); // Empty line
-      results.output.push('Script executed successfully using direct MongoDB connection');
+      results.output.push(`[${new Date().toLocaleTimeString()}] 🎉 Script executed successfully using direct MongoDB connection`);
       
     } catch (scriptError) {
       results.success = false;
+      results.output.push(`[${new Date().toLocaleTimeString()}] ❌ Script execution failed`);
       results.output.push('=== SCRIPT EXECUTION ERROR ===');
       results.errors.push(`Script execution failed: ${scriptError.message}`);
       results.output.push(`ERROR: ${scriptError.message}`);
       
       if (scriptError.stack) {
-        results.output.push('Stack trace:');
+        results.output.push(`[${new Date().toLocaleTimeString()}] 📚 Stack trace available:`);
         scriptError.stack.split('\n').forEach(line => {
           if (line.trim()) results.output.push(`  ${line.trim()}`);
         });
@@ -696,6 +719,7 @@ Available functions:
     } finally {
       // Restore original console.log
       console.log = originalConsoleLog;
+      results.output.push(`[${new Date().toLocaleTimeString()}] 🔄 Logging capture restored`);
     }
     
     // Add execution summary
@@ -704,16 +728,17 @@ Available functions:
     
     results.output.push(''); // Empty line
     results.output.push('=== EXECUTION SUMMARY ===');
-    results.output.push(`Status: ${results.success ? 'SUCCESS' : 'FAILED'}`);
-    results.output.push(`Execution time: ${(executionTime / 1000).toFixed(2)} seconds`);
-    results.output.push(`Completed at: ${new Date().toLocaleTimeString()}`);
-    results.output.push(`Errors: ${results.errors.length}`);
-    results.output.push(`Warnings: ${results.warnings.length}`);
+    results.output.push(`[${new Date().toLocaleTimeString()}] Status: ${results.success ? '✅ SUCCESS' : '❌ FAILED'}`);
+    results.output.push(`[${new Date().toLocaleTimeString()}] Execution time: ${(executionTime / 1000).toFixed(2)} seconds`);
+    results.output.push(`[${new Date().toLocaleTimeString()}] Started: ${new Date(results.executionStart).toLocaleTimeString()}`);
+    results.output.push(`[${new Date().toLocaleTimeString()}] Completed: ${new Date().toLocaleTimeString()}`);
+    results.output.push(`[${new Date().toLocaleTimeString()}] Errors: ${results.errors.length}`);
+    results.output.push(`[${new Date().toLocaleTimeString()}] Warnings: ${results.warnings.length}`);
     
   } catch (error) {
     results.success = false;
     results.errors.push(`Execution setup failed: ${error.message}`);
-    results.output.push(`FATAL ERROR: ${error.message}`);
+    results.output.push(`[${new Date().toLocaleTimeString()}] 💥 FATAL ERROR: ${error.message}`);
     
     results.executionEnd = new Date().toISOString();
   }

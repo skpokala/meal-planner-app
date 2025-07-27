@@ -11,92 +11,77 @@ const ScriptExecutionConsole = ({ results }) => {
   // Generate console logs from different sources
   const generateConsoleLogs = () => {
     const logs = [];
-    const timestamp = new Date().toLocaleTimeString();
     
-    // Initial connection message
-    if (isMongoScript) {
-      logs.push({
-        type: 'info',
-        text: `mongosh 1.10.6 connecting to: mongodb://localhost:27017/meal_planner`,
-        timestamp: timestamp,
-        color: 'text-blue-400'
-      });
-      logs.push({
-        type: 'info', 
-        text: `Using MongoDB: 7.0.8`,
-        timestamp: timestamp,
-        color: 'text-yellow-300'
-      });
-      logs.push({
-        type: 'separator',
-        text: '──────────────────────────────────────────────────',
-        color: 'text-secondary-500'
-      });
-    } else {
-      logs.push({
-        type: 'info',
-        text: `Script Import Console - Starting execution...`,
-        timestamp: timestamp,
-        color: 'text-cyan-400'
-      });
-      logs.push({
-        type: 'separator',
-        text: '──────────────────────────────────────────────────',
-        color: 'text-secondary-500'
-      });
-    }
-    
-    // Script execution start
-    const scriptName = results.importResults?.scriptName || 'backup_script.js';
-    logs.push({
-      type: 'command',
-      text: isMongoScript ? `load('/tmp/${scriptName}')` : `Executing: ${scriptName}`,
-      timestamp: timestamp,
-      color: 'text-cyan-400'
-    });
-    
-    // Process output or show manual instructions
     if (hasOutput) {
-      // Process script output
+      // Process script output with enhanced formatting
       results.importResults.output.forEach((line, index) => {
         const cleanLine = line.trim();
         if (!cleanLine) return;
         
         let logType = 'output';
         let color = 'text-gray-300';
-        let prefix = '';
+        let bgColor = '';
         
-        if (cleanLine.includes('Error:') || cleanLine.includes('error:')) {
-          logType = 'error';
-          color = 'text-red-400';
-          prefix = '❌ ';
-        } else if (cleanLine.includes('version') || cleanLine.includes('MongoDB')) {
-          logType = 'info';
+        // Parse timestamp and emoji from enhanced logs
+        const timestampMatch = cleanLine.match(/^\[([\d:]+)\]\s*(.*)$/);
+        let timestamp = '';
+        let content = cleanLine;
+        
+        if (timestampMatch) {
+          timestamp = timestampMatch[1];
+          content = timestampMatch[2];
+        }
+        
+        // Determine line type and color based on content and emojis
+        if (content.includes('🚀') || content.includes('initiated')) {
+          logType = 'start';
           color = 'text-blue-400';
-          prefix = 'ℹ️  ';
-        } else if (cleanLine.includes('Processing') || cleanLine.includes('Found') || cleanLine.includes('Importing')) {
-          logType = 'processing';
-          color = 'text-yellow-300';
-          prefix = '📊 ';
-        } else if (cleanLine.includes('completed') || cleanLine.includes('success') || cleanLine.includes('Successfully')) {
+          bgColor = 'bg-blue-900/20';
+        } else if (content.includes('✅') || content.includes('completed successfully') || content.includes('SUCCESS')) {
           logType = 'success';
           color = 'text-green-400';
-          prefix = '✅ ';
-        } else if (cleanLine.includes('Total') || cleanLine.includes('Generated') || cleanLine.includes('Inserted')) {
+          bgColor = 'bg-green-900/20';
+        } else if (content.includes('❌') || content.includes('FAILED') || content.includes('ERROR') || content.includes('💥')) {
+          logType = 'error';
+          color = 'text-red-400';
+          bgColor = 'bg-red-900/20';
+        } else if (content.includes('⚙️') || content.includes('🛠️') || content.includes('🔧') || content.includes('Preparing') || content.includes('Setting up')) {
+          logType = 'setup';
+          color = 'text-yellow-300';
+          bgColor = 'bg-yellow-900/20';
+        } else if (content.includes('▶️') || content.includes('⚡') || content.includes('Starting') || content.includes('Executing')) {
+          logType = 'executing';
+          color = 'text-purple-400';
+          bgColor = 'bg-purple-900/20';
+        } else if (content.includes('📋') || content.includes('📝') || content.includes('🆔') || content.includes('Database:') || content.includes('Connection:')) {
+          logType = 'info';
+          color = 'text-cyan-400';
+          bgColor = 'bg-cyan-900/20';
+        } else if (content.includes('🎉') || content.includes('Script executed successfully')) {
+          logType = 'celebration';
+          color = 'text-green-300';
+          bgColor = 'bg-green-900/30';
+        } else if (content.includes('Processing') || content.includes('Found') || content.includes('Importing')) {
+          logType = 'processing';
+          color = 'text-yellow-300';
+        } else if (content.includes('Total') || content.includes('Generated') || content.includes('Inserted')) {
           logType = 'stats';
           color = 'text-cyan-400';
-          prefix = '📈 ';
-        } else if (cleanLine.startsWith('//') || cleanLine.includes('backup script') || cleanLine.includes('comment')) {
+        } else if (content.startsWith('//') || content.includes('backup script') || content.includes('comment')) {
           logType = 'comment';
           color = 'text-purple-400';
-          prefix = '📝 ';
+        } else if (content.includes('=== ')) {
+          logType = 'separator';
+          color = 'text-secondary-500';
         }
         
         logs.push({
           type: logType,
-          text: `${prefix}${cleanLine}`,
+          text: content,
+          timestamp: timestamp,
           color: color,
-          timestamp: timestamp
+          bgColor: bgColor,
+          originalLine: cleanLine
         });
       });
     } else if (results.importResults?.totalImported !== undefined) {
@@ -127,21 +112,6 @@ const ScriptExecutionConsole = ({ results }) => {
         color: 'text-yellow-400'
       });
     }
-    
-    // Execution completion
-    logs.push({
-      type: 'separator',
-      text: '──────────────────────────────────────────────────',
-      color: 'text-secondary-500'
-    });
-    
-    const success = results.importResults?.success !== false;
-    logs.push({
-      type: success ? 'success' : 'error',
-      text: `${success ? '✅' : '❌'} Script execution ${success ? 'completed successfully' : 'failed'}`,
-      color: success ? 'text-green-400' : 'text-red-400',
-      timestamp: results.executedAt || timestamp
-    });
     
     return logs;
   };
@@ -176,27 +146,25 @@ const ScriptExecutionConsole = ({ results }) => {
         {/* Console Content */}
         <div className="p-4 max-h-96 overflow-y-auto">
           {consoleLogs.map((log, index) => (
-            <div key={index} className={`py-0.5 ${log.type === 'separator' ? 'py-1' : ''}`}>
+            <div 
+              key={index} 
+              className={`py-0.5 ${log.type === 'separator' ? 'py-1' : ''} ${log.bgColor ? `${log.bgColor} rounded px-2 my-1` : ''}`}
+            >
               {log.type === 'separator' ? (
                 <div className={`${log.color} select-none`}>{log.text}</div>
-              ) : log.type === 'command' ? (
-                <div className="flex items-start">
-                  <span className="text-green-400 mr-2 flex-shrink-0">
-                    {isMongoScript ? 'meal_planner>' : '$'}
-                  </span>
-                  <span className={`${log.color} break-all`}>{log.text}</span>
-                </div>
               ) : (
                 <div className="flex items-start">
                   <span className="text-green-400 mr-2 flex-shrink-0">
                     {isMongoScript ? 'meal_planner>' : '$'}
                   </span>
-                  <span className={`${log.color} break-all`}>{log.text}</span>
-                  {log.timestamp && (
-                    <span className="text-secondary-600 text-xs ml-auto flex-shrink-0 pl-2">
-                      {log.timestamp}
-                    </span>
-                  )}
+                  <div className="flex-1">
+                    <span className={`${log.color} break-all`}>{log.text}</span>
+                    {log.timestamp && (
+                      <span className="text-secondary-600 text-xs ml-2 opacity-75">
+                        {log.timestamp}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -211,9 +179,6 @@ const ScriptExecutionConsole = ({ results }) => {
           </div>
         </div>
       </div>
-      
-      {/* Manual Instructions Section */}
-      {/* Removed as scripts will now always execute directly */}
       
       {/* Additional Info/Notice */}
       {results.importResults?.notice && (
