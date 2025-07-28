@@ -471,7 +471,7 @@ const MealRecommendations = ({
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                  className="input"
                 />
               </div>
 
@@ -482,7 +482,7 @@ const MealRecommendations = ({
                 <select
                   value={selectedMealType}
                   onChange={(e) => setSelectedMealType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                  className="select"
                 >
                   <option value="breakfast">Breakfast</option>
                   <option value="lunch">Lunch</option>
