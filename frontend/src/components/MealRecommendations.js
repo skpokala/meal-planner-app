@@ -129,6 +129,7 @@ const MealRecommendations = ({
         message: 'ML service unavailable, showing popular meals',
         models_used: ['fallback_popular']
       });
+      setError(''); // Clear error state so recommendations are shown
     } finally {
       setLoading(false);
     }
@@ -269,6 +270,7 @@ const MealRecommendations = ({
           message: 'Showing fallback recommendations',
           models_used: ['fallback_timer']
         });
+        setError(''); // Clear error state so recommendations are shown
       }, 2000);
 
       return () => clearTimeout(timer);
