@@ -181,6 +181,9 @@ npm run docker:build
 | `npm run dev:backend` | Start backend dev server |
 | `npm run dev:docker` | Start with Docker Compose (full stack) |
 | `npm run precommit` | Pre-commit validation |
+| `npm run version:update` | Manual version update |
+| `npm run readme:update` | Update README version and date |
+| `npm run docs:check` | Validate all documentation links |
 
 ## 🛠️ Local Testing Workflow
 
