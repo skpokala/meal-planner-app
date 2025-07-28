@@ -228,7 +228,7 @@ npm run version:update 1.2.0
 git push --no-verify
 ```
 
-For complete versioning details, see **[VERSIONING.md](VERSIONING.md)**.
+For complete versioning details, see **[docs/development/VERSIONING.md](docs/development/VERSIONING.md)**.
 
 ## 📦 Container Registry
 
@@ -248,7 +248,7 @@ export JWT_SECRET="your-secure-jwt-secret-$(openssl rand -hex 32)"
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-For complete GHCR publishing details, see **[GHCR_PUBLISHING.md](GHCR_PUBLISHING.md)**.
+For complete GHCR publishing details, see **[docs/deployment/GHCR_PUBLISHING.md](docs/deployment/GHCR_PUBLISHING.md)**.
 
 ## 🚀 Deployment
 
@@ -287,7 +287,7 @@ docker-compose -f docker-compose.prod.yml up -d
 - 💾 **Persistent data** with Docker volumes
 - 🤖 **ML Service** containerized and integrated
 
-For complete deployment instructions, see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+For complete deployment instructions, see **[docs/deployment/DEPLOYMENT.md](docs/deployment/DEPLOYMENT.md)**.
 
 ## 🔒 Security Features
 
@@ -346,6 +346,31 @@ For complete deployment instructions, see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 - **Better Navigation**: Section icons and improved layout
 - **Consistent Styling**: App-wide design system implementation
 - **Dark Mode**: Complete theme support with persistence
+
+## 📚 Documentation
+
+### 📖 **[Complete Documentation Index](docs/INDEX.md)**
+Comprehensive documentation organized by category with detailed descriptions and audience information.
+
+### 🚀 **Deployment Guides**
+- **[Main Deployment Guide](docs/deployment/DEPLOYMENT.md)** - Docker Compose setup and production configuration
+- **[GitHub Container Registry](docs/deployment/GHCR_PUBLISHING.md)** - Automatic image publishing and multi-platform builds
+- **[Portainer Deployment](docs/deployment/PORTAINER_DEPLOYMENT.md)** - Portainer-specific setup with CORS fixes
+- **[Portainer Login Fix](docs/deployment/PORTAINER_LOGIN_FIX.md)** - Troubleshooting guide for login issues
+
+### ⚙️ **Feature Documentation**
+- **[Address Autocomplete](docs/features/ADDRESS_AUTOCOMPLETE_SETUP.md)** - Nominatim API integration for store addresses
+- **[Autosave Functionality](docs/features/AUTOSAVE_SUMMARY.md)** - Comprehensive autosave system documentation
+- **[Dual Password System](docs/features/DUAL_PASSWORD_SYSTEM.md)** - Admin dual authentication setup and usage
+
+### 🔧 **Development Resources**
+- **[Versioning System](docs/development/VERSIONING.md)** - Auto-increment versioning and git hooks
+- **[Release Workflow](docs/development/RELEASE_WORKFLOW.md)** - Unified release process preventing multiple CI triggers
+- **[Testing Architecture](docs/development/TEST_SUMMARY.md)** - Test coverage and architecture information
+
+### 📋 **Project Information**
+- **[Changelog](docs/CHANGELOG.md)** - Complete version history and feature additions
+- **[README Maintenance](docs/README_MAINTENANCE.md)** - Documentation maintenance procedures
 
 ## 🤝 Contributing
 
