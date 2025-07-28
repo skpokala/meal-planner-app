@@ -33,112 +33,85 @@ const MealRecommendations = ({
   });
 
   const fetchRecommendations = async () => {
-    if (!user) return;
-
     console.log('🚀 fetchRecommendations called', { user: !!user, mealType, maxRecommendations });
-
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.warn('No token found in localStorage');
-      return;
-    }
-
+    
+    if (!user) return;
+    
     setLoading(true);
     setError('');
-
+    
     try {
-      const params = new URLSearchParams();
-      if (mealType) params.append('meal_type', mealType);
-      if (currentMealId) params.append('meal_id', currentMealId);
-      params.append('top_n', maxRecommendations.toString());
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Authentication required');
+        return;
+      }
 
-      console.log('📡 Making API request to /api/recommendations');
+      console.log('📡 Fetching existing meals for recommendations');
 
-      const response = await fetch(`/api/recommendations?${params}`, {
+      // Fetch existing meals instead of ML API
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/api/meals`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
-      const data = await response.json();
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Fetched meals data:', data);
 
-      if (data.success) {
-        setRecommendations(data.recommendations || []);
-        setContext(data.context);
-      } else {
-        setError(data.message || 'Failed to load recommendations');
-      }
-    } catch (err) {
-      console.error('❌ Error fetching recommendations:', err);
-      
-      // Fallback: Show sample recommendations when API is not available
-      console.log('🔄 ML service unavailable, showing sample recommendations...');
-      const sampleRecommendations = [
-        {
-          meal_id: 'sample_1',
-          meal_name: 'Grilled Chicken Salad',
-          meal_type: mealType || 'lunch',
-          prep_time: 15,
-          difficulty: 'easy',
-          rating: 4.5,
-          recommendation_type: 'popular',
-          popularity_score: 0.85,
-          ingredients: ['chicken breast', 'mixed greens', 'tomatoes', 'cucumber']
-        },
-        {
-          meal_id: 'sample_2', 
-          meal_name: 'Spaghetti Carbonara',
-          meal_type: mealType || 'dinner',
-          prep_time: 25,
-          difficulty: 'medium',
-          rating: 4.8,
-          recommendation_type: 'popular',
-          popularity_score: 0.92,
-          ingredients: ['spaghetti', 'eggs', 'bacon', 'parmesan cheese']
-        },
-        {
-          meal_id: 'sample_3',
-          meal_name: 'Avocado Toast',
-          meal_type: mealType || 'breakfast',
-          prep_time: 5,
-          difficulty: 'easy', 
-          rating: 4.2,
-          recommendation_type: 'popular',
-          popularity_score: 0.78,
-          ingredients: ['bread', 'avocado', 'lime', 'salt']
-        },
-        {
-          meal_id: 'sample_4',
-          meal_name: 'Beef Stir Fry',
-          meal_type: mealType || 'dinner',
-          prep_time: 20,
-          difficulty: 'medium',
-          rating: 4.6,
-          recommendation_type: 'popular', 
-          popularity_score: 0.83,
-          ingredients: ['beef strips', 'bell peppers', 'broccoli', 'soy sauce']
-        },
-        {
-          meal_id: 'sample_5',
-          meal_name: 'Greek Yogurt Parfait',
-          meal_type: mealType || 'breakfast',
-          prep_time: 3,
-          difficulty: 'easy',
-          rating: 4.3,
-          recommendation_type: 'popular',
-          popularity_score: 0.75,
-          ingredients: ['greek yogurt', 'berries', 'granola', 'honey']
+        if (data.success && data.meals && data.meals.length > 0) {
+          // Transform existing meals into recommendation format
+          const mealRecommendations = data.meals
+            .filter(meal => meal.active) // Only active meals
+            .map(meal => ({
+              meal_id: meal._id,
+              meal_name: meal.name,
+              meal_type: mealType || 'dinner',
+              prep_time: meal.prepTime || 30,
+              difficulty: meal.recipe?.difficulty || 'medium',
+              rating: 4.2, // Default rating since we don't have ratings in meals
+              recommendation_type: 'existing_meal',
+              popularity_score: 0.8,
+              ingredients: meal.ingredients?.slice(0, 4).map(ing => ing.ingredient?.name || 'ingredient').filter(Boolean) || [],
+              description: meal.description || `Delicious ${meal.name.toLowerCase()}`
+            }))
+            .slice(0, maxRecommendations); // Limit to requested number
+
+          setRecommendations(mealRecommendations);
+          setContext({ 
+            fallback: false, 
+            message: `Showing ${mealRecommendations.length} of your existing meals`,
+            models_used: ['existing_meals']
+          });
+          setError(''); // Clear any previous errors
+          
+          console.log(`📋 Showing ${mealRecommendations.length} existing meal recommendations`);
+        } else {
+          // No meals found - show message to create meals
+          setRecommendations([]);
+          setContext({ 
+            fallback: true, 
+            message: 'No meals found. Create some meals to see recommendations!',
+            models_used: ['empty']
+          });
         }
-      ].slice(0, maxRecommendations);
-
-      setRecommendations(sampleRecommendations);
+      } else {
+        throw new Error('Failed to fetch meals');
+      }
+      
+    } catch (err) {
+      console.error('❌ Error fetching meal recommendations:', err);
+      setError('Failed to load recommendations');
+      
+      // Show empty state instead of fallback recommendations
+      setRecommendations([]);
       setContext({ 
         fallback: true, 
-        message: 'ML service unavailable, showing popular meals',
-        models_used: ['fallback_popular']
+        message: 'Unable to load recommendations. Please try again.',
+        models_used: ['error']
       });
-      setError(''); // Clear error state so recommendations are shown
     } finally {
       setLoading(false);
     }
@@ -205,7 +178,20 @@ const MealRecommendations = ({
       case 'collaborative_filtering': return '👥';
       case 'popular': return '⭐';
       case 'fallback_popular': return '📈';
+      case 'existing_meal': return '🍽️';
       default: return '🍽️';
+    }
+  };
+
+  const getRecommendationTypeLabel = (type) => {
+    switch (type) {
+      case 'hybrid': return 'Personalized';
+      case 'content_based': return 'Similar Taste';
+      case 'collaborative_filtering': return 'Others Like';
+      case 'popular': return 'Popular Choice';
+      case 'fallback_popular': return 'Trending';
+      case 'existing_meal': return 'Your Recipe';
+      default: return 'Recommended';
     }
   };
 
@@ -233,74 +219,21 @@ const MealRecommendations = ({
         return;
       }
 
-      // Step 1: Check if meal already exists or create it
-      let mealId;
-      
-      // Try to find existing meal with the same name
-      const existingMealsResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/api/meals`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      console.log('📅 Adding existing meal to meal plan:', {
+        mealId: selectedRecommendation.meal_id,
+        mealName: selectedRecommendation.meal_name,
+        date: selectedDate,
+        mealType: selectedMealType
       });
 
-      if (existingMealsResponse.ok) {
-        const existingMealsData = await existingMealsResponse.json();
-        const existingMeal = existingMealsData.meals?.find(
-          meal => meal.name.toLowerCase() === selectedRecommendation.meal_name.toLowerCase()
-        );
-
-        if (existingMeal) {
-          mealId = existingMeal._id;
-          console.log('📦 Found existing meal:', existingMeal.name);
-        }
-      }
-
-      // Step 2: Create meal if it doesn't exist
-      if (!mealId) {
-        console.log('🆕 Creating new meal:', selectedRecommendation.meal_name);
-        
-        const mealData = {
-          name: selectedRecommendation.meal_name,
-          description: `Recommended meal with ${selectedRecommendation.ingredients?.slice(0, 3).join(', ')}`,
-          prepTime: selectedRecommendation.prep_time || 30,
-          active: true,
-          ingredients: [], // We could populate this with ingredient data if available
-          recipe: {
-            difficulty: selectedRecommendation.difficulty || 'medium',
-            servings: 4
-          },
-          tags: [selectedRecommendation.recommendation_type || 'recommended'],
-          notes: `Added from AI recommendations (${selectedRecommendation.recommendation_type})`
-        };
-
-        const createMealResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/api/meals`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(mealData)
-        });
-
-        if (!createMealResponse.ok) {
-          const errorData = await createMealResponse.json();
-          throw new Error(errorData.message || 'Failed to create meal');
-        }
-
-        const newMealData = await createMealResponse.json();
-        mealId = newMealData.meal._id;
-        console.log('✅ Created new meal:', newMealData.meal.name);
-      }
-
-      // Step 3: Add to meal plan
+      // Since we're only showing existing meals, we can directly add to meal plan
       const mealPlanData = {
-        meal: mealId,
+        meal: selectedRecommendation.meal_id, // This is already an existing meal ID
         mealType: selectedMealType,
         date: new Date(selectedDate).toISOString(),
         assignedTo: [],
         isCooked: false,
-        notes: `Added from AI recommendations`
+        notes: `Added from recommendations`
       };
 
       const createMealPlanResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/api/meal-plans`, {
@@ -318,29 +251,20 @@ const MealRecommendations = ({
       }
 
       const mealPlanResult = await createMealPlanResponse.json();
-      console.log('📅 Added to meal plan:', mealPlanResult.mealPlan);
+      console.log('✅ Successfully added to meal plan:', mealPlanResult.mealPlan);
 
       // Success!
-      toast.success(`✅ ${selectedRecommendation.meal_name} added to ${selectedMealType} on ${new Date(selectedDate).toLocaleDateString()}`);
+      toast.success(
+        `✅ ${selectedRecommendation.meal_name} added to ${selectedMealType} on ${new Date(selectedDate).toLocaleDateString()}`
+      );
       setShowMealPlanModal(false);
       setSelectedRecommendation(null);
 
     } catch (error) {
-      console.error('Error adding to meal plan:', error);
+      console.error('❌ Error adding to meal plan:', error);
       toast.error(`Failed to add to meal plan: ${error.message}`);
     } finally {
       setIsAddingToMealPlan(false);
-    }
-  };
-
-  const getRecommendationTypeLabel = (type) => {
-    switch (type) {
-      case 'hybrid': return 'AI Personalized';
-      case 'content_based': return 'Similar Meals';
-      case 'collaborative_filtering': return 'Community Favorite';
-      case 'popular': return 'Popular Choice';
-      case 'fallback_popular': return 'Top Rated';
-      default: return 'Recommended';
     }
   };
 
@@ -354,61 +278,6 @@ const MealRecommendations = ({
       console.log('❌ No user found, not fetching recommendations');
     }
   }, [user, mealType, currentMealId, maxRecommendations]);
-
-  // Fallback: Show sample recommendations immediately if we have a user but no recommendations after 2 seconds
-  useEffect(() => {
-    if (user && recommendations.length === 0 && !loading) {
-      console.log('⏰ Setting up fallback timer for sample recommendations...');
-      const timer = setTimeout(() => {
-        console.log('🔄 Timer triggered - showing sample recommendations as ultimate fallback');
-        const sampleRecommendations = [
-          {
-            meal_id: 'fallback_1',
-            meal_name: 'Quick Grilled Chicken',
-            meal_type: mealType || 'dinner',
-            prep_time: 20,
-            difficulty: 'easy',
-            rating: 4.4,
-            recommendation_type: 'popular',
-            popularity_score: 0.88,
-            ingredients: ['chicken breast', 'olive oil', 'herbs', 'lemon']
-          },
-          {
-            meal_id: 'fallback_2', 
-            meal_name: 'Pasta Primavera',
-            meal_type: mealType || 'dinner',
-            prep_time: 15,
-            difficulty: 'easy',
-            rating: 4.2,
-            recommendation_type: 'popular',
-            popularity_score: 0.82,
-            ingredients: ['pasta', 'mixed vegetables', 'olive oil', 'garlic']
-          },
-          {
-            meal_id: 'fallback_3',
-            meal_name: 'Breakfast Smoothie',
-            meal_type: mealType || 'breakfast',
-            prep_time: 5,
-            difficulty: 'easy', 
-            rating: 4.0,
-            recommendation_type: 'popular',
-            popularity_score: 0.76,
-            ingredients: ['banana', 'berries', 'yogurt', 'honey']
-          }
-        ].slice(0, maxRecommendations);
-
-        setRecommendations(sampleRecommendations);
-        setContext({ 
-          fallback: true, 
-          message: 'Showing fallback recommendations',
-          models_used: ['fallback_timer']
-        });
-        setError(''); // Clear error state so recommendations are shown
-      }, 2000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [user, recommendations.length, loading, mealType, maxRecommendations]);
 
   if (!user) return null;
 
