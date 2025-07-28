@@ -20,7 +20,8 @@
     "dev:docker": "docker compose up",
     "lint:fix": "cd frontend && npm run lint --fix 2>/dev/null || true",
     "precommit": "./test-quick.sh",
-    "version:update": "node scripts/update-version.js"
+    "version:update": "node scripts/update-version.js",
+    "readme:update": "./scripts/update-readme.sh"
   },
   "keywords": [
     "meal-planner",
