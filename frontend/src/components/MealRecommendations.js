@@ -41,64 +41,47 @@ const MealRecommendations = ({
     setError('');
     
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Authentication required');
-        return;
-      }
-
       console.log('📡 Fetching existing meals for recommendations');
 
-      // Fetch existing meals instead of ML API
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/api/meals`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      // Use the proper API service instead of raw fetch
+      const response = await api.get('/meals');
+      console.log('✅ Fetched meals data:', response.data);
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Fetched meals data:', data);
+      if (response.data.success && response.data.meals && response.data.meals.length > 0) {
+        // Transform existing meals into recommendation format
+        const mealRecommendations = response.data.meals
+          .filter(meal => meal.active) // Only active meals
+          .map(meal => ({
+            meal_id: meal._id,
+            meal_name: meal.name,
+            meal_type: mealType || 'dinner',
+            prep_time: meal.prepTime || 30,
+            difficulty: meal.recipe?.difficulty || 'medium',
+            rating: 4.2, // Default rating since we don't have ratings in meals
+            recommendation_type: 'existing_meal',
+            popularity_score: 0.8,
+            ingredients: meal.ingredients?.slice(0, 4).map(ing => ing.ingredient?.name || 'ingredient').filter(Boolean) || [],
+            description: meal.description || `Delicious ${meal.name.toLowerCase()}`
+          }))
+          .slice(0, maxRecommendations); // Limit to requested number
 
-        if (data.success && data.meals && data.meals.length > 0) {
-          // Transform existing meals into recommendation format
-          const mealRecommendations = data.meals
-            .filter(meal => meal.active) // Only active meals
-            .map(meal => ({
-              meal_id: meal._id,
-              meal_name: meal.name,
-              meal_type: mealType || 'dinner',
-              prep_time: meal.prepTime || 30,
-              difficulty: meal.recipe?.difficulty || 'medium',
-              rating: 4.2, // Default rating since we don't have ratings in meals
-              recommendation_type: 'existing_meal',
-              popularity_score: 0.8,
-              ingredients: meal.ingredients?.slice(0, 4).map(ing => ing.ingredient?.name || 'ingredient').filter(Boolean) || [],
-              description: meal.description || `Delicious ${meal.name.toLowerCase()}`
-            }))
-            .slice(0, maxRecommendations); // Limit to requested number
-
-          setRecommendations(mealRecommendations);
-          setContext({ 
-            fallback: false, 
-            message: `Showing ${mealRecommendations.length} of your existing meals`,
-            models_used: ['existing_meals']
-          });
-          setError(''); // Clear any previous errors
-          
-          console.log(`📋 Showing ${mealRecommendations.length} existing meal recommendations`);
-        } else {
-          // No meals found - show message to create meals
-          setRecommendations([]);
-          setContext({ 
-            fallback: true, 
-            message: 'No meals found. Create some meals to see recommendations!',
-            models_used: ['empty']
-          });
-        }
+        setRecommendations(mealRecommendations);
+        setContext({ 
+          fallback: false, 
+          message: `Showing ${mealRecommendations.length} of your existing meals`,
+          models_used: ['existing_meals']
+        });
+        setError(''); // Clear any previous errors
+        
+        console.log(`📋 Showing ${mealRecommendations.length} existing meal recommendations`);
       } else {
-        throw new Error('Failed to fetch meals');
+        // No meals found - show message to create meals
+        setRecommendations([]);
+        setContext({ 
+          fallback: true, 
+          message: 'No meals found. Create some meals to see recommendations!',
+          models_used: ['empty']
+        });
       }
       
     } catch (err) {
@@ -213,12 +196,6 @@ const MealRecommendations = ({
     setIsAddingToMealPlan(true);
     
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast.error('Authentication required');
-        return;
-      }
-
       console.log('📅 Adding existing meal to meal plan:', {
         mealId: selectedRecommendation.meal_id,
         mealName: selectedRecommendation.meal_name,
@@ -236,22 +213,9 @@ const MealRecommendations = ({
         notes: `Added from recommendations`
       };
 
-      const createMealPlanResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/api/meal-plans`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(mealPlanData)
-      });
-
-      if (!createMealPlanResponse.ok) {
-        const errorData = await createMealPlanResponse.json();
-        throw new Error(errorData.message || 'Failed to add to meal plan');
-      }
-
-      const mealPlanResult = await createMealPlanResponse.json();
-      console.log('✅ Successfully added to meal plan:', mealPlanResult.mealPlan);
+      // Use the proper API service instead of raw fetch
+      const response = await api.post('/meal-plans', mealPlanData);
+      console.log('✅ Successfully added to meal plan:', response.data.mealPlan);
 
       // Success!
       toast.success(
@@ -262,7 +226,8 @@ const MealRecommendations = ({
 
     } catch (error) {
       console.error('❌ Error adding to meal plan:', error);
-      toast.error(`Failed to add to meal plan: ${error.message}`);
+      const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+      toast.error(`Failed to add to meal plan: ${errorMessage}`);
     } finally {
       setIsAddingToMealPlan(false);
     }
