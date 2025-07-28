@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# Colors for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+echo -e "${YELLOW}🚀 Pre-push: Running checks and updates...${NC}"
+
+# Check if there are commits to push
+if git diff --quiet origin/$(git branch --show-current) HEAD; then
+    echo -e "${YELLOW}⚠️  No commits to push. Skipping version increment.${NC}"
+    exit 0
+fi
+
+# Get current version from package.json
+CURRENT_VERSION=$(node -p "require('./package.json').version")
+echo -e "${GREEN}📦 Current version: $CURRENT_VERSION${NC}"
+
+# Auto-increment patch version
+IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+MAJOR=${VERSION_PARTS[0]}
+MINOR=${VERSION_PARTS[1]}
+PATCH=${VERSION_PARTS[2]}
+
+# Increment patch version
+NEW_PATCH=$((PATCH + 1))
+NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+
+echo -e "${GREEN}🔄 Incrementing to version: $NEW_VERSION${NC}"
+
+# Update package.json
+npm version $NEW_VERSION --no-git-tag-version > /dev/null 2>&1
+
+# Update README.md with current version and date
+CURRENT_DATE=$(date +"%B %Y")
+echo -e "${GREEN}📝 Updating README.md with version $NEW_VERSION and date $CURRENT_DATE${NC}"
+
+# Update the README footer with new version and date
+sed -i.bak "s/\*\*Current Version\*\*: v[0-9]\+\.[0-9]\+\.[0-9]\+ | \*\*Last Updated\*\*: .*/\*\*Current Version\*\*: v$NEW_VERSION | \*\*Last Updated\*\*: $CURRENT_DATE/" README.md
+
+# Remove backup file
+rm -f README.md.bak
+
+# Commit the version changes
+git add package.json README.md
+git commit -m "chore: bump version to v$NEW_VERSION and update README"
+
+echo -e "${GREEN}✅ Version updated and README synchronized!${NC}"
+echo -e "${GREEN}🚀 Proceeding with push...${NC}" 
