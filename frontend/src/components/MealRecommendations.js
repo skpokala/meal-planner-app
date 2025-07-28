@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Clock, Star, ChefHat, Users, ThumbsUp, ThumbsDown, RefreshCw, Lightbulb } from 'lucide-react';
+import { Clock, Star, ChefHat, Users, ThumbsUp, ThumbsDown, RefreshCw, Lightbulb, Calendar, Plus } from 'lucide-react';
+import api from '../services/api';
+import toast from 'react-hot-toast';
 
 const MealRecommendations = ({ 
   mealType = null, 
@@ -13,7 +15,14 @@ const MealRecommendations = ({
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [context, setContext] = useState(null);
+  const [context, setContext] = useState({});
+
+  // Meal planning modal states
+  const [showMealPlanModal, setShowMealPlanModal] = useState(false);
+  const [selectedRecommendation, setSelectedRecommendation] = useState(null);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedMealType, setSelectedMealType] = useState('dinner');
+  const [isAddingToMealPlan, setIsAddingToMealPlan] = useState(false);
   const [feedbackLoading, setFeedbackLoading] = useState({});
 
   console.log('🧠 MealRecommendations component rendered', { 
@@ -197,6 +206,130 @@ const MealRecommendations = ({
       case 'popular': return '⭐';
       case 'fallback_popular': return '📈';
       default: return '🍽️';
+    }
+  };
+
+  // Handle opening meal plan modal
+  const handleAddToMealPlan = (recommendation) => {
+    setSelectedRecommendation(recommendation);
+    setSelectedDate(new Date().toISOString().split('T')[0]); // Default to today
+    setSelectedMealType(recommendation.meal_type || 'dinner');
+    setShowMealPlanModal(true);
+  };
+
+  // Handle adding recommendation to meal plan
+  const handleConfirmAddToMealPlan = async () => {
+    if (!selectedRecommendation || !selectedDate || !selectedMealType) {
+      toast.error('Please select a date and meal type');
+      return;
+    }
+
+    setIsAddingToMealPlan(true);
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Authentication required');
+        return;
+      }
+
+      // Step 1: Check if meal already exists or create it
+      let mealId;
+      
+      // Try to find existing meal with the same name
+      const existingMealsResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/api/meals`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (existingMealsResponse.ok) {
+        const existingMealsData = await existingMealsResponse.json();
+        const existingMeal = existingMealsData.meals?.find(
+          meal => meal.name.toLowerCase() === selectedRecommendation.meal_name.toLowerCase()
+        );
+
+        if (existingMeal) {
+          mealId = existingMeal._id;
+          console.log('📦 Found existing meal:', existingMeal.name);
+        }
+      }
+
+      // Step 2: Create meal if it doesn't exist
+      if (!mealId) {
+        console.log('🆕 Creating new meal:', selectedRecommendation.meal_name);
+        
+        const mealData = {
+          name: selectedRecommendation.meal_name,
+          description: `Recommended meal with ${selectedRecommendation.ingredients?.slice(0, 3).join(', ')}`,
+          prepTime: selectedRecommendation.prep_time || 30,
+          active: true,
+          ingredients: [], // We could populate this with ingredient data if available
+          recipe: {
+            difficulty: selectedRecommendation.difficulty || 'medium',
+            servings: 4
+          },
+          tags: [selectedRecommendation.recommendation_type || 'recommended'],
+          notes: `Added from AI recommendations (${selectedRecommendation.recommendation_type})`
+        };
+
+        const createMealResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/api/meals`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(mealData)
+        });
+
+        if (!createMealResponse.ok) {
+          const errorData = await createMealResponse.json();
+          throw new Error(errorData.message || 'Failed to create meal');
+        }
+
+        const newMealData = await createMealResponse.json();
+        mealId = newMealData.meal._id;
+        console.log('✅ Created new meal:', newMealData.meal.name);
+      }
+
+      // Step 3: Add to meal plan
+      const mealPlanData = {
+        meal: mealId,
+        mealType: selectedMealType,
+        date: new Date(selectedDate).toISOString(),
+        assignedTo: [],
+        isCooked: false,
+        notes: `Added from AI recommendations`
+      };
+
+      const createMealPlanResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/api/meal-plans`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(mealPlanData)
+      });
+
+      if (!createMealPlanResponse.ok) {
+        const errorData = await createMealPlanResponse.json();
+        throw new Error(errorData.message || 'Failed to add to meal plan');
+      }
+
+      const mealPlanResult = await createMealPlanResponse.json();
+      console.log('📅 Added to meal plan:', mealPlanResult.mealPlan);
+
+      // Success!
+      toast.success(`✅ ${selectedRecommendation.meal_name} added to ${selectedMealType} on ${new Date(selectedDate).toLocaleDateString()}`);
+      setShowMealPlanModal(false);
+      setSelectedRecommendation(null);
+
+    } catch (error) {
+      console.error('Error adding to meal plan:', error);
+      toast.error(`Failed to add to meal plan: ${error.message}`);
+    } finally {
+      setIsAddingToMealPlan(false);
     }
   };
 
@@ -445,6 +578,15 @@ const MealRecommendations = ({
                       >
                         <ThumbsDown className="w-4 h-4" />
                       </button>
+                      
+                      {/* Add to Meal Plan button */}
+                      <button
+                        onClick={() => handleAddToMealPlan(recommendation)}
+                        className="p-2 rounded-full transition-colors bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                        title="Add to meal plan"
+                      >
+                        <Calendar className="w-4 h-4" />
+                      </button>
                     </div>
                   )}
                 </div>
@@ -453,6 +595,97 @@ const MealRecommendations = ({
           </div>
         )}
       </div>
+
+      {/* Meal Plan Modal */}
+      {showMealPlanModal && selectedRecommendation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Add to Meal Plan
+              </h3>
+              <button
+                onClick={() => setShowMealPlanModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-2xl">
+                  {getRecommendationTypeIcon(selectedRecommendation.recommendation_type)}
+                </span>
+                <div>
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                    {selectedRecommendation.meal_name}
+                  </h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {selectedRecommendation.prep_time} min • {selectedRecommendation.difficulty}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Meal Type
+                </label>
+                <select
+                  value={selectedMealType}
+                  onChange={(e) => setSelectedMealType(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                >
+                  <option value="breakfast">Breakfast</option>
+                  <option value="lunch">Lunch</option>
+                  <option value="dinner">Dinner</option>
+                  <option value="snack">Snack</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => setShowMealPlanModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmAddToMealPlan}
+                disabled={isAddingToMealPlan}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+              >
+                {isAddingToMealPlan ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add to Plan
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
