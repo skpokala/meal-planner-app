@@ -212,8 +212,68 @@ const MealRecommendations = ({
 
   useEffect(() => {
     console.log('🔄 MealRecommendations useEffect triggered', { user: !!user, mealType, currentMealId, maxRecommendations });
-    fetchRecommendations();
+    
+    if (user) {
+      console.log('👤 User is authenticated, calling fetchRecommendations...');
+      fetchRecommendations();
+    } else {
+      console.log('❌ No user found, not fetching recommendations');
+    }
   }, [user, mealType, currentMealId, maxRecommendations]);
+
+  // Fallback: Show sample recommendations immediately if we have a user but no recommendations after 2 seconds
+  useEffect(() => {
+    if (user && recommendations.length === 0 && !loading) {
+      console.log('⏰ Setting up fallback timer for sample recommendations...');
+      const timer = setTimeout(() => {
+        console.log('🔄 Timer triggered - showing sample recommendations as ultimate fallback');
+        const sampleRecommendations = [
+          {
+            meal_id: 'fallback_1',
+            meal_name: 'Quick Grilled Chicken',
+            meal_type: mealType || 'dinner',
+            prep_time: 20,
+            difficulty: 'easy',
+            rating: 4.4,
+            recommendation_type: 'popular',
+            popularity_score: 0.88,
+            ingredients: ['chicken breast', 'olive oil', 'herbs', 'lemon']
+          },
+          {
+            meal_id: 'fallback_2', 
+            meal_name: 'Pasta Primavera',
+            meal_type: mealType || 'dinner',
+            prep_time: 15,
+            difficulty: 'easy',
+            rating: 4.2,
+            recommendation_type: 'popular',
+            popularity_score: 0.82,
+            ingredients: ['pasta', 'mixed vegetables', 'olive oil', 'garlic']
+          },
+          {
+            meal_id: 'fallback_3',
+            meal_name: 'Breakfast Smoothie',
+            meal_type: mealType || 'breakfast',
+            prep_time: 5,
+            difficulty: 'easy', 
+            rating: 4.0,
+            recommendation_type: 'popular',
+            popularity_score: 0.76,
+            ingredients: ['banana', 'berries', 'yogurt', 'honey']
+          }
+        ].slice(0, maxRecommendations);
+
+        setRecommendations(sampleRecommendations);
+        setContext({ 
+          fallback: true, 
+          message: 'Showing fallback recommendations',
+          models_used: ['fallback_timer']
+        });
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [user, recommendations.length, loading, mealType, maxRecommendations]);
 
   if (!user) return null;
 
