@@ -281,25 +281,25 @@ const Stores = () => {
               ) : (
                 stores.map((store) => (
                   <tr key={store._id}>
-                    <td>
+                    <td className="!text-gray-900 dark:!text-gray-100">
                       <div className="flex items-center space-x-2">
                         <StoreIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                        <span className="font-medium text-gray-900 dark:text-gray-100">{store.name}</span>
+                        <span className="font-medium">{store.name}</span>
                       </div>
                     </td>
-                    <td>
+                    <td className="!text-gray-600 dark:!text-gray-300">
                       <div className="flex items-center space-x-2">
                         <MapPin className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                        <span className="text-gray-600 dark:text-gray-300">{store.address.street}</span>
+                        <span>{store.address.street}</span>
                       </div>
                     </td>
-                    <td className="text-gray-600 dark:text-gray-300">
+                    <td className="!text-gray-600 dark:!text-gray-300">
                       {store.address.city}, {store.address.state}
                     </td>
-                    <td className="text-gray-600 dark:text-gray-300">
+                    <td className="!text-gray-600 dark:!text-gray-300">
                       {store.address.zipCode}
                     </td>
-                    <td className="text-gray-500 dark:text-gray-400">
+                    <td className="!text-gray-500 dark:!text-gray-400">
                       {new Date(store.createdAt).toLocaleDateString()}
                     </td>
                     <td>
