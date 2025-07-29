@@ -200,8 +200,8 @@ const Stores = () => {
         <div className="flex items-center space-x-3">
           <StoreIcon className="w-8 h-8 text-primary-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Stores</h1>
-            <p className="text-gray-600">Manage your store locations</p>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Stores</h1>
+            <p className="text-gray-600 dark:text-gray-300">Manage your store locations</p>
           </div>
         </div>
         <button
@@ -224,7 +224,7 @@ const Stores = () => {
         <div className="card-body">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Search Stores
               </label>
               <div className="relative">
@@ -273,8 +273,8 @@ const Stores = () => {
             <tbody className="table-body">
               {stores.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="text-center text-gray-500 py-8">
-                    <StoreIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <td colSpan="6" className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <StoreIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
                     <p>No stores found. Add your first store to get started!</p>
                   </td>
                 </tr>
@@ -283,23 +283,23 @@ const Stores = () => {
                   <tr key={store._id}>
                     <td>
                       <div className="flex items-center space-x-2">
-                        <StoreIcon className="w-4 h-4 text-gray-400" />
-                        <span className="font-medium text-gray-900">{store.name}</span>
+                        <StoreIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{store.name}</span>
                       </div>
                     </td>
                     <td>
                       <div className="flex items-center space-x-2">
-                        <MapPin className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-600">{store.address.street}</span>
+                        <MapPin className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                        <span className="text-gray-600 dark:text-gray-300">{store.address.street}</span>
                       </div>
                     </td>
-                    <td className="text-gray-600">
+                    <td className="text-gray-600 dark:text-gray-300">
                       {store.address.city}, {store.address.state}
                     </td>
-                    <td className="text-gray-600">
+                    <td className="text-gray-600 dark:text-gray-300">
                       {store.address.zipCode}
                     </td>
-                    <td className="text-gray-500">
+                    <td className="text-gray-500 dark:text-gray-400">
                       {new Date(store.createdAt).toLocaleDateString()}
                     </td>
                     <td>
@@ -333,13 +333,13 @@ const Stores = () => {
         <div className="modal-overlay">
           <div className="modal-content max-w-lg">
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
                 {editingStore ? 'Edit Store' : 'Add New Store'}
               </h3>
               
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Store Name *
                   </label>
                   <input
@@ -354,8 +354,8 @@ const Stores = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address * <span className="text-xs text-gray-500">(Search for address suggestions)</span>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Address * <span className="text-xs text-gray-500 dark:text-gray-400">(Search for address suggestions)</span>
                   </label>
                   <AddressAutocomplete
                     value={addressSearchValue}
@@ -378,7 +378,7 @@ const Stores = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       City *
                     </label>
                     <input
@@ -392,7 +392,7 @@ const Stores = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       State *
                     </label>
                     <input
@@ -409,7 +409,7 @@ const Stores = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       ZIP Code *
                     </label>
                     <input
@@ -423,7 +423,7 @@ const Stores = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Country
                     </label>
                     <input
