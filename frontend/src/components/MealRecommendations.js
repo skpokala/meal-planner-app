@@ -248,7 +248,7 @@ const MealRecommendations = ({
 
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 ${className}`}>
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Lightbulb className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -259,7 +259,7 @@ const MealRecommendations = ({
           <button
             onClick={fetchRecommendations}
             disabled={loading}
-            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
             title="Refresh recommendations"
           >
             <RefreshCw className={`w-4 h-4 text-gray-500 dark:text-gray-400 ${loading ? 'animate-spin' : ''}`} />
@@ -282,7 +282,7 @@ const MealRecommendations = ({
         )}
       </div>
 
-      <div className="p-4">
+      <div className="p-4 overflow-y-auto flex-1 min-h-0">
         {loading ? (
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (

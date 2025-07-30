@@ -736,9 +736,9 @@ const MealPlanner = () => {
         )}
 
         {/* Main Content - Two Column Layout */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-          {/* Calendar Content - Takes up 3/4 of the space */}
-          <div className="xl:col-span-3">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Calendar Content - Takes up 2/3 of the space */}
+          <div className="xl:col-span-2">
             <CalendarView
               viewMode={viewMode}
               days={getCurrentViewDays()}
@@ -756,13 +756,15 @@ const MealPlanner = () => {
             />
           </div>
           
-          {/* AI Recommendations Sidebar - Takes up 1/4 of the space */}
+          {/* AI Recommendations Sidebar - Takes up 1/3 of the space */}
           <div className="xl:col-span-1">
-            <MealRecommendations 
-              className="sticky top-4" 
-              maxRecommendations={4}
-              showFeedback={true}
-            />
+            <div className="sticky top-4 max-h-screen overflow-hidden">
+              <MealRecommendations 
+                className="max-h-[calc(100vh-2rem)] overflow-y-auto" 
+                maxRecommendations={4}
+                showFeedback={true}
+              />
+            </div>
           </div>
         </div>
 
