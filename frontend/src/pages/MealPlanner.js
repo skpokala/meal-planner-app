@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Clock, Trash2, CalendarDays, CalendarCheck, List, Loader2 } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Clock, Trash2, CalendarDays, CalendarCheck, List, Loader2, Plus } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MealModal from '../components/MealModal';
@@ -656,15 +656,30 @@ const MealPlanner = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Meal Planner</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">Plan your meals for the week ahead</p>
+    <div className="py-6 min-h-screen overflow-hidden">
+      <div className="container mx-auto px-4 py-8">
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <Calendar className="w-8 h-8 text-primary-600" />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Meal Planner</h1>
+                <p className="text-gray-600 dark:text-gray-300">Plan your weekly meals</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setMealModalOpen(true)}
+                className="btn-primary"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Meal
+              </button>
+            </div>
           </div>
-          
+
           {/* View Mode Toggles */}
           <div className="flex items-center space-x-2">
             <div className="flex rounded-md shadow-sm">
@@ -735,10 +750,10 @@ const MealPlanner = () => {
           </div>
         )}
 
-        {/* Main Content - Two Column Layout */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Main Content - Flexbox Layout for better control */}
+        <div className="flex flex-col xl:flex-row gap-6 h-full">
           {/* Calendar Content - Takes up 2/3 of the space */}
-          <div className="xl:col-span-2">
+          <div className="flex-1 xl:flex-[2] min-w-0">
             <CalendarView
               viewMode={viewMode}
               days={getCurrentViewDays()}
@@ -757,10 +772,10 @@ const MealPlanner = () => {
           </div>
           
           {/* AI Recommendations Sidebar - Takes up 1/3 of the space */}
-          <div className="xl:col-span-1">
-            <div className="sticky top-4 max-h-screen overflow-hidden">
+          <div className="xl:flex-[1] xl:max-w-sm xl:w-80 w-full">
+            <div className="h-full xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)]">
               <MealRecommendations 
-                className="max-h-[calc(100vh-2rem)] overflow-y-auto" 
+                className="h-full xl:h-[calc(100vh-2rem)] flex flex-col max-w-full" 
                 maxRecommendations={4}
                 showFeedback={true}
               />
