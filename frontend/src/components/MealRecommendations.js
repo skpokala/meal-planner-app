@@ -247,8 +247,13 @@ const MealRecommendations = ({
   if (!user) return null;
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col w-full max-w-full ${className}`} 
-         style={{ contain: 'layout size style' }}>
+    <div className={`flex flex-col h-full w-full ${className}`} 
+         style={{ 
+           maxWidth: '100%', 
+           width: '100%', 
+           overflow: 'hidden',
+           boxSizing: 'border-box'
+         }}>
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 min-w-0 flex-1">
@@ -270,7 +275,7 @@ const MealRecommendations = ({
         {context && (
           <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             {context.fallback ? (
-              <span className="flex items-center text-yellow-600 dark:text-yellow-400 break-words">
+              <span className="flex items-center text-yellow-600 dark:text-yellow-400">
                 ⚠️ <span className="ml-1 break-all">{context.message}</span>
               </span>
             ) : (
@@ -283,8 +288,13 @@ const MealRecommendations = ({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0" style={{ contain: 'strict' }}>
-        <div className="p-4 break-words">
+      <div className="flex-1 overflow-y-auto min-h-0 w-full" 
+           style={{ 
+             maxWidth: '100%', 
+             overflow: 'auto hidden',
+             boxSizing: 'border-box'
+           }}>
+        <div className="p-4 w-full" style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
           {loading ? (
             <div className="space-y-3">
               {[...Array(3)].map((_, i) => (
@@ -311,118 +321,127 @@ const MealRecommendations = ({
               <p className="text-sm mt-1">Try creating some meal plans to get personalized suggestions!</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 w-full" style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
               {recommendations.map((recommendation, index) => (
                 <div 
                   key={recommendation.meal_id} 
-                  className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow w-full max-w-full overflow-hidden"
+                  className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:shadow-md transition-shadow w-full"
+                  style={{ 
+                    maxWidth: '100%', 
+                    width: '100%',
+                    overflow: 'hidden',
+                    boxSizing: 'border-box'
+                  }}
                 >
-                  <div className="flex items-start justify-between min-w-0">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-2 min-w-0">
+                  {/* Content and buttons in stacked layout for better space management */}
+                  <div className="w-full" style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
+                    {/* Header with meal name and type badge - stacked to prevent overflow */}
+                    <div className="mb-2 w-full" style={{ maxWidth: '100%' }}>
+                      <div className="flex items-center space-x-2 mb-1 w-full min-w-0">
                         <span className="text-lg flex-shrink-0">
                           {getRecommendationTypeIcon(recommendation.recommendation_type)}
                         </span>
-                        <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                        <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate flex-1 text-sm min-w-0">
                           {recommendation.meal_name}
                         </h4>
-                        <span className="text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 flex-shrink-0">
-                          {getRecommendationTypeLabel(recommendation.recommendation_type)}
-                        </span>
                       </div>
-
-                      <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400 mb-2">
-                        {recommendation.meal_type && (
-                          <span className="flex items-center">
-                            <Users className="w-4 h-4 mr-1" />
-                            {recommendation.meal_type}
-                          </span>
-                        )}
-                        
-                        {recommendation.prep_time && (
-                          <span className="flex items-center">
-                            <Clock className="w-4 h-4 mr-1" />
-                            {recommendation.prep_time} min
-                          </span>
-                        )}
-                        
-                        {recommendation.difficulty && (
-                          <span className={`flex items-center ${getDifficultyColor(recommendation.difficulty)}`}>
-                            <ChefHat className="w-4 h-4 mr-1" />
-                            {recommendation.difficulty}
-                          </span>
-                        )}
-                        
-                        {recommendation.rating > 0 && (
-                          <span className="flex items-center">
-                            <Star className="w-4 h-4 mr-1 text-yellow-500" />
-                            {recommendation.rating}/5
-                          </span>
-                        )}
-                      </div>
-
-                      {recommendation.ingredients && recommendation.ingredients.length > 0 && (
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          <span className="font-medium">Ingredients: </span>
-                          {recommendation.ingredients.slice(0, 3).join(', ')}
-                          {recommendation.ingredients.length > 3 && ` +${recommendation.ingredients.length - 3} more`}
-                        </div>
-                      )}
-
-                      {/* Recommendation score/confidence */}
-                      {(recommendation.similarity_score || recommendation.prediction_score || recommendation.popularity_score) && (
-                        <div className="mt-2">
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            Match confidence: {Math.round((recommendation.similarity_score || recommendation.prediction_score || recommendation.popularity_score) * 100)}%
-                          </div>
-                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1 mt-1">
-                            <div 
-                              className="bg-blue-600 h-1 rounded-full" 
-                              style={{ 
-                                width: `${Math.round((recommendation.similarity_score || recommendation.prediction_score || recommendation.popularity_score) * 100)}%` 
-                              }}
-                            ></div>
-                          </div>
-                        </div>
-                      )}
+                      <span className="inline-block text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 max-w-full truncate">
+                        {getRecommendationTypeLabel(recommendation.recommendation_type)}
+                      </span>
                     </div>
 
-                    {/* Feedback buttons */}
+                    {/* Details in compact format - wrapped to prevent overflow */}
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 space-y-1 w-full" style={{ maxWidth: '100%' }}>
+                      <div className="flex items-center flex-wrap gap-2 w-full">
+                        {recommendation.meal_type && (
+                          <span className="flex items-center flex-shrink-0">
+                            <Users className="w-3 h-3 mr-1" />
+                            <span className="truncate">{recommendation.meal_type}</span>
+                          </span>
+                        )}
+                        {recommendation.prep_time && (
+                          <span className="flex items-center flex-shrink-0">
+                            <Clock className="w-3 h-3 mr-1" />
+                            <span>{recommendation.prep_time}m</span>
+                          </span>
+                        )}
+                        {recommendation.difficulty && (
+                          <span className={`flex items-center flex-shrink-0 ${getDifficultyColor(recommendation.difficulty)}`}>
+                            <ChefHat className="w-3 h-3 mr-1" />
+                            <span className="truncate">{recommendation.difficulty}</span>
+                          </span>
+                        )}
+                        {recommendation.rating > 0 && (
+                          <span className="flex items-center flex-shrink-0">
+                            <Star className="w-3 h-3 mr-1 text-yellow-500" />
+                            <span>{recommendation.rating}/5</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Ingredients - truncated to save space */}
+                    {recommendation.ingredients && recommendation.ingredients.length > 0 && (
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                        <span className="font-medium">Ingredients: </span>
+                        <span className="break-words">
+                          {recommendation.ingredients.slice(0, 2).join(', ')}
+                          {recommendation.ingredients.length > 2 && ` +${recommendation.ingredients.length - 2} more`}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Action buttons in horizontal layout to save vertical space */}
                     {showFeedback && (
-                      <div className="flex space-x-1 ml-4">
+                      <div className="flex items-center justify-center gap-1 pt-2 border-t border-gray-100 dark:border-gray-700 w-full max-w-full" style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
                         <button
                           onClick={() => handleFeedback(recommendation.meal_id, 'like')}
                           disabled={feedbackLoading[recommendation.meal_id]}
-                          className={`p-2 rounded-full transition-colors ${
+                          className={`p-1 rounded-full transition-colors text-xs flex-shrink-0 ${
                             recommendation.user_feedback === 'like'
                               ? 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400'
                               : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-green-600'
                           }`}
-                          title="Like this recommendation"
+                          title="Like"
                         >
-                          <ThumbsUp className="w-4 h-4" />
+                          <ThumbsUp className="w-3 h-3" />
                         </button>
                         <button
                           onClick={() => handleFeedback(recommendation.meal_id, 'dislike')}
                           disabled={feedbackLoading[recommendation.meal_id]}
-                          className={`p-2 rounded-full transition-colors ${
+                          className={`p-1 rounded-full transition-colors text-xs flex-shrink-0 ${
                             recommendation.user_feedback === 'dislike'
                               ? 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400'
                               : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-red-600'
                           }`}
-                          title="Dislike this recommendation"
+                          title="Dislike"
                         >
-                          <ThumbsDown className="w-4 h-4" />
+                          <ThumbsDown className="w-3 h-3" />
                         </button>
-                        
-                        {/* Add to Meal Plan button */}
                         <button
                           onClick={() => handleAddToMealPlan(recommendation)}
-                          className="p-2 rounded-full transition-colors bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                          className="p-1 rounded-full transition-colors bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-xs flex-shrink-0"
                           title="Add to meal plan"
                         >
-                          <Calendar className="w-4 h-4" />
+                          <Calendar className="w-3 h-3" />
                         </button>
+                      </div>
+                    )}
+
+                    {/* Confidence score - compact version */}
+                    {(recommendation.similarity_score || recommendation.prediction_score || recommendation.popularity_score) && (
+                      <div className="mt-2">
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1">
+                          <div 
+                            className="bg-blue-600 h-1 rounded-full" 
+                            style={{ 
+                              width: `${Math.round((recommendation.similarity_score || recommendation.prediction_score || recommendation.popularity_score) * 100)}%` 
+                            }}
+                          ></div>
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {Math.round((recommendation.similarity_score || recommendation.prediction_score || recommendation.popularity_score) * 100)}% match
+                        </div>
                       </div>
                     )}
                   </div>

@@ -771,14 +771,23 @@ const MealPlanner = () => {
             />
           </div>
           
-          {/* AI Recommendations Sidebar - Takes up 1/3 of the space */}
-          <div className="xl:flex-[1] xl:max-w-sm xl:w-80 w-full">
-            <div className="h-full xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)]">
-              <MealRecommendations 
-                className="h-full xl:h-[calc(100vh-2rem)] flex flex-col max-w-full" 
-                maxRecommendations={4}
-                showFeedback={true}
-              />
+          {/* AI Recommendations Sidebar - Fixed width to prevent overflow */}
+          <div className="xl:w-80 xl:min-w-0 xl:max-w-[320px] w-full">
+            <div className="xl:sticky xl:top-4 h-full">
+              <div className="xl:h-[calc(100vh-2rem)] h-auto bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700" 
+                   style={{ 
+                     width: '320px', 
+                     maxWidth: '320px', 
+                     minWidth: '0', 
+                     overflow: 'hidden',
+                     contain: 'layout style size'
+                   }}>
+                <MealRecommendations 
+                  className="h-full w-full" 
+                  maxRecommendations={4}
+                  showFeedback={true}
+                />
+              </div>
             </div>
           </div>
         </div>
