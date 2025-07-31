@@ -156,6 +156,26 @@ const MealPlanner = () => {
     { value: 'snack', label: 'Snack' }
   ];
 
+  // Get recommendations panel height based on view mode
+  const getRecommendationsPanelHeight = (viewMode) => {
+    switch (viewMode) {
+      case VIEW_MODES.MONTHLY:
+        // Monthly calendar height: day headers (~48px) + 6 rows of 128px each = ~816px
+        return 'h-[816px]';
+      case VIEW_MODES.WEEKLY:
+        // Weekly view is typically shorter
+        return 'h-[400px]';
+      case VIEW_MODES.DAILY:
+        // Daily view uses min-h-96 (384px) for cells plus headers
+        return 'h-[432px]';
+      case VIEW_MODES.LIST:
+        // List view is variable height
+        return 'h-auto max-h-[600px]';
+      default:
+        return 'h-auto';
+    }
+  };
+
   // Helper functions - all wrapped in useCallback with proper error handling
   const getStartOfWeek = useCallback((date) => {
     try {
@@ -771,15 +791,14 @@ const MealPlanner = () => {
             />
           </div>
           
-          {/* AI Recommendations Sidebar - Fixed width to prevent overflow */}
+          {/* AI Recommendations Sidebar - Height matches calendar */}
           <div className="xl:w-80 xl:min-w-0 xl:max-w-[320px] w-full">
             <div className="xl:sticky xl:top-4 h-full">
-              <div className="xl:h-[calc(100vh-2rem)] h-auto bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700" 
+              <div className={`${getRecommendationsPanelHeight(viewMode)} bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden`} 
                    style={{ 
                      width: '320px', 
                      maxWidth: '320px', 
                      minWidth: '0', 
-                     overflow: 'hidden',
                      contain: 'layout style size'
                    }}>
                 <MealRecommendations 
@@ -844,7 +863,7 @@ const CalendarView = ({
 
   return (
     <div className="card">
-      <div className="card-body p-0">
+      <div className={`card-body p-0 ${viewMode === VIEW_MODES.MONTHLY ? 'h-[816px]' : ''}`}>
         {/* Day headers for monthly/weekly view */}
         {(viewMode === VIEW_MODES.MONTHLY || viewMode === VIEW_MODES.WEEKLY) && (
           <div className="grid grid-cols-7 border-b border-secondary-200 dark:border-secondary-700">
