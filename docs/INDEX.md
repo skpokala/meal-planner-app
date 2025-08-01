@@ -8,7 +8,7 @@ This directory contains comprehensive documentation for the Family Meal Planner 
 |----------|-------|-------------|
 | **🚀 [Deployment](#-deployment)** | 4 files | Production deployment guides and troubleshooting |
 | **⚙️ [Features](#️-features)** | 3 files | Feature documentation and setup guides |
-| **🔧 [Development](#-development)** | 3 files | Development processes, versioning, and testing |
+| **🔧 [Development](#-development)** | 4 files | Development processes, versioning, and testing |
 | **📖 [Project Info](#-project-information)** | 2 files | Changelog and maintenance procedures |
 
 ---
@@ -89,6 +89,12 @@ This directory contains comprehensive documentation for the Family Meal Planner 
 - **Audience**: Developers, QA engineers
 - **Status**: ⚠️ Not referenced in main README
 
+### [`TEST_COVERAGE_SUMMARY.md`](development/TEST_COVERAGE_SUMMARY.md)
+- **Purpose**: Comprehensive test suite improvements and coverage analysis
+- **Contents**: Detailed breakdown of new test coverage, ML recommendations testing, script execution testing, frontend component coverage
+- **Audience**: Developers, QA engineers, project maintainers
+- **Status**: ⚠️ Not referenced in main README
+
 ---
 
 ## 📖 Project Information
@@ -124,6 +130,7 @@ This directory contains comprehensive documentation for the Family Meal Planner 
 - `features/DUAL_PASSWORD_SYSTEM.md`
 - `development/RELEASE_WORKFLOW.md`
 - `development/TEST_SUMMARY.md`
+- `development/TEST_COVERAGE_SUMMARY.md`
 - `CHANGELOG.md`
 
 ### 📋 **Recommendations**

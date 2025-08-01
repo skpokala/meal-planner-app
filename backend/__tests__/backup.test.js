@@ -448,4 +448,468 @@ describe('Backup API Tests', () => {
       expect(script).toContain('// ========== RESTORATION INSTRUCTIONS ==========');
     });
   });
+
+  describe('MongoDB Script Execution', () => {
+    test('should execute valid MongoDB script successfully', async () => {
+      const testScript = `
+        // Test script that queries the database
+        const users = await db.users.find({}).toArray();
+        printjson({ userCount: users.length });
+        console.log('Script executed successfully');
+      `;
+
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ script: testScript });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.output).toBeDefined();
+      expect(Array.isArray(response.body.output)).toBe(true);
+      expect(response.body.output.length).toBeGreaterThan(0);
+      
+      // Check that console.log output is captured
+      const hasLogOutput = response.body.output.some(line => 
+        line.includes('Script executed successfully')
+      );
+      expect(hasLogOutput).toBe(true);
+    });
+
+    test('should handle script with database operations', async () => {
+      const testScript = `
+        // Create a test document
+        const result = await db.users.insertOne({
+          username: 'scripttest',
+          email: 'script@test.com',
+          createdAt: new Date()
+        });
+        printjson({ insertedId: result.insertedId });
+        
+        // Query it back
+        const user = await db.users.findOne({ username: 'scripttest' });
+        console.log('User found:', user?.username);
+        
+        // Clean up
+        await db.users.deleteOne({ username: 'scripttest' });
+        console.log('Cleanup complete');
+      `;
+
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ script: testScript });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.output).toBeDefined();
+      
+      // Verify operations were logged
+      const output = response.body.output.join(' ');
+      expect(output).toContain('insertedId');
+      expect(output).toContain('User found: scripttest');
+      expect(output).toContain('Cleanup complete');
+    });
+
+    test('should provide MongoDB shell utilities', async () => {
+      const testScript = `
+        // Test various MongoDB shell utilities
+        console.log('Testing ObjectId:', ObjectId().toString().length === 24);
+        console.log('Testing ISODate:', ISODate() instanceof Date);
+        console.log('Testing NumberInt:', NumberInt('42') === 42);
+        
+        // Test show function
+        const stats = show('dbs');
+        console.log('Show dbs result type:', typeof stats);
+        
+        // Test printjson
+        printjson({
+          test: 'data',
+          number: NumberInt(123),
+          date: ISODate('2024-01-01')
+        });
+      `;
+
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ script: testScript });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      
+      const output = response.body.output.join(' ');
+      expect(output).toContain('Testing ObjectId: true');
+      expect(output).toContain('Testing ISODate: true');
+      expect(output).toContain('Testing NumberInt: true');
+      expect(output).toContain('test: "data"');
+    });
+
+    test('should handle script syntax errors gracefully', async () => {
+      const invalidScript = `
+        // This script has syntax errors
+        invalid javascript syntax here !!!
+        const malformed = {
+        // missing closing brace
+      `;
+
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ script: invalidScript });
+
+      expect(response.status).toBe(500);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Script execution failed');
+      expect(response.body.error).toBeDefined();
+    });
+
+    test('should handle script runtime errors gracefully', async () => {
+      const errorScript = `
+        // This script will throw a runtime error
+        console.log('Starting script...');
+        throw new Error('Intentional test error');
+        console.log('This should not execute');
+      `;
+
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ script: errorScript });
+
+      expect(response.status).toBe(500);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Script execution failed');
+      expect(response.body.error).toContain('Intentional test error');
+      
+      // Should still capture output before the error
+      expect(response.body.output).toBeDefined();
+      const hasStartOutput = response.body.output.some(line => 
+        line.includes('Starting script...')
+      );
+      expect(hasStartOutput).toBe(true);
+    });
+
+    test('should require admin privileges for script execution', async () => {
+      const testScript = 'console.log("test");';
+
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .set('Authorization', `Bearer ${testToken}`) // regular user token
+        .send({ script: testScript });
+
+      expect(response.status).toBe(403);
+      expect(response.body.message).toBe('Access denied. Admin role required.');
+    });
+
+    test('should require authentication for script execution', async () => {
+      const testScript = 'console.log("test");';
+
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .send({ script: testScript });
+
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe('Access denied. No token provided.');
+    });
+
+    test('should validate script parameter', async () => {
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({}); // no script parameter
+
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Script is required');
+    });
+
+    test('should validate script is not empty', async () => {
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ script: '   ' }); // empty/whitespace script
+
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Script cannot be empty');
+    });
+
+    test('should capture console output with different log levels', async () => {
+      const testScript = `
+        console.log('LOG: This is a log message');
+        console.warn('WARN: This is a warning message');
+        console.error('ERROR: This is an error message');
+        console.info('INFO: This is an info message');
+        
+        // These should also work
+        print('PRINT: Using print function');
+        printjson({ message: 'Using printjson', type: 'json' });
+      `;
+
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ script: testScript });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      
+      const output = response.body.output.join(' ');
+      expect(output).toContain('LOG: This is a log message');
+      expect(output).toContain('WARN: This is a warning message');
+      expect(output).toContain('ERROR: This is an error message');
+      expect(output).toContain('INFO: This is an info message');
+      expect(output).toContain('PRINT: Using print function');
+      expect(output).toContain('Using printjson');
+    });
+
+    test('should handle database connection operations', async () => {
+      const testScript = `
+        // Test database operations
+        const dbName = db.getName();
+        console.log('Current database:', dbName);
+        
+        // Test collection operations
+        const collections = await db.listCollections().toArray();
+        console.log('Collections count:', collections.length);
+        
+        // Test admin operations (should work in test environment)
+        try {
+          const stats = await db.stats();
+          console.log('Database stats retrieved:', !!stats);
+        } catch (error) {
+          console.log('Stats error (expected in test):', error.message);
+        }
+      `;
+
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ script: testScript });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      
+      const output = response.body.output.join(' ');
+      expect(output).toContain('Current database:');
+      expect(output).toContain('Collections count:');
+    });
+
+    test('should handle complex aggregation operations', async () => {
+      // First create some test data
+      await User.create([
+        { username: 'user1', email: 'user1@test.com', role: 'user' },
+        { username: 'user2', email: 'user2@test.com', role: 'admin' },
+        { username: 'user3', email: 'user3@test.com', role: 'user' }
+      ]);
+
+      const testScript = `
+        // Test aggregation pipeline
+        const pipeline = [
+          { $group: { _id: '$role', count: { $sum: 1 } } },
+          { $sort: { count: -1 } }
+        ];
+        
+        const roleStats = await db.users.aggregate(pipeline).toArray();
+        console.log('Role statistics:');
+        roleStats.forEach(stat => {
+          console.log(\`  \${stat._id}: \${stat.count} users\`);
+        });
+        
+        // Test complex find operations
+        const userCount = await db.users.countDocuments({ role: 'user' });
+        console.log('Regular users count:', userCount);
+        
+        printjson({ aggregationResults: roleStats, userCount });
+      `;
+
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ script: testScript });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      
+      const output = response.body.output.join(' ');
+      expect(output).toContain('Role statistics:');
+      expect(output).toContain('Regular users count:');
+      expect(output).toContain('aggregationResults');
+    });
+
+    test('should handle script with async/await operations', async () => {
+      const testScript = `
+        // Test async operations
+        async function testAsyncOperations() {
+          console.log('Starting async operations...');
+          
+          // Simulate some async work
+          const users = await db.users.find({}).limit(5).toArray();
+          console.log('Found users:', users.length);
+          
+          // Test Promise.all
+          const operations = await Promise.all([
+            db.users.countDocuments({}),
+            db.meals?.countDocuments({}) || 0,
+            db.stores?.countDocuments({}) || 0
+          ]);
+          
+          console.log('Collection counts:', operations);
+          return operations;
+        }
+        
+        // Execute the async function
+        const results = await testAsyncOperations();
+        printjson({ asyncResults: results });
+        console.log('Async operations completed');
+      `;
+
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ script: testScript });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      
+      const output = response.body.output.join(' ');
+      expect(output).toContain('Starting async operations...');
+      expect(output).toContain('Collection counts:');
+      expect(output).toContain('Async operations completed');
+    });
+
+    test('should handle script execution timeout', async () => {
+      const timeoutScript = `
+        // This script will run for a long time
+        console.log('Starting long-running operation...');
+        
+        let counter = 0;
+        const startTime = Date.now();
+        
+        // Run a loop for a reasonable time (but not infinite)
+        while (Date.now() - startTime < 1000) {
+          counter++;
+          if (counter % 100000 === 0) {
+            console.log('Counter:', counter);
+          }
+        }
+        
+        console.log('Loop completed with counter:', counter);
+      `;
+
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ script: timeoutScript });
+
+      // This should complete normally since it's not truly infinite
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      
+      const output = response.body.output.join(' ');
+      expect(output).toContain('Starting long-running operation...');
+      expect(output).toContain('Loop completed with counter:');
+    });
+
+    test('should preserve MongoDB shell context between operations', async () => {
+      const testScript = `
+        // Test that MongoDB shell utilities work consistently
+        const id1 = ObjectId();
+        const id2 = ObjectId();
+        
+        console.log('Generated ObjectIds:');
+        console.log('ID1 length:', id1.toString().length);
+        console.log('ID2 length:', id2.toString().length);
+        console.log('IDs are different:', id1.toString() !== id2.toString());
+        
+        // Test date utilities
+        const date1 = ISODate();
+        const date2 = ISODate('2024-01-01');
+        
+        console.log('Date1 is Date:', date1 instanceof Date);
+        console.log('Date2 year is 2024:', date2.getFullYear() === 2024);
+        
+        // Test numeric utilities
+        const num1 = NumberInt('123');
+        const num2 = NumberLong('456');
+        
+        console.log('NumberInt result:', num1);
+        console.log('NumberLong result:', num2);
+        
+        printjson({
+          ids: [id1, id2],
+          dates: [date1, date2],
+          numbers: [num1, num2]
+        });
+      `;
+
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ script: testScript });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      
+      const output = response.body.output.join(' ');
+      expect(output).toContain('ID1 length: 24');
+      expect(output).toContain('ID2 length: 24');
+      expect(output).toContain('IDs are different: true');
+      expect(output).toContain('Date1 is Date: true');
+      expect(output).toContain('Date2 year is 2024: true');
+      expect(output).toContain('NumberInt result: 123');
+      expect(output).toContain('NumberLong result: 456');
+    });
+  });
+
+  describe('Script Validation', () => {
+    test('should validate script content type', async () => {
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ script: 12345 }); // number instead of string
+
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Script must be a string');
+    });
+
+    test('should handle malformed JSON request', async () => {
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Content-Type', 'application/json')
+        .send('{ invalid json }');
+
+      expect(response.status).toBe(500);
+      expect(response.body.success).toBe(false);
+    });
+
+    test('should handle very long scripts', async () => {
+      // Create a script with lots of operations
+      const longScript = `
+        console.log('Starting long script...');
+        ${Array.from({ length: 100 }, (_, i) => 
+          `console.log('Operation ${i + 1} completed');`
+        ).join('\n')}
+        console.log('Long script completed');
+      `;
+
+      const response = await request(app)
+        .post('/api/backup/execute-script')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ script: longScript });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.output.length).toBeGreaterThan(100); // Should have captured all console.log calls
+      
+      const output = response.body.output.join(' ');
+      expect(output).toContain('Starting long script...');
+      expect(output).toContain('Operation 1 completed');
+      expect(output).toContain('Operation 100 completed');
+      expect(output).toContain('Long script completed');
+    });
+  });
 }); 
