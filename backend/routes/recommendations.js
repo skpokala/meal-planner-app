@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 const axios = require('axios');
 
 // ML Service URL
@@ -11,7 +11,7 @@ const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://ml-service:5003';
  * @desc Get personalized meal recommendations
  * @access Private
  */
-router.get('/', auth, async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const { meal_type, top_n = 5, meal_id } = req.query;
     const user_id = req.user.id;
@@ -89,7 +89,7 @@ router.get('/', auth, async (req, res) => {
  * @desc Get recommendations with complex context
  * @access Private
  */
-router.post('/', auth, async (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
   try {
     const { meal_type, top_n = 5, meal_id, context = {} } = req.body;
     const user_id = req.user.id;
@@ -142,7 +142,7 @@ router.post('/', auth, async (req, res) => {
  * @desc Record user feedback on recommendations
  * @access Private
  */
-router.post('/feedback', auth, async (req, res) => {
+router.post('/feedback', authenticateToken, async (req, res) => {
   try {
     const { meal_id, feedback_type, rating } = req.body;
     const user_id = req.user.id;
@@ -198,7 +198,7 @@ router.post('/feedback', auth, async (req, res) => {
  * @desc Trigger ML model retraining (admin only)
  * @access Private (Admin)
  */
-router.post('/train', auth, async (req, res) => {
+router.post('/train', authenticateToken, async (req, res) => {
   try {
     // Check if user is admin
     if (!req.user.isAdmin && req.user.role !== 'admin') {
@@ -237,7 +237,7 @@ router.post('/train', auth, async (req, res) => {
  * @desc Get ML service status
  * @access Private (Admin)
  */
-router.get('/status', auth, async (req, res) => {
+router.get('/status', authenticateToken, async (req, res) => {
   try {
     // Check if user is admin
     if (!req.user.isAdmin && req.user.role !== 'admin') {

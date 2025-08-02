@@ -531,7 +531,9 @@ const executeMongoScript = async (scriptContent, options = {}) => {
       // Admin methods
       runCommand: (command) => rawDb.admin().command(command),
       dropDatabase: () => rawDb.dropDatabase(),
-      listCollections: () => rawDb.listCollections().toArray()
+      listCollections: () => ({
+        toArray: () => rawDb.listCollections().toArray()
+      })
     };
     
     // Add dynamic collection access via proxy for any collection name
@@ -647,11 +649,44 @@ Available functions:
     
     // Mock console.log to capture output
     const originalConsoleLog = console.log;
+    const originalConsoleWarn = console.warn;
+    const originalConsoleError = console.error;
+    const originalConsoleInfo = console.info;
     const consoleLogs = [];
-    console.log = (...args) => {
+    
+    const captureConsoleOutput = (...args) => {
       const message = args.join(' ');
       consoleLogs.push(`[${new Date().toLocaleTimeString()}] ${message}`);
+    };
+    
+    console.log = (...args) => {
+      captureConsoleOutput(...args);
       originalConsoleLog(...args);
+    };
+    
+    console.warn = (...args) => {
+      captureConsoleOutput(...args);
+      originalConsoleWarn(...args);
+    };
+    
+    console.error = (...args) => {
+      captureConsoleOutput(...args);
+      originalConsoleError(...args);
+    };
+    
+    console.info = (...args) => {
+      captureConsoleOutput(...args);
+      originalConsoleInfo(...args);
+    };
+
+    // Create full console object for script execution
+    const scriptConsole = {
+      log: console.log,
+      warn: console.warn,
+      error: console.error,
+      info: console.info,
+      debug: console.log, // Map debug to log
+      trace: console.log  // Map trace to log
     };
     
     results.output.push(`[${new Date().toLocaleTimeString()}] ✅ Logging capture active`);
@@ -677,7 +712,7 @@ Available functions:
       results.output.push(`[${new Date().toLocaleTimeString()}] ⚡ Executing script with MongoDB context...`);
       
       await scriptFunction(
-        dbProxy, print, { log: console.log },
+        dbProxy, print, scriptConsole,
         printjson, printjsononeline,
         ObjectId, ISODate, NumberInt, NumberLong, NumberDecimal,
         help, show, use, load, quit, exit
@@ -686,6 +721,12 @@ Available functions:
       results.output.push(`[${new Date().toLocaleTimeString()}] ✅ Script execution completed successfully`);
       results.output.push('=== SCRIPT EXECUTION END ===');
       results.output.push(''); // Empty line
+      
+      // Restore original console functions
+      console.log = originalConsoleLog;
+      console.warn = originalConsoleWarn;
+      console.error = originalConsoleError;
+      console.info = originalConsoleInfo;
       
       // Add captured logs to output
       if (executionLogs.length > 0) {
@@ -1174,6 +1215,16 @@ router.post('/execute-script', [
       timeout: 30000, // 30 seconds timeout
       maxOutputLines: 1000
     });
+
+    // Check if script execution failed
+    if (!result.success || result.errors.length > 0) {
+      return res.status(500).json({
+        success: false,
+        message: 'Script execution failed',
+        error: result.errors.length > 0 ? result.errors.join('; ') : 'Unknown execution error',
+        output: result.output || []
+      });
+    }
 
     // Return successful result
     res.status(200).json({
