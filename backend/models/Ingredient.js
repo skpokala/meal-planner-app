@@ -1,5 +1,55 @@
 const mongoose = require('mongoose');
 
+// Reusable location schema
+const locationSchema = {
+  address: {
+    street: {
+      type: String,
+      trim: true,
+      maxlength: [100, 'Street address cannot exceed 100 characters']
+    },
+    city: {
+      type: String,
+      trim: true,
+      maxlength: [50, 'City cannot exceed 50 characters']
+    },
+    state: {
+      type: String,
+      trim: true,
+      maxlength: [50, 'State cannot exceed 50 characters']
+    },
+    zipCode: {
+      type: String,
+      trim: true,
+      maxlength: [20, 'ZIP code cannot exceed 20 characters']
+    },
+    country: {
+      type: String,
+      trim: true,
+      maxlength: [50, 'Country cannot exceed 50 characters'],
+      default: 'USA'
+    }
+  },
+  coordinates: {
+    latitude: {
+      type: Number,
+      min: [-90, 'Latitude must be between -90 and 90'],
+      max: [90, 'Latitude must be between -90 and 90']
+    },
+    longitude: {
+      type: Number,  
+      min: [-180, 'Longitude must be between -180 and 180'],
+      max: [180, 'Longitude must be between -180 and 180']
+    }
+  },
+  timezone: {
+    type: String,
+    trim: true,
+    maxlength: [50, 'Timezone cannot exceed 50 characters'],
+    default: 'America/New_York'
+  }
+};
+
 const ingredientSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -24,6 +74,21 @@ const ingredientSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Store',
     required: [true, 'Store is required']
+  },
+  // Optional direct location information (in addition to store location)
+  // Useful for tracking specific pickup locations, seasonal availability by region, etc.
+  location: locationSchema,
+  seasonality: {
+    availableMonths: [{
+      type: Number,
+      min: 1,
+      max: 12
+    }], // Array of month numbers (1-12) when ingredient is typically available
+    notes: {
+      type: String,
+      trim: true,
+      maxlength: 200
+    }
   },
   isActive: {
     type: Boolean,
