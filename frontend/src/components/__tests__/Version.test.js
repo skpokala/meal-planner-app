@@ -76,4 +76,40 @@ describe('Version Component', () => {
       expect(screen.getByText('Backend: v1.0.0')).toBeInTheDocument();
     });
   });
+
+  test('displays build time when available', async () => {
+    // Mock environment variables
+    process.env.REACT_APP_VERSION = '1.1.0';
+    process.env.REACT_APP_BUILD_TIME = '2024-01-15T14:30:00Z';
+    
+    // Mock backend API response
+    api.get.mockResolvedValue({
+      data: { version: '1.1.0' }
+    });
+
+    render(<Version />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Version: v1.1.0')).toBeInTheDocument();
+      expect(screen.getByText(/Built: Jan 15/)).toBeInTheDocument();
+    });
+  });
+
+  test('handles collapsed sidebar with build time in tooltip', async () => {
+    // Mock environment variables
+    process.env.REACT_APP_VERSION = '1.1.0';
+    process.env.REACT_APP_BUILD_TIME = '2024-01-15T14:30:00Z';
+    
+    // Mock backend API response
+    api.get.mockResolvedValue({
+      data: { version: '1.1.0' }
+    });
+
+    render(<Version sidebarCollapsed={true} />);
+    
+    await waitFor(() => {
+      const tooltipElement = screen.getByTitle(/Version: v1\.1\.0.*Built:/);
+      expect(tooltipElement).toBeInTheDocument();
+    });
+  });
 }); 

@@ -3,6 +3,9 @@ import { Plus, Edit2, Trash2, User, Users, Mail, Calendar, Heart, Shield, Key, U
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
+import LocationInput from '../components/LocationInput';
+import LocationDisplay from '../components/LocationDisplay';
+import LocationPrompt from '../components/LocationPrompt';
 import toast from 'react-hot-toast';
 
 const FamilyMembers = () => {
@@ -32,6 +35,21 @@ const FamilyMembers = () => {
     password: '',
     confirmPassword: '',
     role: 'user',
+    useParentLocation: true,
+    location: {
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'USA'
+      },
+      coordinates: {
+        latitude: null,
+        longitude: null
+      },
+      timezone: 'America/New_York'
+    }
   });
   const [passwordData, setPasswordData] = useState({
     password: '',
@@ -157,6 +175,21 @@ const FamilyMembers = () => {
       password: '',
       confirmPassword: '',
       role: member.role || 'user',
+      useParentLocation: member.useParentLocation !== undefined ? member.useParentLocation : true,
+      location: member.location || {
+        address: {
+          street: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          country: 'USA'
+        },
+        coordinates: {
+          latitude: null,
+          longitude: null
+        },
+        timezone: 'America/New_York'
+      }
     });
     setUsernameAvailable(null);
     setShowModal(true);
@@ -234,6 +267,21 @@ const FamilyMembers = () => {
       password: '',
       confirmPassword: '',
       role: 'user',
+      useParentLocation: true,
+      location: {
+        address: {
+          street: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          country: 'USA'
+        },
+        coordinates: {
+          latitude: null,
+          longitude: null
+        },
+        timezone: 'America/New_York'
+      }
     });
     setUsernameAvailable(null);
   };
@@ -252,6 +300,32 @@ const FamilyMembers = () => {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleLocationDetected = (detectedLocation) => {
+    setFormData(prev => ({
+      ...prev,
+      location: detectedLocation,
+      useParentLocation: false
+    }));
+    toast.success('Location detected successfully!');
+  };
+
+  const hasLocationData = (location) => {
+    if (!location) return false;
+    
+    const hasAddress = location.address && (
+      location.address.street ||
+      location.address.city ||
+      location.address.state ||
+      location.address.zipCode
+    );
+    
+    const hasCoordinates = location.coordinates &&
+      location.coordinates.latitude !== null &&
+      location.coordinates.longitude !== null;
+    
+    return hasAddress || hasCoordinates;
   };
 
   const getRelationshipColor = (relationship) => {
@@ -443,6 +517,12 @@ const FamilyMembers = () => {
                       </div>
                     </div>
                   )}
+                  <LocationDisplay
+                    location={member.location}
+                    useParentLocation={member.useParentLocation}
+                    compact={true}
+                    className="mt-2"
+                  />
                 </div>
               </div>
             </div>
@@ -665,6 +745,25 @@ const FamilyMembers = () => {
                       )}
                     </div>
                   )}
+                </div>
+
+                {/* Location Information */}
+                <div className="space-y-4 border-t border-secondary-200 dark:border-secondary-700 pt-6">
+                  {!editingMember && !formData.useParentLocation && !hasLocationData(formData.location) && (
+                    <LocationPrompt 
+                      onLocationDetected={handleLocationDetected}
+                      title="Set Family Member Location"
+                      description="Automatically detect this family member's location for personalized meal recommendations."
+                    />
+                  )}
+                  <LocationInput
+                    location={formData.location}
+                    onChange={(location) => setFormData(prev => ({ ...prev, location }))}
+                    showInheritanceOption={true}
+                    useParentLocation={formData.useParentLocation}
+                    onInheritanceChange={(useParent) => setFormData(prev => ({ ...prev, useParentLocation: useParent }))}
+                    label="Location Information"
+                  />
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">

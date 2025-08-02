@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Package, Plus, Edit, Trash2, Search, RotateCcw } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
+import LocationInput from '../components/LocationInput';
+import LocationDisplay from '../components/LocationDisplay';
 import { useStores } from '../contexts/StoresContext';
 import toast from 'react-hot-toast';
 
@@ -15,7 +17,25 @@ const Ingredients = () => {
     name: '',
     quantity: '',
     unit: 'lbs',
-    store: ''
+    store: '',
+    location: {
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'USA'
+      },
+      coordinates: {
+        latitude: null,
+        longitude: null
+      },
+      timezone: 'America/New_York'
+    },
+    seasonality: {
+      availableMonths: [],
+      notes: ''
+    }
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [storeFilter, setStoreFilter] = useState('');
@@ -42,6 +62,21 @@ const Ingredients = () => {
     { value: 'tsp', label: 'Teaspoons (tsp)' },
     { value: 'ml', label: 'Milliliters (ml)' },
     { value: 'l', label: 'Liters (l)' }
+  ];
+
+  const months = [
+    { value: 1, label: 'January' },
+    { value: 2, label: 'February' },
+    { value: 3, label: 'March' },
+    { value: 4, label: 'April' },
+    { value: 5, label: 'May' },
+    { value: 6, label: 'June' },
+    { value: 7, label: 'July' },
+    { value: 8, label: 'August' },
+    { value: 9, label: 'September' },
+    { value: 10, label: 'October' },
+    { value: 11, label: 'November' },
+    { value: 12, label: 'December' }
   ];
 
   useEffect(() => {
@@ -110,7 +145,25 @@ const Ingredients = () => {
       name: ingredient.name,
       quantity: ingredient.quantity.toString(),
       unit: ingredient.unit,
-      store: ingredient.store
+      store: ingredient.store,
+      location: ingredient.location || {
+        address: {
+          street: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          country: 'USA'
+        },
+        coordinates: {
+          latitude: null,
+          longitude: null
+        },
+        timezone: 'America/New_York'
+      },
+      seasonality: ingredient.seasonality || {
+        availableMonths: [],
+        notes: ''
+      }
     });
     setShowModal(true);
   };
@@ -138,7 +191,25 @@ const Ingredients = () => {
       name: '',
       quantity: '',
       unit: 'lbs',
-      store: ''
+      store: '',
+      location: {
+        address: {
+          street: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          country: 'USA'
+        },
+        coordinates: {
+          latitude: null,
+          longitude: null
+        },
+        timezone: 'America/New_York'
+      },
+      seasonality: {
+        availableMonths: [],
+        notes: ''
+      }
     });
     setEditingIngredient(null);
     setShowModal(false);
@@ -312,93 +383,164 @@ const Ingredients = () => {
       {/* Modal */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-content max-w-md">
+          <div className="modal-content max-w-2xl">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 {editingIngredient ? 'Edit Ingredient' : 'Add New Ingredient'}
               </h3>
               
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ingredient Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    required
-                    maxLength={100}
-                    className="input w-full"
-                    placeholder="Enter ingredient name"
-                  />
-                </div>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Basic Information */}
+                <div className="space-y-4">
+                  <h4 className="text-md font-medium text-gray-800">Basic Information</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ingredient Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        required
+                        maxLength={100}
+                        className="input w-full"
+                        placeholder="Enter ingredient name"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Quantity *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.quantity}
-                    onChange={(e) => setFormData({...formData, quantity: e.target.value})}
-                    required
-                    className="input w-full"
-                    placeholder="Enter quantity"
-                  />
-                </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Quantity *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.quantity}
+                        onChange={(e) => setFormData({...formData, quantity: e.target.value})}
+                        required
+                        className="input w-full"
+                        placeholder="Enter quantity"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Unit *
-                  </label>
-                  <select
-                    value={formData.unit}
-                    onChange={(e) => setFormData({...formData, unit: e.target.value})}
-                    className="select w-full"
-                  >
-                    {units.map(unit => (
-                      <option key={unit.value} value={unit.value}>
-                        {unit.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Unit *
+                      </label>
+                      <select
+                        value={formData.unit}
+                        onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                        className="select w-full"
+                      >
+                        {units.map(unit => (
+                          <option key={unit.value} value={unit.value}>
+                            {unit.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Store *
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <select
-                      value={formData.store}
-                      onChange={(e) => setFormData({...formData, store: e.target.value})}
-                      required
-                      className="select flex-1"
-                    >
-                      <option value="">Select a store...</option>
-                      {stores.map(store => (
-                        <option key={store._id} value={store._id}>
-                          {store.name}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => fetchStores(true)}
-                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                      title="Refresh stores"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                    </button>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Store *
+                      </label>
+                      <div className="flex items-center space-x-2">
+                        <select
+                          value={formData.store}
+                          onChange={(e) => setFormData({...formData, store: e.target.value})}
+                          required
+                          className="select flex-1"
+                        >
+                          <option value="">Select a store...</option>
+                          {stores.map(store => (
+                            <option key={store._id} value={store._id}>
+                              {store.name}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => fetchStores(true)}
+                          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                          title="Refresh stores"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {stores.length === 0 && (
+                        <p className="text-sm text-gray-500 mt-1">
+                          No stores available. Please add stores in Master Data → Stores first.
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  {stores.length === 0 && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      No stores available. Please add stores in Master Data → Stores first.
-                    </p>
-                  )}
+                </div>
+
+                {/* Seasonality Information */}
+                <div className="space-y-4 border-t border-gray-200 pt-6">
+                  <h4 className="text-md font-medium text-gray-800">Seasonality</h4>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Available Months (Optional)
+                    </label>
+                    <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+                      {months.map(month => (
+                        <label key={month.value} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={formData.seasonality.availableMonths.includes(month.value)}
+                            onChange={(e) => {
+                              const newMonths = e.target.checked
+                                ? [...formData.seasonality.availableMonths, month.value]
+                                : formData.seasonality.availableMonths.filter(m => m !== month.value);
+                              setFormData({
+                                ...formData,
+                                seasonality: {
+                                  ...formData.seasonality,
+                                  availableMonths: newMonths
+                                }
+                              });
+                            }}
+                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          />
+                          <span className="text-sm text-gray-700">{month.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Seasonality Notes (Optional)
+                    </label>
+                    <textarea
+                      value={formData.seasonality.notes}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        seasonality: {
+                          ...formData.seasonality,
+                          notes: e.target.value
+                        }
+                      })}
+                      rows={2}
+                      maxLength={200}
+                      className="input w-full resize-none"
+                      placeholder="e.g., Peak season June-July in California"
+                    />
+                  </div>
+                </div>
+
+                {/* Location Information */}
+                <div className="border-t border-gray-200 pt-6">
+                  <LocationInput
+                    location={formData.location}
+                    onChange={(location) => setFormData(prev => ({ ...prev, location }))}
+                    label="Ingredient Source/Origin Location (Optional)"
+                  />
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">

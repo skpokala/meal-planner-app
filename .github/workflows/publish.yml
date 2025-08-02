@@ -135,6 +135,7 @@ jobs:
         cache-to: type=gha,mode=max
         build-args: |
           REACT_APP_VERSION=${{ steps.package-version.outputs.version }}
+          REACT_APP_BUILD_TIME=${{ github.event.head_commit.timestamp }}
     
     - name: Image publication summary
       run: |

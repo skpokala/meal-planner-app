@@ -4,6 +4,7 @@ FROM node:18-alpine AS build
 # Accept build arguments
 ARG REACT_APP_API_URL
 ARG REACT_APP_VERSION
+ARG REACT_APP_BUILD_TIME
 
 # Set working directory
 WORKDIR /app
@@ -20,6 +21,7 @@ COPY . .
 # Set environment variables for build
 ENV REACT_APP_API_URL=${REACT_APP_API_URL}
 ENV REACT_APP_VERSION=${REACT_APP_VERSION}
+ENV REACT_APP_BUILD_TIME=${REACT_APP_BUILD_TIME}
 
 # Build the application (completely skip tests)
 RUN npm run build:skip-tests

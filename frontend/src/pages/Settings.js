@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { User, Lock, Save, Shield } from 'lucide-react';
+import { User, Lock, Save, Shield, MapPin } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import TwoFactorSetup from '../components/TwoFactorSetup';
+import LocationInput from '../components/LocationInput';
+import LocationDisplay from '../components/LocationDisplay';
+import LocationPrompt from '../components/LocationPrompt';
 import toast from 'react-hot-toast';
 
 const Settings = () => {
@@ -14,6 +17,42 @@ const Settings = () => {
     lastName: user?.lastName || '',
     email: user?.email || '',
   });
+
+  const [locationData, setLocationData] = useState({
+    location: user?.location || {
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'USA'
+      },
+      coordinates: {
+        latitude: null,
+        longitude: null
+      },
+      timezone: 'America/New_York'
+    }
+  });
+
+  // Check if user has any meaningful location data
+  const hasLocationData = () => {
+    const location = locationData.location;
+    if (!location) return false;
+    
+    const hasAddress = location.address && (
+      location.address.street ||
+      location.address.city ||
+      location.address.state ||
+      location.address.zipCode
+    );
+    
+    const hasCoordinates = location.coordinates &&
+      location.coordinates.latitude !== null &&
+      location.coordinates.longitude !== null;
+    
+    return hasAddress || hasCoordinates;
+  };
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -40,6 +79,28 @@ const Settings = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLocationSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      await updateProfile(locationData);
+      toast.success('Location updated successfully');
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Failed to update location';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLocationDetected = (detectedLocation) => {
+    setLocationData({
+      location: detectedLocation
+    });
+    toast.success('Location detected successfully!');
   };
 
   const handlePasswordSubmit = async (e) => {
@@ -78,6 +139,13 @@ const Settings = () => {
     setProfileData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleLocationInputChange = (newLocation) => {
+    setLocationData(prev => ({
+      ...prev,
+      location: newLocation
     }));
   };
 
@@ -132,6 +200,7 @@ const Settings = () => {
     { id: 'profile', name: 'Profile', icon: User },
     { id: 'password', name: 'Password', icon: Lock },
     { id: 'twoFactor', name: '2FA', icon: Shield },
+    { id: 'location', name: 'Location', icon: MapPin },
   ];
 
   // Add master password tab for admin users
@@ -376,6 +445,51 @@ const Settings = () => {
               </div>
               <div className="card-body p-0">
                 <TwoFactorSetup />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'location' && (
+            <div className="card">
+              <div className="card-header">
+                <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
+                  Location Settings
+                </h3>
+                <p className="text-sm text-secondary-600 dark:text-secondary-400">
+                  Manage your account location and timezone
+                </p>
+              </div>
+              <div className="card-body">
+                {hasLocationData() ? (
+                  <LocationDisplay location={locationData.location} />
+                ) : (
+                  <LocationPrompt onLocationDetected={handleLocationDetected} />
+                )}
+                <form onSubmit={handleLocationSubmit} className="space-y-6 mt-6">
+                  <LocationInput
+                    location={locationData.location}
+                    onChange={handleLocationInputChange}
+                  />
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="btn-primary"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="spinner mr-2" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Location
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}

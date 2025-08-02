@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Clock, Plus, Trash2, RotateCcw } from 'lucide-react';
 import api from '../services/api';
+import LocationInput from './LocationInput';
 import toast from 'react-hot-toast';
 
 const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit' }) => {
@@ -10,6 +11,22 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
     prepTime: '',
     active: true,
     ingredients: [],
+    cuisine: '',
+    region: '',
+    location: {
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'USA'
+      },
+      coordinates: {
+        latitude: null,
+        longitude: null
+      },
+      timezone: 'America/New_York'
+    }
   });
   const [loading, setLoading] = useState(false);
   const [availableIngredients, setAvailableIngredients] = useState([]);
@@ -43,6 +60,28 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
     { value: 'l', label: 'Liters (l)' }
   ];
 
+  const cuisineTypes = [
+    { value: '', label: 'Select cuisine...' },
+    { value: 'American', label: 'American' },
+    { value: 'Italian', label: 'Italian' },
+    { value: 'Mexican', label: 'Mexican' },
+    { value: 'Chinese', label: 'Chinese' },
+    { value: 'Japanese', label: 'Japanese' },
+    { value: 'Indian', label: 'Indian' },
+    { value: 'Thai', label: 'Thai' },
+    { value: 'French', label: 'French' },
+    { value: 'Mediterranean', label: 'Mediterranean' },
+    { value: 'Greek', label: 'Greek' },
+    { value: 'Korean', label: 'Korean' },
+    { value: 'Vietnamese', label: 'Vietnamese' },
+    { value: 'Spanish', label: 'Spanish' },
+    { value: 'German', label: 'German' },
+    { value: 'British', label: 'British' },
+    { value: 'BBQ', label: 'BBQ' },
+    { value: 'Fusion', label: 'Fusion' },
+    { value: 'Other', label: 'Other' }
+  ];
+
   useEffect(() => {
     if (isOpen) {
       if (isEditMode && meal) {
@@ -52,6 +91,22 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
           prepTime: meal.prepTime || '',
           active: meal.active !== undefined ? meal.active : true,
           ingredients: meal.ingredients || [],
+          cuisine: meal.cuisine || '',
+          region: meal.region || '',
+          location: meal.location || {
+            address: {
+              street: '',
+              city: '',
+              state: '',
+              zipCode: '',
+              country: 'USA'
+            },
+            coordinates: {
+              latitude: null,
+              longitude: null
+            },
+            timezone: 'America/New_York'
+          }
         });
       } else if (isAddMode) {
         // Reset form for add mode
@@ -61,6 +116,22 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
           prepTime: '',
           active: true,
           ingredients: [],
+          cuisine: '',
+          region: '',
+          location: {
+            address: {
+              street: '',
+              city: '',
+              state: '',
+              zipCode: '',
+              country: 'USA'
+            },
+            coordinates: {
+              latitude: null,
+              longitude: null
+            },
+            timezone: 'America/New_York'
+          }
         });
       }
       // Load available ingredients and stores
@@ -363,6 +434,54 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                 disabled={loading}
               />
             </div>
+          </div>
+
+          {/* Cuisine and Region */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="cuisine" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+                Cuisine Type
+              </label>
+              <select
+                id="cuisine"
+                name="cuisine"
+                value={formData.cuisine}
+                onChange={handleInputChange}
+                className="input w-full"
+                disabled={loading}
+              >
+                {cuisineTypes.map(cuisine => (
+                  <option key={cuisine.value} value={cuisine.value}>
+                    {cuisine.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label htmlFor="region" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+                Region
+              </label>
+              <input
+                type="text"
+                id="region"
+                name="region"
+                value={formData.region}
+                onChange={handleInputChange}
+                className="input w-full"
+                placeholder="e.g., Southern USA, Mediterranean"
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          {/* Location Information */}
+          <div className="border-t border-secondary-200 dark:border-secondary-700 pt-4">
+            <LocationInput
+              location={formData.location}
+              onChange={(location) => setFormData(prev => ({ ...prev, location }))}
+              label="Meal Origin/Popular Location"
+            />
           </div>
 
           {/* Ingredients Section */}
