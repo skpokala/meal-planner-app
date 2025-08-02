@@ -1126,4 +1126,72 @@ router.post('/validate-compatibility', [
   }
 });
 
+// POST /api/backup/execute-script
+// Execute MongoDB script directly (for admin console)
+router.post('/execute-script', [
+  authenticateToken,
+  body('script').notEmpty().withMessage('Script is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const user = req.user;
+    if (!isAdmin(user)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin role required.'
+      });
+    }
+
+    const { script } = req.body;
+    
+    // Validate script parameter
+    if (!script || typeof script !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Script must be a string'
+      });
+    }
+
+    if (script.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Script cannot be empty'
+      });
+    }
+
+    console.log(`Script execution requested by ${user.email || user.username} (${user._id})`);
+    
+    // Execute the script using the existing function
+    const result = await executeMongoScript(script, {
+      timeout: 30000, // 30 seconds timeout
+      maxOutputLines: 1000
+    });
+
+    // Return successful result
+    res.status(200).json({
+      success: true,
+      output: result.output,
+      executionTime: result.executionTime,
+      message: 'Script executed successfully'
+    });
+
+  } catch (error) {
+    console.error('Error executing script:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Script execution failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      output: error.output || []
+    });
+  }
+});
+
 module.exports = router; 
