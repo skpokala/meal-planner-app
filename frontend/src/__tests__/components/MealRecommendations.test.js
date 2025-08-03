@@ -40,7 +40,12 @@ describe('MealRecommendations', () => {
       prepTime: 30,
       difficulty: 'medium',
       rating: 4.5,
-      ingredients: ['Chicken', 'Curry Powder', 'Rice']
+      active: true,
+      ingredients: [
+        { ingredient: { name: 'Chicken' } },
+        { ingredient: { name: 'Curry Powder' } },
+        { ingredient: { name: 'Rice' } }
+      ]
     },
     {
       _id: 'meal2', 
@@ -49,7 +54,12 @@ describe('MealRecommendations', () => {
       prepTime: 15,
       difficulty: 'easy',
       rating: 4.2,
-      ingredients: ['Flour', 'Eggs', 'Milk']
+      active: true,
+      ingredients: [
+        { ingredient: { name: 'Flour' } },
+        { ingredient: { name: 'Eggs' } },
+        { ingredient: { name: 'Milk' } }
+      ]
     }
   ];
 
@@ -76,6 +86,8 @@ describe('MealRecommendations', () => {
 
   afterEach(() => {
     localStorage.clear();
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   describe('Component Rendering', () => {
@@ -96,7 +108,7 @@ describe('MealRecommendations', () => {
         </TestWrapper>
       );
 
-      const component = screen.getByText('AI Meal Recommendations').closest('div');
+      const component = screen.getByText('AI Meal Recommendations').closest('div').parentElement.parentElement;
       expect(component).toHaveClass('custom-class');
     });
 
@@ -388,7 +400,7 @@ describe('MealRecommendations', () => {
   });
 
   describe('Fallback Behavior', () => {
-    test('shows fallback context when using existing meals', async () => {
+    test('shows context when using existing meals', async () => {
       render(
         <TestWrapper>
           <MealRecommendations />
@@ -396,8 +408,8 @@ describe('MealRecommendations', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText(/⚠️/)).toBeInTheDocument();
-        expect(screen.getByText(/Using your existing meals as recommendations/)).toBeInTheDocument();
+        expect(screen.getByText(/Personalized for any meal/)).toBeInTheDocument();
+        expect(screen.getByText(/Models used: existing_meals/)).toBeInTheDocument();
       });
     });
 
@@ -425,7 +437,7 @@ describe('MealRecommendations', () => {
         </TestWrapper>
       );
 
-      const component = screen.getByText('AI Meal Recommendations').closest('div');
+      const component = screen.getByText('AI Meal Recommendations').closest('div').parentElement.parentElement;
       expect(component).toHaveClass('overflow-hidden');
     });
 
@@ -470,7 +482,13 @@ describe('MealRecommendations', () => {
     test('ingredients list truncates when too many items', async () => {
       const manyIngredientsMeal = {
         ...mockMeals[0],
-        ingredients: ['Ingredient 1', 'Ingredient 2', 'Ingredient 3', 'Ingredient 4', 'Ingredient 5']
+        ingredients: [
+          { ingredient: { name: 'Ingredient 1' } },
+          { ingredient: { name: 'Ingredient 2' } },
+          { ingredient: { name: 'Ingredient 3' } },
+          { ingredient: { name: 'Ingredient 4' } },
+          { ingredient: { name: 'Ingredient 5' } }
+        ]
       };
       
       api.get.mockResolvedValue({

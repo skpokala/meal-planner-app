@@ -51,6 +51,7 @@ const MealRecommendations = ({
         // Transform existing meals into recommendation format
         const mealRecommendations = response.data.meals
           .filter(meal => meal.active) // Only active meals
+          .filter(meal => !mealType || meal.mealType === mealType) // Filter by meal type if specified
           .map(meal => ({
             meal_id: meal._id,
             meal_name: meal.name,

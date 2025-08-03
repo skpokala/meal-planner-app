@@ -13,6 +13,12 @@ describe('Version Component', () => {
     jest.clearAllMocks();
   });
 
+  afterEach(() => {
+    // Clean up environment variables
+    delete process.env.REACT_APP_VERSION;
+    delete process.env.REACT_APP_BUILD_TIME;
+  });
+
   test('renders frontend version', async () => {
     // Mock environment variable
     process.env.REACT_APP_VERSION = '1.1.0';
