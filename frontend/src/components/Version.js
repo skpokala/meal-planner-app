@@ -27,6 +27,7 @@ const Version = ({ sidebarCollapsed }) => {
     try {
       const date = new Date(buildTimeString);
       return date.toLocaleString('en-US', {
+        year: 'numeric',
         month: 'short',
         day: 'numeric',
         hour: '2-digit',

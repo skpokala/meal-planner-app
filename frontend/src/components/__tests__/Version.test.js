@@ -91,7 +91,7 @@ describe('Version Component', () => {
     
     await waitFor(() => {
       expect(screen.getByText('Version: v1.1.0')).toBeInTheDocument();
-      expect(screen.getByText(/Built: Jan 15/)).toBeInTheDocument();
+      expect(screen.getByText(/Built: Jan 15, 2024/)).toBeInTheDocument();
     });
   });
 
