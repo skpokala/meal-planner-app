@@ -108,7 +108,7 @@ describe('MealRecommendations', () => {
         </TestWrapper>
       );
 
-      const component = screen.getByText('AI Meal Recommendations').closest('div').parentElement.parentElement;
+      const component = screen.getByTestId('meal-recommendations-root');
       expect(component).toHaveClass('custom-class');
     });
 
@@ -119,7 +119,7 @@ describe('MealRecommendations', () => {
         </TestWrapper>
       );
 
-      const component = screen.getByText('AI Meal Recommendations').closest('div');
+      const component = screen.getByTestId('meal-recommendations-root');
       expect(component).toHaveClass('h-full', 'w-full', 'max-w-full', 'overflow-hidden');
     });
   });

@@ -154,7 +154,7 @@ describe('MealPlanner', () => {
         </TestWrapper>
       );
 
-      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+      expect(screen.getByRole('status')).toBeInTheDocument();
     });
 
     test('displays error state when API fails', async () => {
@@ -167,7 +167,7 @@ describe('MealPlanner', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText(/Error loading meal planner/)).toBeInTheDocument();
+        expect(screen.getByText('Error')).toBeInTheDocument();
       });
     });
   });
