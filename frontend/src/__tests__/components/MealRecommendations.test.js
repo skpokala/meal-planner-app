@@ -82,6 +82,16 @@ describe('MealRecommendations', () => {
         mealPlan: { _id: 'plan123', meal: 'meal1', date: '2024-01-01' }
       }
     });
+
+    // Prevent excessive console output during tests
+    jest.spyOn(console, 'log').mockImplementation(() => {});
+    jest.spyOn(console, 'debug').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    // Restore console methods
+    console.log.mockRestore?.();
+    console.debug.mockRestore?.();
   });
 
   afterEach(() => {

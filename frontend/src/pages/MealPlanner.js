@@ -705,6 +705,7 @@ const MealPlanner = () => {
             <div className="flex rounded-md shadow-sm">
               <button
                 onClick={() => setViewMode(VIEW_MODES.MONTHLY)}
+                aria-label="Monthly view"
                 className={`px-3 py-2 text-sm font-medium rounded-l-md border ${
                   viewMode === VIEW_MODES.MONTHLY
                     ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
@@ -715,6 +716,7 @@ const MealPlanner = () => {
               </button>
               <button
                 onClick={() => setViewMode(VIEW_MODES.WEEKLY)}
+                aria-label="Weekly view"
                 className={`px-3 py-2 text-sm font-medium border-t border-b ${
                   viewMode === VIEW_MODES.WEEKLY
                     ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
@@ -725,6 +727,7 @@ const MealPlanner = () => {
               </button>
               <button
                 onClick={() => setViewMode(VIEW_MODES.DAILY)}
+                aria-label="Daily view"
                 className={`px-3 py-2 text-sm font-medium border-t border-b ${
                   viewMode === VIEW_MODES.DAILY
                     ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
@@ -735,6 +738,7 @@ const MealPlanner = () => {
               </button>
               <button
                 onClick={() => setViewMode(VIEW_MODES.LIST)}
+                aria-label="List view"
                 className={`px-3 py-2 text-sm font-medium rounded-r-md border ${
                   viewMode === VIEW_MODES.LIST
                     ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'

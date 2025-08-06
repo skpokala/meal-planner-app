@@ -137,11 +137,11 @@ describe('MealPlanner', () => {
       expect(screen.getByText('Meal Planner')).toBeInTheDocument();
       expect(screen.getByTestId('meal-recommendations')).toBeInTheDocument();
       
-      // Check view mode controls
-      expect(screen.getByText('Monthly')).toBeInTheDocument();
-      expect(screen.getByText('Weekly')).toBeInTheDocument();
-      expect(screen.getByText('Daily')).toBeInTheDocument();
-      expect(screen.getByText('List')).toBeInTheDocument();
+      // Check view mode controls using aria-labels
+      expect(screen.getByLabelText('Monthly view')).toBeInTheDocument();
+      expect(screen.getByLabelText('Weekly view')).toBeInTheDocument();
+      expect(screen.getByLabelText('Daily view')).toBeInTheDocument();
+      expect(screen.getByLabelText('List view')).toBeInTheDocument();
     });
 
     test('shows loading state initially', () => {
@@ -187,23 +187,23 @@ describe('MealPlanner', () => {
       const user = userEvent.setup();
 
       // Test switching to Weekly view
-      const weeklyButton = screen.getByText('Weekly');
+      const weeklyButton = screen.getByLabelText('Weekly view');
       await user.click(weeklyButton);
       
-      // Monthly should no longer be active
-      expect(weeklyButton.closest('button')).toHaveClass('bg-blue-600');
+      // Weekly should be active
+      expect(weeklyButton).toHaveClass('bg-primary-50');
 
       // Test switching to Daily view
-      const dailyButton = screen.getByText('Daily');
+      const dailyButton = screen.getByLabelText('Daily view');
       await user.click(dailyButton);
       
-      expect(dailyButton.closest('button')).toHaveClass('bg-blue-600');
+      expect(dailyButton).toHaveClass('bg-primary-50');
 
       // Test switching to List view
-      const listButton = screen.getByText('List');
+      const listButton = screen.getByLabelText('List view');
       await user.click(listButton);
       
-      expect(listButton.closest('button')).toHaveClass('bg-blue-600');
+      expect(listButton).toHaveClass('bg-primary-50');
     });
 
     test('updates recommendations panel height based on view mode', async () => {
@@ -224,7 +224,7 @@ describe('MealPlanner', () => {
       expect(recommendationsPanel).toHaveClass('h-full');
 
       // Switch to Weekly view
-      await user.click(screen.getByText('Weekly'));
+      await user.click(screen.getByLabelText('Weekly view'));
       
       // The height should be managed by the parent container
       // In monthly view, the parent should have specific height constraints
@@ -232,10 +232,10 @@ describe('MealPlanner', () => {
       expect(parentContainer).toBeDefined();
 
       // Switch to Daily view
-      await user.click(screen.getByText('Daily'));
+      await user.click(screen.getByLabelText('Daily view'));
       
       // Switch to List view
-      await user.click(screen.getByText('List'));
+      await user.click(screen.getByLabelText('List view'));
     });
   });
 
@@ -681,7 +681,7 @@ describe('MealPlanner', () => {
       expect(screen.getByLabelText(/Next month/)).toBeInTheDocument();
 
       // Check view mode buttons are accessible
-      const monthlyButton = screen.getByRole('button', { name: 'Monthly' });
+      const monthlyButton = screen.getByLabelText('Monthly view');
       expect(monthlyButton).toBeInTheDocument();
     });
 
@@ -704,7 +704,7 @@ describe('MealPlanner', () => {
       await user.tab();
 
       // Should be able to activate buttons with Enter/Space
-      const monthlyButton = screen.getByRole('button', { name: 'Monthly' });
+      const monthlyButton = screen.getByLabelText('Monthly view');
       await user.type(monthlyButton, '{enter}');
     });
   });
