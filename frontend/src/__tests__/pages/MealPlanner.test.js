@@ -107,6 +107,13 @@ describe('MealPlanner', () => {
       if (url === '/meals') {
         return Promise.resolve({ data: { meals: mockMeals } });
       }
+      if (url === '/meal-plans/calendar') {
+        // Return meals organized by date for calendar view
+        const mealPlansByDate = {};
+        const today = new Date().toISOString().split('T')[0];
+        mealPlansByDate[today] = mockMealPlans;
+        return Promise.resolve({ data: { mealPlansByDate } });
+      }
       if (url.includes('/meal-plans')) {
         return Promise.resolve({ data: { mealPlans: mockMealPlans } });
       }
@@ -168,7 +175,7 @@ describe('MealPlanner', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText(/error/i)).toBeInTheDocument();
+        expect(screen.getByText('Failed to load data: API Error')).toBeInTheDocument();
       });
     });
   });
@@ -599,7 +606,7 @@ describe('MealPlanner', () => {
 
       // Should show error message
       await waitFor(() => {
-        expect(screen.getByText(/Failed to add meal to plan/)).toBeInTheDocument();
+        expect(screen.getByText('Failed to plan meal. Please try again.')).toBeInTheDocument();
       });
     });
 

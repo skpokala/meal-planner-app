@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Clock, Star, ChefHat, Users, ThumbsUp, ThumbsDown, RefreshCw, Lightbulb, Calendar, Plus } from 'lucide-react';
 import api from '../services/api';
@@ -25,27 +26,20 @@ const MealRecommendations = ({
   const [isAddingToMealPlan, setIsAddingToMealPlan] = useState(false);
   const [feedbackLoading, setFeedbackLoading] = useState({});
 
-  console.log('🧠 MealRecommendations component rendered', { 
-    user: !!user, 
-    mealType, 
-    maxRecommendations,
-    recommendations: recommendations.length 
-  });
 
-  const fetchRecommendations = async () => {
-    console.log('🚀 fetchRecommendations called', { user: !!user, mealType, maxRecommendations });
-    
-    if (!user) return;
+
+  const fetchRecommendations = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     
     setLoading(true);
     setError('');
     
     try {
-      console.log('📡 Fetching existing meals for recommendations');
-
       // Use the proper API service instead of raw fetch
       const response = await api.get('/meals');
-      console.log('✅ Fetched meals data:', response.data);
 
       if (response.data.success && response.data.meals && response.data.meals.length > 0) {
         // Transform existing meals into recommendation format
@@ -55,10 +49,10 @@ const MealRecommendations = ({
           .map(meal => ({
             meal_id: meal._id,
             meal_name: meal.name,
-            meal_type: mealType || 'dinner',
+            meal_type: meal.meal_type || meal.mealType || 'dinner',
             prep_time: meal.prepTime || 30,
-            difficulty: meal.recipe?.difficulty || 'medium',
-            rating: 4.2, // Default rating since we don't have ratings in meals
+            difficulty: meal.difficulty || 'medium',
+            rating: meal.rating || 4.2,
             recommendation_type: 'existing_meal',
             popularity_score: 0.8,
             ingredients: meal.ingredients?.slice(0, 4).map(ing => ing.ingredient?.name || 'ingredient').filter(Boolean) || [],
@@ -73,13 +67,11 @@ const MealRecommendations = ({
           models_used: ['existing_meals']
         });
         setError(''); // Clear any previous errors
-        
-        console.log(`📋 Showing ${mealRecommendations.length} existing meal recommendations`);
       } else {
-        // No meals found - show message to create meals
+        // No meals found - show empty state
         setRecommendations([]);
         setContext({ 
-          fallback: true, 
+          fallback: false, 
           message: 'No meals found. Create some meals to see recommendations!',
           models_used: ['empty']
         });
@@ -87,7 +79,7 @@ const MealRecommendations = ({
       
     } catch (err) {
       console.error('❌ Error fetching meal recommendations:', err);
-      setError('Failed to load recommendations');
+      setError('Failed to fetch meals');
       
       // Show empty state instead of fallback recommendations
       setRecommendations([]);
@@ -97,9 +89,11 @@ const MealRecommendations = ({
         models_used: ['error']
       });
     } finally {
-      setLoading(false);
+      flushSync(() => {
+        setLoading(false);
+      });
     }
-  };
+  }, [user, mealType, maxRecommendations]);
 
   const handleFeedback = async (mealId, feedbackType) => {
     if (!user) return;
@@ -227,37 +221,31 @@ const MealRecommendations = ({
 
     } catch (error) {
       console.error('❌ Error adding to meal plan:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
-      toast.error(`Failed to add to meal plan: ${errorMessage}`);
+      toast.error('Failed to add to meal plan. Please try again.');
     } finally {
       setIsAddingToMealPlan(false);
     }
   };
 
   useEffect(() => {
-    console.log('🔄 MealRecommendations useEffect triggered', { user: !!user, mealType, currentMealId, maxRecommendations });
-    
     if (user) {
-      console.log('👤 User is authenticated, calling fetchRecommendations...');
       fetchRecommendations();
-    } else {
-      console.log('❌ No user found, not fetching recommendations');
     }
-  }, [user, mealType, currentMealId, maxRecommendations]);
+  }, [user, fetchRecommendations]);
 
   if (!user) return null;
 
   return (
     <div 
       data-testid="meal-recommendations-root"
-      className={`flex flex-col h-full w-full ${className}`}
+      className="flex flex-col h-full w-full"
       style={{
         maxWidth: '100%',
         minWidth: '0',
         overflow: 'hidden',
         boxSizing: 'border-box'
       }}>
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+      <div className={`p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 ${className}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 min-w-0 flex-1">
             <Lightbulb className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
@@ -309,7 +297,7 @@ const MealRecommendations = ({
             </div>
           ) : error ? (
             <div className="text-center py-6">
-              <div className="text-red-600 dark:text-red-400 mb-2">⚠️ {error}</div>
+              <div className="text-red-600 dark:text-red-400 mb-2">Failed to fetch meals</div>
               <button
                 onClick={fetchRecommendations}
                 className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
@@ -329,6 +317,7 @@ const MealRecommendations = ({
                 <div 
                   key={recommendation.meal_id} 
                   className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:shadow-md transition-shadow w-full"
+                  data-testid={`meal-card-${recommendation.meal_id}`}
                   style={{ 
                     maxWidth: '100%', 
                     width: '100%',
@@ -340,7 +329,7 @@ const MealRecommendations = ({
                   <div className="w-full" style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
                     {/* Header with meal name and type badge - stacked to prevent overflow */}
                     <div className="mb-2 w-full" style={{ maxWidth: '100%' }}>
-                      <div className="flex items-center space-x-2 mb-1 w-full min-w-0">
+                      <div className="flex items-center space-x-2 mb-1 w-full min-w-0" style={{ maxWidth: '100%' }}>
                         <span className="text-lg flex-shrink-0">
                           {getRecommendationTypeIcon(recommendation.recommendation_type)}
                         </span>
@@ -461,7 +450,7 @@ const MealRecommendations = ({
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Add to Meal Plan
+                Add {selectedRecommendation.meal_name} to Meal Plan
               </h3>
               <button
                 onClick={() => setShowMealPlanModal(false)}
@@ -537,7 +526,7 @@ const MealRecommendations = ({
                 ) : (
                   <>
                     <Plus className="w-4 h-4 mr-2" />
-                    Add to Plan
+                    Add to Meal Plan
                   </>
                 )}
               </button>

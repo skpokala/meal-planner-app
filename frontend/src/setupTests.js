@@ -4,12 +4,12 @@
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 
-// Configure global timeout for waitFor calls - increased for CI
+// Configure global timeout for waitFor calls - reduced for faster feedback
 import { configure } from '@testing-library/react';
-configure({ testIdAttribute: 'data-testid', asyncUtilTimeout: 30000 });
+configure({ testIdAttribute: 'data-testid', asyncUtilTimeout: 5000 });
 
-// Set Jest timeout for all tests - increased for CI
-jest.setTimeout(60000);
+// Set Jest timeout for all tests - reduced for faster feedback
+jest.setTimeout(15000);
 
 // Mock react-router-dom
 import { BrowserRouter } from 'react-router-dom';

@@ -757,6 +757,7 @@ const MealPlanner = () => {
             <button
               onClick={() => navigate(-1)}
               className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:text-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
+              aria-label={viewMode === VIEW_MODES.MONTHLY ? "Previous month" : viewMode === VIEW_MODES.WEEKLY ? "Previous week" : "Previous day"}
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -768,6 +769,7 @@ const MealPlanner = () => {
             <button
               onClick={() => navigate(1)}
               className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:text-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
+              aria-label={viewMode === VIEW_MODES.MONTHLY ? "Next month" : viewMode === VIEW_MODES.WEEKLY ? "Next week" : "Next day"}
             >
               <ChevronRight className="w-5 h-5" />
             </button>
