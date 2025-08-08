@@ -231,7 +231,7 @@ const MealRecommendations = ({
     if (user) {
       fetchRecommendations();
     }
-  }, [user, mealType, maxRecommendations]);
+  }, [user?.id]); // Depend on stable user ID instead of entire user object
 
   if (!user) return null;
 
