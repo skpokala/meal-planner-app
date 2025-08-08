@@ -28,7 +28,7 @@ const MealRecommendations = ({
 
 
 
-  const fetchRecommendations = useCallback(async () => {
+  const fetchRecommendations = async () => {
     if (!user) {
       setLoading(false);
       return;
@@ -93,7 +93,7 @@ const MealRecommendations = ({
         setLoading(false);
       });
     }
-  }, [user, mealType, maxRecommendations]);
+  };
 
   const handleFeedback = async (mealId, feedbackType) => {
     if (!user) return;
@@ -231,7 +231,7 @@ const MealRecommendations = ({
     if (user) {
       fetchRecommendations();
     }
-  }, [user, fetchRecommendations]);
+  }, [user, mealType, maxRecommendations]);
 
   if (!user) return null;
 
