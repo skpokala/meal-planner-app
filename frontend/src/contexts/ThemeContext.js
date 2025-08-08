@@ -14,6 +14,8 @@ export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState('system');
   const [resolvedTheme, setResolvedTheme] = useState('light');
   const [systemTheme, setSystemTheme] = useState('light');
+  // Visual style preset for the design system: classic (existing) or modern (colorful)
+  const [themeStyle, setThemeStyle] = useState('classic');
 
   // Detect system theme preference
   useEffect(() => {
@@ -48,6 +50,11 @@ export const ThemeProvider = ({ children }) => {
     if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
       setTheme(savedTheme);
     }
+
+    const savedThemeStyle = localStorage.getItem('themeStyle');
+    if (savedThemeStyle && ['classic', 'modern'].includes(savedThemeStyle)) {
+      setThemeStyle(savedThemeStyle);
+    }
   }, []);
 
   // Update resolved theme when theme or system theme changes
@@ -61,16 +68,19 @@ export const ThemeProvider = ({ children }) => {
       
       // Remove existing theme classes
       root.classList.remove('light', 'dark');
-      
-      // Add new theme class
+      // Remove existing style classes
+      root.classList.remove('classic', 'modern');
+
+      // Add new theme class and style class
       root.classList.add(newResolvedTheme);
+      root.classList.add(themeStyle);
     }
 
     // Save theme preference to localStorage
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorage.setItem('theme', theme);
     }
-  }, [theme, systemTheme]);
+  }, [theme, systemTheme, themeStyle]);
 
   const setThemePreference = (newTheme) => {
     if (['light', 'dark', 'system'].includes(newTheme)) {
@@ -88,16 +98,36 @@ export const ThemeProvider = ({ children }) => {
     }
   };
 
+  const setThemeStylePreference = (newStyle) => {
+    if (['classic', 'modern'].includes(newStyle)) {
+      setThemeStyle(newStyle);
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('themeStyle', newStyle);
+      }
+    }
+  };
+
+  const toggleThemeStyle = () => {
+    setThemeStylePreference(themeStyle === 'classic' ? 'modern' : 'classic');
+  };
+
   const value = {
     theme, // Current theme setting (light, dark, system)
     resolvedTheme, // Actual theme being used (light or dark)
     systemTheme, // System preference (light or dark)
     setTheme: setThemePreference,
     toggleTheme,
+    themeStyle, // Current design style (classic or modern)
+    setThemeStyle: setThemeStylePreference,
+    toggleThemeStyle,
     themes: [
       { value: 'light', label: 'Light', icon: 'sun' },
       { value: 'dark', label: 'Dark', icon: 'moon' },
       { value: 'system', label: 'System', icon: 'monitor' }
+    ],
+    styles: [
+      { value: 'classic', label: 'Classic' },
+      { value: 'modern', label: 'Modern' }
     ]
   };
 

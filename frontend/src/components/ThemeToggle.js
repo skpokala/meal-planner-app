@@ -3,7 +3,7 @@ import { Sun, Moon, Monitor, ChevronDown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
 const ThemeToggle = ({ variant = 'dropdown', className = '' }) => {
-  const { theme, resolvedTheme, setTheme, toggleTheme, themes } = useTheme();
+  const { theme, resolvedTheme, setTheme, toggleTheme, themes, themeStyle, setThemeStyle, styles } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -65,9 +65,12 @@ const ThemeToggle = ({ variant = 'dropdown', className = '' }) => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-secondary-800 rounded-card shadow-card-lg border border-secondary-200 dark:border-secondary-700 z-50">
+        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-secondary-800 rounded-card shadow-card-lg border border-secondary-200 dark:border-secondary-700 z-50">
           <div className="py-2">
             <div className="px-3 py-2 text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">
+              Appearance
+            </div>
+            <div className="px-3 py-2 text-xs font-medium text-secondary-500 dark:text-secondary-400">
               Theme
             </div>
             {themes.map((themeOption) => (
@@ -75,7 +78,6 @@ const ThemeToggle = ({ variant = 'dropdown', className = '' }) => {
                 key={themeOption.value}
                 onClick={() => {
                   setTheme(themeOption.value);
-                  setIsOpen(false);
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2 text-sm text-left hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors ${
                   theme === themeOption.value
@@ -92,6 +94,37 @@ const ThemeToggle = ({ variant = 'dropdown', className = '' }) => {
                 )}
               </button>
             ))}
+
+            <div className="px-3 pt-3 pb-2 text-xs font-medium text-secondary-500 dark:text-secondary-400 border-t border-secondary-200 dark:border-secondary-700">
+              Style
+            </div>
+            {styles?.map((style) => (
+              <button
+                key={style.value}
+                onClick={() => setThemeStyle(style.value)}
+                className={`w-full flex items-center gap-3 px-3 py-2 text-sm text-left hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors ${
+                  themeStyle === style.value
+                    ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                    : 'text-secondary-700 dark:text-secondary-300'
+                }`}
+                title={style.value === 'modern' ? 'Colorful, modern UI' : 'Original classic UI'}
+              >
+                <span className="inline-block w-2 h-2 rounded-full bg-primary-500" />
+                <span className="flex-1">{style.label}</span>
+                {themeStyle === style.value && (
+                  <span className="text-xs text-secondary-500 dark:text-secondary-400">Selected</span>
+                )}
+              </button>
+            ))}
+
+            <div className="px-3 py-2">
+              <button
+                onClick={() => setIsOpen(false)}
+                className="w-full btn btn-secondary"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
