@@ -238,7 +238,7 @@ const MealRecommendations = ({
   return (
     <div 
       data-testid="meal-recommendations-root"
-      className="flex flex-col h-full w-full"
+      className={`flex flex-col h-full w-full max-w-full overflow-hidden ${className}`}
       style={{
         maxWidth: '100%',
         minWidth: '0',
