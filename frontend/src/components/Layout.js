@@ -27,6 +27,7 @@ import {
 const Layout = ({ children }) => {
   const { user, logout, isSystemAdmin, isAdmin } = useAuth();
   const { themeStyle, toggleThemeStyle } = useTheme();
+  console.log('Layout - themeStyle:', themeStyle, 'toggleThemeStyle:', typeof toggleThemeStyle);
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -257,10 +258,10 @@ const Layout = ({ children }) => {
 
             {/* Theme toggle (theme + style) and User menu */}
             <div className="flex items-center space-x-2">
-              <ThemeToggle variant="simple" />
+              <ThemeToggle variant="dropdown" />
               <button
                 onClick={toggleThemeStyle}
-                className="hidden sm:inline-flex items-center px-3 py-2 text-xs font-medium rounded-card border border-secondary-200 dark:border-secondary-700 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors"
+                className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-card border border-secondary-200 dark:border-secondary-700 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors"
                 title={`Switch to ${themeStyle === 'classic' ? 'Modern' : 'Classic'} style`}
               >
                 {themeStyle === 'classic' ? 'Modern style' : 'Classic style'}

@@ -131,6 +131,8 @@ export const ThemeProvider = ({ children }) => {
     ]
   };
 
+  console.log('ThemeContext - providing value:', { themeStyle, toggleThemeStyle: typeof toggleThemeStyle });
+
   return (
     <ThemeContext.Provider value={value}>
       {children}

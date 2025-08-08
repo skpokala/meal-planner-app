@@ -8,7 +8,8 @@ const Version = ({ sidebarCollapsed }) => {
   useEffect(() => {
     const fetchBackendVersion = async () => {
       try {
-        const response = await api.get('/api/version');
+        // api baseURL already points to API root; don't prefix with /api
+        const response = await api.get('/version');
         setBackendVersion(response.data.version);
       } catch (err) {
         console.error('Failed to fetch backend version:', err);
