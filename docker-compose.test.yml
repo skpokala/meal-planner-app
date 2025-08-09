@@ -25,6 +25,7 @@ services:
       - JWT_SECRET=test-jwt-secret-key
       - NODE_ENV=test
       - CI=true
+      - GOOGLE_MAPS_API_KEY=DUMMY_FOR_TESTS
     volumes:
       - ./backend:/app
       - /app/node_modules

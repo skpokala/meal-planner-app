@@ -39,9 +39,10 @@ services:
       - NODE_ENV=development
       - FRONTEND_URL=http://localhost:3001
       - ML_SERVICE_URL=http://ml-service:5003
-      # TODO: Set your Google Maps API key for geocoding (required for address search/reverse geocoding)
-      # Provide via .env file in the repo root or your environment; this placeholder will fail if missing
-      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:?set in .env}
+      # Google Maps API key for geocoding
+      # In CI or local without a key, this defaults to a harmless placeholder to avoid breaking builds.
+      # Provide a real key via .env or your environment for geocoding features to work.
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-DUMMY_FOR_TESTS}
     ports:
       - "5002:5000"
     volumes:
