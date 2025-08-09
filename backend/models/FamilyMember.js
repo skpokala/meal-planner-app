@@ -138,6 +138,17 @@ const familyMemberSchema = new mongoose.Schema({
     default: true // By default, inherit location from the creating user
   },
   location: locationSchema, // Individual location if not using parent location
+  // UI preferences
+  theme: {
+    type: String,
+    enum: ['light', 'dark', 'system'],
+    default: 'system'
+  },
+  themeStyle: {
+    type: String,
+    enum: ['classic', 'modern'],
+    default: 'classic'
+  },
   isActive: {
     type: Boolean,
     default: true

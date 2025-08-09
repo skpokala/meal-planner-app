@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useAuth } from './AuthContext';
+import api from '../services/api';
 
 const ThemeContext = createContext();
 
@@ -16,6 +18,7 @@ export const ThemeProvider = ({ children }) => {
   const [systemTheme, setSystemTheme] = useState('light');
   // Visual style preset for the design system: classic (existing) or modern (colorful)
   const [themeStyle, setThemeStyle] = useState('classic');
+  const { user } = useAuth?.() || {}; // ThemeProvider is above AuthProvider today; fallback if not available
 
   // Detect system theme preference
   useEffect(() => {
@@ -40,22 +43,31 @@ export const ThemeProvider = ({ children }) => {
     };
   }, []);
 
-  // Load saved theme from localStorage on mount
+  // Load theme from user profile (if logged in) or localStorage on mount and when user changes
   useEffect(() => {
     if (typeof window === 'undefined' || !window.localStorage) {
       return;
     }
     
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
-      setTheme(savedTheme);
-    }
+    if (user && (user.theme || user.themeStyle)) {
+      if (user.theme && ['light', 'dark', 'system'].includes(user.theme)) {
+        setTheme(user.theme);
+      }
+      if (user.themeStyle && ['classic', 'modern'].includes(user.themeStyle)) {
+        setThemeStyle(user.themeStyle);
+      }
+    } else {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
+        setTheme(savedTheme);
+      }
 
-    const savedThemeStyle = localStorage.getItem('themeStyle');
-    if (savedThemeStyle && ['classic', 'modern'].includes(savedThemeStyle)) {
-      setThemeStyle(savedThemeStyle);
+      const savedThemeStyle = localStorage.getItem('themeStyle');
+      if (savedThemeStyle && ['classic', 'modern'].includes(savedThemeStyle)) {
+        setThemeStyle(savedThemeStyle);
+      }
     }
-  }, []);
+  }, [user]);
 
   // Update resolved theme when theme or system theme changes
   useEffect(() => {
@@ -82,9 +94,17 @@ export const ThemeProvider = ({ children }) => {
     }
   }, [theme, systemTheme, themeStyle]);
 
-  const setThemePreference = (newTheme) => {
+  const setThemePreference = async (newTheme) => {
     if (['light', 'dark', 'system'].includes(newTheme)) {
       setTheme(newTheme);
+      try {
+        // Persist to backend if authenticated
+        if (user) {
+          await api.put('/auth/profile', { theme: newTheme });
+        }
+      } catch (err) {
+        console.error('Failed to save theme preference:', err);
+      }
     }
   };
 
@@ -98,11 +118,18 @@ export const ThemeProvider = ({ children }) => {
     }
   };
 
-  const setThemeStylePreference = (newStyle) => {
+  const setThemeStylePreference = async (newStyle) => {
     if (['classic', 'modern'].includes(newStyle)) {
       setThemeStyle(newStyle);
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem('themeStyle', newStyle);
+      }
+      try {
+        if (user) {
+          await api.put('/auth/profile', { themeStyle: newStyle });
+        }
+      } catch (err) {
+        console.error('Failed to save theme style:', err);
       }
     }
   };

@@ -24,8 +24,8 @@ import './index.css';
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <ThemeProvider>
           <StoresProvider>
             <Router>
             <ReleaseNotesWrapper>
@@ -69,8 +69,8 @@ function App() {
             />
           </Router>
           </StoresProvider>
-        </AuthProvider>
-      </ThemeProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }

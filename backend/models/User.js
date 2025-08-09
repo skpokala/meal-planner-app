@@ -97,6 +97,17 @@ const userSchema = new mongoose.Schema({
   },
   // Location information
   location: locationSchema,
+  // UI preferences
+  theme: {
+    type: String,
+    enum: ['light', 'dark', 'system'],
+    default: 'system'
+  },
+  themeStyle: {
+    type: String,
+    enum: ['classic', 'modern'],
+    default: 'classic'
+  },
   isActive: {
     type: Boolean,
     default: true

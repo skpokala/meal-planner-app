@@ -220,7 +220,9 @@ router.post('/login', [
       lastName: user.lastName,
       role: user.role,
       userType: userType,
-      lastLogin: user.lastLogin
+      lastLogin: user.lastLogin,
+      theme: user.theme,
+      themeStyle: user.themeStyle
     };
 
     // Add additional fields for family members
@@ -291,7 +293,9 @@ router.get('/profile', authenticateToken, async (req, res) => {
       lastName: req.user.lastName,
       role: req.user.role,
       userType: req.user.userType,
-      lastLogin: req.user.lastLogin
+      lastLogin: req.user.lastLogin,
+      theme: req.user.theme,
+      themeStyle: req.user.themeStyle
     };
 
     // Add additional fields for family members
@@ -319,7 +323,9 @@ router.get('/profile', authenticateToken, async (req, res) => {
 router.put('/profile', authenticateToken, [
   body('firstName').optional().trim().isLength({ min: 1 }).withMessage('First name cannot be empty'),
   body('lastName').optional().trim().isLength({ min: 1 }).withMessage('Last name cannot be empty'),
-  body('email').optional().isEmail().withMessage('Invalid email format')
+  body('email').optional().isEmail().withMessage('Invalid email format'),
+  body('theme').optional().isIn(['light', 'dark', 'system']).withMessage('Invalid theme'),
+  body('themeStyle').optional().isIn(['classic', 'modern']).withMessage('Invalid theme style')
 ], async (req, res) => {
   try {
     // Check validation errors
@@ -332,7 +338,7 @@ router.put('/profile', authenticateToken, [
       });
     }
 
-    const { firstName, lastName, email } = req.body;
+    const { firstName, lastName, email, theme, themeStyle } = req.body;
     const userId = req.user._id;
 
     // Update appropriate model based on userType
@@ -343,7 +349,9 @@ router.put('/profile', authenticateToken, [
         {
           ...(firstName && { firstName }),
           ...(lastName && { lastName }),
-          ...(email && { email })
+          ...(email && { email }),
+          ...(theme && { theme }),
+          ...(themeStyle && { themeStyle })
         },
         { new: true, runValidators: true }
       );
@@ -353,7 +361,9 @@ router.put('/profile', authenticateToken, [
         {
           ...(firstName && { firstName }),
           ...(lastName && { lastName }),
-          ...(email && { email })
+          ...(email && { email }),
+          ...(theme && { theme }),
+          ...(themeStyle && { themeStyle })
         },
         { new: true, runValidators: true }
       );
