@@ -68,12 +68,33 @@ describe('MealRecommendations', () => {
     jest.clearAllMocks();
     localStorage.setItem('token', 'mock-token');
     
-    // Default mock - success with sample meals
-    api.get.mockResolvedValue({
-      data: {
-        success: true,
-        meals: mockMeals
+    // Default mock implementation that handles /recommendations and /meals
+    api.get.mockImplementation((url, options = {}) => {
+      if (url === '/recommendations') {
+        const mealType = options?.params?.meal_type;
+        const source = mealType ? mockMeals.filter(m => m.mealType === mealType) : mockMeals;
+        const topN = typeof options?.params?.top_n === 'number' ? options.params.top_n : source.length;
+        const recommendations = source.slice(0, topN).map(m => ({
+          meal_id: m._id,
+          meal_name: m.name,
+          meal_type: m.mealType,
+          prep_time: m.prepTime,
+          difficulty: m.difficulty,
+          rating: m.rating,
+          recommendation_type: 'existing_meal'
+        }));
+        return Promise.resolve({
+          data: {
+            success: true,
+            recommendations,
+            context: { models_used: ['existing_meals'], scoring_mode: 'top_normalized' }
+          }
+        });
       }
+      if (url === '/meals') {
+        return Promise.resolve({ data: { success: true, meals: mockMeals } });
+      }
+      return Promise.resolve({ data: { success: true } });
     });
 
     api.post.mockResolvedValue({
@@ -135,7 +156,7 @@ describe('MealRecommendations', () => {
   });
 
   describe('API Integration', () => {
-    test('calls API to fetch meals on mount', async () => {
+    test('calls API to fetch recommendations on mount', async () => {
       render(
         <TestWrapper>
           <MealRecommendations />
@@ -143,7 +164,7 @@ describe('MealRecommendations', () => {
       );
 
       await waitFor(() => {
-        expect(api.get).toHaveBeenCalledWith('/meals');
+        expect(api.get).toHaveBeenCalledWith('/recommendations', expect.any(Object));
       });
     });
 
@@ -352,11 +373,11 @@ describe('MealRecommendations', () => {
 
   describe('Error Handling', () => {
     test('shows error message when no meals found', async () => {
-      api.get.mockResolvedValue({
-        data: {
-          success: true,
-          meals: []
+      api.get.mockImplementation((url) => {
+        if (url === '/recommendations') {
+          return Promise.resolve({ data: { success: true, recommendations: [] } });
         }
+        return Promise.resolve({ data: { success: true } });
       });
 
       render(
@@ -463,11 +484,19 @@ describe('MealRecommendations', () => {
         name: 'This is a very long meal name that should be truncated to prevent overflow issues in the UI'
       };
       
-      api.get.mockResolvedValue({
-        data: {
-          success: true,
-          meals: [longNameMeal]
+      api.get.mockImplementation((url) => {
+        if (url === '/recommendations') {
+          return Promise.resolve({ data: { success: true, recommendations: [{
+            meal_id: longNameMeal._id,
+            meal_name: longNameMeal.name,
+            meal_type: longNameMeal.mealType,
+            prep_time: longNameMeal.prepTime,
+            difficulty: longNameMeal.difficulty,
+            rating: longNameMeal.rating,
+            recommendation_type: 'existing_meal'
+          }] } });
         }
+        return Promise.resolve({ data: { success: true } });
       });
 
       render(
@@ -494,11 +523,19 @@ describe('MealRecommendations', () => {
         ]
       };
       
-      api.get.mockResolvedValue({
-        data: {
-          success: true,
-          meals: [manyIngredientsMeal]
+      api.get.mockImplementation((url) => {
+        if (url === '/recommendations') {
+          return Promise.resolve({ data: { success: true, recommendations: [{
+            meal_id: manyIngredientsMeal._id,
+            meal_name: manyIngredientsMeal.name,
+            meal_type: manyIngredientsMeal.mealType,
+            prep_time: manyIngredientsMeal.prepTime,
+            difficulty: manyIngredientsMeal.difficulty,
+            rating: manyIngredientsMeal.rating,
+            recommendation_type: 'existing_meal'
+          }] } });
         }
+        return Promise.resolve({ data: { success: true } });
       });
 
       render(
