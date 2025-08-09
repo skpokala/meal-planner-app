@@ -5,8 +5,6 @@ services:
   mongo:
     image: mongo:latest
     container_name: meal-planner-mongo-test
-    ports:
-      - "27019:27017"
     environment:
       MONGO_INITDB_DATABASE: meal_planner_test
     volumes:
@@ -26,6 +24,7 @@ services:
       - MONGODB_URI=mongodb://mongo:27017/meal_planner_test
       - JWT_SECRET=test-jwt-secret-key
       - NODE_ENV=test
+      - CI=true
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -48,7 +47,8 @@ services:
       - ./frontend/coverage:/app/coverage
     networks:
       - meal-planner-test-network
-    command: npm run test:ci
+    # Keep container alive after tests so backend can finish; CI uses exit code from backend-test
+    command: sh -c "npm run test:ci && tail -f /dev/null"
 
 volumes:
   mongo_test_data:
