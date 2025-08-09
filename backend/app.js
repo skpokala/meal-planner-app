@@ -17,6 +17,7 @@ const auditRoutes = require('./routes/audit');
 const releaseNotesRoutes = require('./routes/releaseNotes');
 const recommendationsRoutes = require('./routes/recommendations');
 const configRoutes = require('./routes/config');
+const locationRoutes = require('./routes/location');
 
 const app = express();
 
@@ -106,6 +107,7 @@ app.use('/api/audit', auditRoutes);
 app.use('/api/release-notes', releaseNotesRoutes);
 app.use('/api/recommendations', recommendationsRoutes);
 app.use('/api/config', configRoutes);
+app.use('/api/location', locationRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {

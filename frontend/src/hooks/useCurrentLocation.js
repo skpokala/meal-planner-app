@@ -36,21 +36,15 @@ export const useCurrentLocation = (autoDetect = false) => {
             timezone: 'America/New_York'
           };
 
-          // Try to get address from coordinates (reverse geocoding)
+          // Try to get address from coordinates (reverse geocoding via backend -> Google)
           try {
-            const response = await fetch(
-              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
-            );
+            const response = await fetch(`/api/location/reverse-geocode?lat=${latitude}&lng=${longitude}`);
             
             if (response.ok) {
               const data = await response.json();
-              locationData.address = {
-                street: data.locality || '',
-                city: data.city || '',
-                state: data.principalSubdivision || '',
-                zipCode: data.postcode || '',
-                country: data.countryCode || 'USA'
-              };
+              if (data.success && data.location) {
+                locationData.address = data.location.address;
+              }
             }
           } catch (error) {
             console.log('Reverse geocoding failed, using coordinates only:', error);

@@ -40,36 +40,14 @@ const AddressAutocomplete = ({
 
     setLoading(true);
     try {
-      // Using Nominatim (OpenStreetMap) - completely free, no API key required
-      // Reliable open-source geocoding service
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&countrycodes=us&q=${encodeURIComponent(query)}`,
-        {
-          headers: {
-            'User-Agent': 'MealPlannerApp/1.0'
-          }
-        }
-      );
+      // Use backend proxy to Google Geocoding API
+      const response = await fetch(`/api/location/search?q=${encodeURIComponent(query)}`);
       
       if (!response.ok) throw new Error('Failed to fetch suggestions');
       
       const data = await response.json();
-      
-      const formattedSuggestions = data.map(item => ({
-        id: item.place_id,
-        displayName: item.display_name,
-        address: {
-          street: extractStreetAddress(item.address),
-          city: item.address.city || item.address.town || item.address.village || '',
-          state: item.address.state || '',
-          zipCode: item.address.postcode || '',
-          country: item.address.country || 'USA'
-        },
-        lat: parseFloat(item.lat),
-        lon: parseFloat(item.lon)
-      }));
-      
-      setSuggestions(formattedSuggestions);
+      const formatted = Array.isArray(data.suggestions) ? data.suggestions : [];
+      setSuggestions(formatted);
       setShowSuggestions(true);
     } catch (error) {
       console.error('Error fetching address suggestions:', error);
