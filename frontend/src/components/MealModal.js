@@ -447,7 +447,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                 name="cuisine"
                 value={formData.cuisine}
                 onChange={handleInputChange}
-                className="input w-full"
+                className="select w-full"
                 disabled={loading}
               >
                 {cuisineTypes.map(cuisine => (
