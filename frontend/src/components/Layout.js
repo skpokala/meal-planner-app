@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Version from './Version';
 import ThemeToggle from './ThemeToggle';
+import { useLocationContext } from '../contexts/LocationContext';
+import { Navigation as NavigationIcon, MapPin } from 'lucide-react';
 import {
   Home,
   Users,
@@ -25,6 +27,7 @@ import {
 
 const Layout = ({ children }) => {
   const { user, logout, isSystemAdmin, isAdmin } = useAuth();
+  const { isCaptured, capture, loading: locLoading } = useLocationContext();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -253,8 +256,18 @@ const Layout = ({ children }) => {
               </div>
             </div>
 
-            {/* Theme dropdown and User menu */}
+            {/* Location capture, Theme dropdown and User menu */}
             <div className="flex items-center space-x-2">
+              <div
+                className={`flex items-center gap-2 px-3 py-2 rounded-card border ${
+                  isCaptured
+                    ? 'bg-success-50 dark:bg-success-900/20 border-success-200 dark:border-success-800 text-success-700 dark:text-success-300'
+                    : 'bg-secondary-50 dark:bg-secondary-800 border-secondary-200 dark:border-secondary-700 text-secondary-600 dark:text-secondary-400'
+                }`}
+                title={isCaptured ? 'Location captured' : 'Location not captured'}
+              >
+                <NavigationIcon className="w-4 h-4" />
+              </div>
               <ThemeToggle variant="dropdown" />
               <div className="relative flex-shrink-0">
                                 <button

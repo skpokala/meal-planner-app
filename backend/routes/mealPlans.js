@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const MealPlan = require('../models/MealPlan');
 const Meal = require('../models/Meal');
 const FamilyMember = require('../models/FamilyMember');
+const Audit = require('../models/Audit');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -236,6 +237,28 @@ router.post('/', [
 
     await mealPlan.save();
 
+    // Log audit with client location
+    try {
+      const clientInfo = {
+        ipAddress: req.headers['x-forwarded-for']?.split(',')[0].trim() || req.connection.remoteAddress || req.socket.remoteAddress || 'unknown',
+        userAgent: req.headers['user-agent'] || 'unknown'
+      };
+      await Audit.logEvent({
+        action: 'profile_update',
+        status: 'success',
+        userId: req.user._id,
+        userType: req.user.userType || 'User',
+        username: req.user.username,
+        userDisplayName: `${req.user.firstName} ${req.user.lastName}`,
+        userRole: req.user.role || 'user',
+        sessionId: null,
+        ipAddress: clientInfo.ipAddress,
+        userAgent: clientInfo.userAgent,
+        details: { entity: 'mealPlan', operation: 'create', mealPlanId: mealPlan._id },
+        location: req.clientLocation
+      });
+    } catch (_) {}
+
     // Populate the references for response
     await mealPlan.populate('meal', 'name description prepTime active');
     await mealPlan.populate('assignedTo', 'firstName lastName fullName');
@@ -345,6 +368,28 @@ router.put('/:id', [
       });
     }
 
+    // Log audit with client location
+    try {
+      const clientInfo = {
+        ipAddress: req.headers['x-forwarded-for']?.split(',')[0].trim() || req.connection.remoteAddress || req.socket.remoteAddress || 'unknown',
+        userAgent: req.headers['user-agent'] || 'unknown'
+      };
+      await Audit.logEvent({
+        action: 'profile_update',
+        status: 'success',
+        userId: req.user._id,
+        userType: req.user.userType || 'User',
+        username: req.user.username,
+        userDisplayName: `${req.user.firstName} ${req.user.lastName}`,
+        userRole: req.user.role || 'user',
+        sessionId: null,
+        ipAddress: clientInfo.ipAddress,
+        userAgent: clientInfo.userAgent,
+        details: { entity: 'mealPlan', operation: 'update', mealPlanId: mealPlan._id },
+        location: req.clientLocation
+      });
+    } catch (_) {}
+
     res.json({
       success: true,
       message: 'Meal plan updated successfully',
@@ -380,6 +425,28 @@ router.delete('/:id', async (req, res) => {
         message: 'Meal plan not found'
       });
     }
+
+    // Log audit with client location
+    try {
+      const clientInfo = {
+        ipAddress: req.headers['x-forwarded-for']?.split(',')[0].trim() || req.connection.remoteAddress || req.socket.remoteAddress || 'unknown',
+        userAgent: req.headers['user-agent'] || 'unknown'
+      };
+      await Audit.logEvent({
+        action: 'profile_update',
+        status: 'success',
+        userId: req.user._id,
+        userType: req.user.userType || 'User',
+        username: req.user.username,
+        userDisplayName: `${req.user.firstName} ${req.user.lastName}`,
+        userRole: req.user.role || 'user',
+        sessionId: null,
+        ipAddress: clientInfo.ipAddress,
+        userAgent: clientInfo.userAgent,
+        details: { entity: 'mealPlan', operation: 'delete', mealPlanId: req.params.id },
+        location: req.clientLocation
+      });
+    } catch (_) {}
 
     res.json({
       success: true,

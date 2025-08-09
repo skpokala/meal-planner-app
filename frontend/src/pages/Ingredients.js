@@ -17,25 +17,7 @@ const Ingredients = () => {
     name: '',
     quantity: '',
     unit: 'lbs',
-    store: '',
-    location: {
-      address: {
-        street: '',
-        city: '',
-        state: '',
-        zipCode: '',
-        country: 'USA'
-      },
-      coordinates: {
-        latitude: null,
-        longitude: null
-      },
-      timezone: 'America/New_York'
-    },
-    seasonality: {
-      availableMonths: [],
-      notes: ''
-    }
+    store: ''
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [storeFilter, setStoreFilter] = useState('');
@@ -64,20 +46,7 @@ const Ingredients = () => {
     { value: 'l', label: 'Liters (l)' }
   ];
 
-  const months = [
-    { value: 1, label: 'January' },
-    { value: 2, label: 'February' },
-    { value: 3, label: 'March' },
-    { value: 4, label: 'April' },
-    { value: 5, label: 'May' },
-    { value: 6, label: 'June' },
-    { value: 7, label: 'July' },
-    { value: 8, label: 'August' },
-    { value: 9, label: 'September' },
-    { value: 10, label: 'October' },
-    { value: 11, label: 'November' },
-    { value: 12, label: 'December' }
-  ];
+  
 
   useEffect(() => {
     fetchIngredients();
@@ -145,25 +114,7 @@ const Ingredients = () => {
       name: ingredient.name,
       quantity: ingredient.quantity.toString(),
       unit: ingredient.unit,
-      store: ingredient.store,
-      location: ingredient.location || {
-        address: {
-          street: '',
-          city: '',
-          state: '',
-          zipCode: '',
-          country: 'USA'
-        },
-        coordinates: {
-          latitude: null,
-          longitude: null
-        },
-        timezone: 'America/New_York'
-      },
-      seasonality: ingredient.seasonality || {
-        availableMonths: [],
-        notes: ''
-      }
+      store: ingredient.store
     });
     setShowModal(true);
   };
@@ -187,30 +138,7 @@ const Ingredients = () => {
   };
 
   const resetForm = () => {
-    setFormData({
-      name: '',
-      quantity: '',
-      unit: 'lbs',
-      store: '',
-      location: {
-        address: {
-          street: '',
-          city: '',
-          state: '',
-          zipCode: '',
-          country: 'USA'
-        },
-        coordinates: {
-          latitude: null,
-          longitude: null
-        },
-        timezone: 'America/New_York'
-      },
-      seasonality: {
-        availableMonths: [],
-        notes: ''
-      }
-    });
+    setFormData({ name: '', quantity: '', unit: 'lbs', store: '' });
     setEditingIngredient(null);
     setShowModal(false);
   };
@@ -479,69 +407,7 @@ const Ingredients = () => {
                   </div>
                 </div>
 
-                {/* Seasonality Information */}
-                <div className="space-y-4 border-t border-gray-200 pt-6">
-                  <h4 className="text-md font-medium text-gray-800">Seasonality</h4>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Available Months (Optional)
-                    </label>
-                    <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-                      {months.map(month => (
-                        <label key={month.value} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            checked={formData.seasonality.availableMonths.includes(month.value)}
-                            onChange={(e) => {
-                              const newMonths = e.target.checked
-                                ? [...formData.seasonality.availableMonths, month.value]
-                                : formData.seasonality.availableMonths.filter(m => m !== month.value);
-                              setFormData({
-                                ...formData,
-                                seasonality: {
-                                  ...formData.seasonality,
-                                  availableMonths: newMonths
-                                }
-                              });
-                            }}
-                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                          />
-                          <span className="text-sm text-gray-700">{month.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Seasonality Notes (Optional)
-                    </label>
-                    <textarea
-                      value={formData.seasonality.notes}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        seasonality: {
-                          ...formData.seasonality,
-                          notes: e.target.value
-                        }
-                      })}
-                      rows={2}
-                      maxLength={200}
-                      className="input w-full resize-none"
-                      placeholder="e.g., Peak season June-July in California"
-                    />
-                  </div>
-                </div>
-
-                {/* Location Information */}
-                <div className="border-t border-gray-200 pt-6">
-                  <LocationInput
-                    location={formData.location}
-                    onChange={(location) => setFormData(prev => ({ ...prev, location }))}
-                    label="Ingredient Source/Origin Location (Optional)"
-                  />
-                </div>
+                {/* Removed Seasonality and Ingredient Source sections as per requirements */}
 
                 <div className="flex justify-end space-x-3 pt-4">
                   <button

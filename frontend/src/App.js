@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { StoresProvider } from './contexts/StoresContext';
+import { LocationProvider } from './contexts/LocationContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -27,6 +28,7 @@ function App() {
       <AuthProvider>
         <ThemeProvider>
           <StoresProvider>
+            <LocationProvider>
             <Router>
             <ReleaseNotesWrapper>
               <Routes>
@@ -68,6 +70,7 @@ function App() {
               }}
             />
           </Router>
+            </LocationProvider>
           </StoresProvider>
         </ThemeProvider>
       </AuthProvider>

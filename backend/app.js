@@ -72,6 +72,25 @@ if (process.env.NODE_ENV === 'production') {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Middleware to parse client location from header/body and attach to req
+app.use((req, res, next) => {
+  try {
+    let clientLocation = null;
+    if (req.headers['x-client-location']) {
+      clientLocation = JSON.parse(req.headers['x-client-location']);
+    }
+    if (!clientLocation && req.body && req.body.clientLocation) {
+      clientLocation = req.body.clientLocation;
+    }
+    if (clientLocation) {
+      req.clientLocation = clientLocation;
+    }
+  } catch (_) {
+    // ignore malformed header
+  }
+  next();
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/2fa', twoFactorRoutes);

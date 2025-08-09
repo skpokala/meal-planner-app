@@ -436,7 +436,7 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
             </div>
           </div>
 
-          {/* Cuisine and Region */}
+          {/* Cuisine */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="cuisine" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
@@ -457,34 +457,11 @@ const MealModal = ({ meal, isOpen, onClose, onSave, onMealCreated, mode = 'edit'
                 ))}
               </select>
             </div>
-            
-            <div>
-              <label htmlFor="region" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
-                Region
-              </label>
-              <input
-                type="text"
-                id="region"
-                name="region"
-                value={formData.region}
-                onChange={handleInputChange}
-                className="input w-full"
-                placeholder="e.g., Southern USA, Mediterranean"
-                disabled={loading}
-              />
-            </div>
           </div>
 
-          {/* Location Information */}
-          <div className="border-t border-secondary-200 dark:border-secondary-700 pt-4">
-            <LocationInput
-              location={formData.location}
-              onChange={(location) => setFormData(prev => ({ ...prev, location }))}
-              label="Meal Origin/Popular Location"
-            />
-          </div>
+          {/* Location section removed as per requirements */}
 
-          {/* Ingredients Section */}
+           {/* Ingredients Section */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">

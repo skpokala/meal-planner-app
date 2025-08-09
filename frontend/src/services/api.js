@@ -49,6 +49,12 @@ const api = axios.create({
   withCredentials: false,
 });
 
+// Client location captured from UI; set via LocationContext
+let currentClientLocation = null;
+export const setClientLocation = (location) => {
+  currentClientLocation = location || null;
+};
+
 // Request interceptor to add auth token and cache busting
 api.interceptors.request.use(
   (config) => {
@@ -63,6 +69,25 @@ api.interceptors.request.use(
         ...config.params,
         _t: Date.now() // Cache busting timestamp
       };
+    }
+    
+    // Attach client location for mutating requests
+    const method = (config.method || 'get').toLowerCase();
+    if (['post', 'put', 'patch', 'delete'].includes(method)) {
+      try {
+        if (currentClientLocation) {
+          // Prefer body embedding for server-side parsing
+          if (config.data && typeof config.data === 'object') {
+            config.data = { ...config.data, clientLocation: currentClientLocation };
+          } else if (!config.data) {
+            config.data = { clientLocation: currentClientLocation };
+          }
+          // Also send as header for non-JSON bodies
+          config.headers['X-Client-Location'] = JSON.stringify(currentClientLocation);
+        }
+      } catch (_) {
+        // Ignore serialization issues silently
+      }
     }
     
     return config;

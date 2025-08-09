@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const mongoose = require('mongoose');
 const Store = require('../models/Store');
+const Audit = require('../models/Audit');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -135,6 +136,28 @@ router.post('/', [
     });
     
     await store.save();
+
+    // Log audit with client location
+    try {
+      const clientInfo = {
+        ipAddress: req.headers['x-forwarded-for']?.split(',')[0].trim() || req.connection.remoteAddress || req.socket.remoteAddress || 'unknown',
+        userAgent: req.headers['user-agent'] || 'unknown'
+      };
+      await Audit.logEvent({
+        action: 'profile_update',
+        status: 'success',
+        userId: req.user._id,
+        userType: req.user.userType || 'User',
+        username: req.user.username,
+        userDisplayName: `${req.user.firstName} ${req.user.lastName}`,
+        userRole: req.user.role || 'user',
+        sessionId: null,
+        ipAddress: clientInfo.ipAddress,
+        userAgent: clientInfo.userAgent,
+        details: { entity: 'store', operation: 'create', storeId: store._id },
+        location: req.clientLocation
+      });
+    } catch (_) {}
     
     // Populate the created store
     await store.populate('createdBy', 'firstName lastName username');
@@ -239,6 +262,28 @@ router.put('/:id', [
     if (isActive !== undefined) store.isActive = isActive;
     
     await store.save();
+
+    // Log audit with client location
+    try {
+      const clientInfo = {
+        ipAddress: req.headers['x-forwarded-for']?.split(',')[0].trim() || req.connection.remoteAddress || req.socket.remoteAddress || 'unknown',
+        userAgent: req.headers['user-agent'] || 'unknown'
+      };
+      await Audit.logEvent({
+        action: 'profile_update',
+        status: 'success',
+        userId: req.user._id,
+        userType: req.user.userType || 'User',
+        username: req.user.username,
+        userDisplayName: `${req.user.firstName} ${req.user.lastName}`,
+        userRole: req.user.role || 'user',
+        sessionId: null,
+        ipAddress: clientInfo.ipAddress,
+        userAgent: clientInfo.userAgent,
+        details: { entity: 'store', operation: 'update', storeId: store._id },
+        location: req.clientLocation
+      });
+    } catch (_) {}
     
     // Populate the updated store
     await store.populate('createdBy', 'firstName lastName username');
@@ -298,6 +343,28 @@ router.delete('/:id', async (req, res) => {
     store.isActive = false;
     await store.save();
     
+    // Log audit with client location
+    try {
+      const clientInfo = {
+        ipAddress: req.headers['x-forwarded-for']?.split(',')[0].trim() || req.connection.remoteAddress || req.socket.remoteAddress || 'unknown',
+        userAgent: req.headers['user-agent'] || 'unknown'
+      };
+      await Audit.logEvent({
+        action: 'profile_update',
+        status: 'success',
+        userId: req.user._id,
+        userType: req.user.userType || 'User',
+        username: req.user.username,
+        userDisplayName: `${req.user.firstName} ${req.user.lastName}`,
+        userRole: req.user.role || 'user',
+        sessionId: null,
+        ipAddress: clientInfo.ipAddress,
+        userAgent: clientInfo.userAgent,
+        details: { entity: 'store', operation: 'delete', storeId: req.params.id },
+        location: req.clientLocation
+      });
+    } catch (_) {}
+
     res.json({
       success: true,
       message: 'Store deleted successfully'

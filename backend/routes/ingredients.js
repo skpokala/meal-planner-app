@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const mongoose = require('mongoose');
 const Ingredient = require('../models/Ingredient');
 const Store = require('../models/Store');
+const Audit = require('../models/Audit');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -183,6 +184,28 @@ router.post('/', [
     });
     
     await ingredient.save();
+
+    // Log audit with client location
+    try {
+      const clientInfo = {
+        ipAddress: req.headers['x-forwarded-for']?.split(',')[0].trim() || req.connection.remoteAddress || req.socket.remoteAddress || 'unknown',
+        userAgent: req.headers['user-agent'] || 'unknown'
+      };
+      await Audit.logEvent({
+        action: 'profile_update',
+        status: 'success',
+        userId: req.user._id,
+        userType: req.user.userType || 'User',
+        username: req.user.username,
+        userDisplayName: `${req.user.firstName} ${req.user.lastName}`,
+        userRole: req.user.role || 'user',
+        sessionId: null,
+        ipAddress: clientInfo.ipAddress,
+        userAgent: clientInfo.userAgent,
+        details: { entity: 'ingredient', operation: 'create', ingredientId: ingredient._id },
+        location: req.clientLocation
+      });
+    } catch (_) {}
     
     // Populate the created ingredient
     await ingredient.populate([
@@ -300,6 +323,28 @@ router.put('/:id', [
     if (isActive !== undefined) ingredient.isActive = isActive;
     
     await ingredient.save();
+
+    // Log audit with client location
+    try {
+      const clientInfo = {
+        ipAddress: req.headers['x-forwarded-for']?.split(',')[0].trim() || req.connection.remoteAddress || req.socket.remoteAddress || 'unknown',
+        userAgent: req.headers['user-agent'] || 'unknown'
+      };
+      await Audit.logEvent({
+        action: 'profile_update',
+        status: 'success',
+        userId: req.user._id,
+        userType: req.user.userType || 'User',
+        username: req.user.username,
+        userDisplayName: `${req.user.firstName} ${req.user.lastName}`,
+        userRole: req.user.role || 'user',
+        sessionId: null,
+        ipAddress: clientInfo.ipAddress,
+        userAgent: clientInfo.userAgent,
+        details: { entity: 'ingredient', operation: 'update', ingredientId: ingredient._id },
+        location: req.clientLocation
+      });
+    } catch (_) {}
     
     // Populate the updated ingredient
     await ingredient.populate([
@@ -362,6 +407,28 @@ router.delete('/:id', async (req, res) => {
     ingredient.isActive = false;
     await ingredient.save();
     
+    // Log audit with client location
+    try {
+      const clientInfo = {
+        ipAddress: req.headers['x-forwarded-for']?.split(',')[0].trim() || req.connection.remoteAddress || req.socket.remoteAddress || 'unknown',
+        userAgent: req.headers['user-agent'] || 'unknown'
+      };
+      await Audit.logEvent({
+        action: 'profile_update',
+        status: 'success',
+        userId: req.user._id,
+        userType: req.user.userType || 'User',
+        username: req.user.username,
+        userDisplayName: `${req.user.firstName} ${req.user.lastName}`,
+        userRole: req.user.role || 'user',
+        sessionId: null,
+        ipAddress: clientInfo.ipAddress,
+        userAgent: clientInfo.userAgent,
+        details: { entity: 'ingredient', operation: 'delete', ingredientId: req.params.id },
+        location: req.clientLocation
+      });
+    } catch (_) {}
+
     res.json({
       success: true,
       message: 'Ingredient deleted successfully'

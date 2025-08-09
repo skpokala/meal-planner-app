@@ -58,6 +58,21 @@ const auditSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  // Client-side location info if provided
+  location: {
+    address: {
+      street: { type: String, trim: true, maxlength: 100 },
+      city: { type: String, trim: true, maxlength: 50 },
+      state: { type: String, trim: true, maxlength: 50 },
+      zipCode: { type: String, trim: true, maxlength: 20 },
+      country: { type: String, trim: true, maxlength: 50 }
+    },
+    coordinates: {
+      latitude: { type: Number, min: -90, max: 90 },
+      longitude: { type: Number, min: -180, max: 180 }
+    },
+    timezone: { type: String, trim: true, maxlength: 50 }
+  },
   
   // Additional Details
   details: {
@@ -103,6 +118,7 @@ auditSchema.statics.logEvent = async function(eventData) {
       sessionId: eventData.sessionId,
       ipAddress: eventData.ipAddress,
       userAgent: eventData.userAgent,
+      location: eventData.location,
       details: eventData.details ? JSON.stringify(eventData.details) : '',
       failureReason: eventData.failureReason,
       expiresAt: new Date(Date.now() + (365 * 24 * 60 * 60 * 1000)) // 1 year retention
