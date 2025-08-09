@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Clock, Star, ChefHat, Users, ThumbsUp, ThumbsDown, RefreshCw, Lightbulb, Calendar, Plus } from 'lucide-react';
+import { Clock, Star, ChefHat, Users, ThumbsUp, ThumbsDown, RefreshCw, Lightbulb, Calendar, Plus, Info } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -17,6 +17,8 @@ const MealRecommendations = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [context, setContext] = useState({});
+  const [showModeInfo, setShowModeInfo] = useState(false);
+  const modeInfoRef = useRef(null);
 
   // Meal planning modal states
   const [showMealPlanModal, setShowMealPlanModal] = useState(false);
@@ -33,65 +35,92 @@ const MealRecommendations = ({
       setLoading(false);
       return;
     }
-    
     setLoading(true);
     setError('');
-    
     try {
-      // Use the proper API service instead of raw fetch
-      const response = await api.get('/meals');
+      // Call backend recommendations endpoint (uses ML service with fallback)
+      const response = await api.get('/recommendations', {
+        params: {
+          meal_type: mealType || undefined,
+          top_n: maxRecommendations,
+        },
+      });
 
-      if (response.data.success && response.data.meals && response.data.meals.length > 0) {
-        // Transform existing meals into recommendation format
-        const mealRecommendations = response.data.meals
-          .filter(meal => meal.active) // Only active meals
-          .filter(meal => !mealType || meal.mealType === mealType) // Filter by meal type if specified
-          .map(meal => ({
-            meal_id: meal._id,
-            meal_name: meal.name,
-            meal_type: meal.meal_type || meal.mealType || 'dinner',
-            prep_time: meal.prepTime || 30,
-            difficulty: meal.difficulty || 'medium',
-            rating: meal.rating || 4.2,
-            recommendation_type: 'existing_meal',
-            popularity_score: 0.8,
-            ingredients: meal.ingredients?.slice(0, 4).map(ing => ing.ingredient?.name || 'ingredient').filter(Boolean) || [],
-            description: meal.description || `Delicious ${meal.name.toLowerCase()}`
-          }))
-          .slice(0, maxRecommendations); // Limit to requested number
+      if (response.data?.success && Array.isArray(response.data.recommendations)) {
+        let recs = response.data.recommendations.map((rec) => ({
+          meal_id: rec.meal_id || rec.mealId || rec._id,
+          meal_name: rec.meal_name || rec.mealName || rec.name,
+          meal_type: rec.meal_type || rec.mealType || 'dinner',
+          prep_time: rec.prep_time ?? rec.prepTime ?? 0,
+          difficulty: rec.difficulty || 'medium',
+          rating: rec.rating ?? 0,
+          recommendation_type: rec.recommendation_type || 'recommended',
+          popularity_score: rec.popularity_score ?? 0,
+          similarity_score: rec.similarity_score,
+          prediction_score: rec.prediction_score,
+          display_score: typeof rec.display_score === 'number' ? rec.display_score : undefined,
+          ingredients: rec.ingredients || [],
+          description: rec.description || '',
+        }));
 
-        setRecommendations(mealRecommendations);
-        setContext({ 
-          fallback: false, 
-          message: `Showing ${mealRecommendations.length} of your existing meals`,
-          models_used: ['existing_meals']
+        // If server didn't provide display_score, compute a safe fallback normalization
+        const missingDisplay = recs.every(r => typeof r.display_score !== 'number');
+        if (missingDisplay) {
+          const maxPopularity = Math.max(0, ...recs.map(r => (typeof r.popularity_score === 'number' ? r.popularity_score : 0)));
+          recs = recs.map(r => {
+            const raw = (typeof r.similarity_score === 'number')
+              ? r.similarity_score
+              : (typeof r.prediction_score === 'number')
+                ? r.prediction_score
+                : (typeof r.popularity_score === 'number' && maxPopularity > 0)
+                  ? r.popularity_score / maxPopularity
+                  : 0;
+            const display_score = Math.max(0, Math.min(1, raw));
+            return { ...r, display_score };
+          });
+        }
+
+        // Client-side fallback to existing active meals if still no results
+        if (recs.length === 0) {
+          const mealsResp = await api.get('/meals', { params: { active: true } });
+          recs = (mealsResp.data.meals || [])
+            .filter(m => m.active)
+            .filter(m => !mealType || m.mealType === mealType)
+            .slice(0, maxRecommendations)
+            .map(m => ({
+              meal_id: m._id,
+              meal_name: m.name,
+              meal_type: m.mealType || 'dinner',
+              prep_time: m.prepTime || 0,
+              difficulty: m.difficulty || 'medium',
+              rating: m.rating || 0,
+              recommendation_type: 'existing_meal',
+              display_score: 0,
+              ingredients: m.ingredients?.slice(0, 4).map(ing => ing.ingredient?.name || 'ingredient').filter(Boolean) || [],
+              description: m.description || ''
+            }));
+        }
+
+        setRecommendations(recs);
+        const ctx = response.data.context || {};
+        setContext({
+          fallback: !!ctx.fallback,
+          message: ctx.message || '',
+          models_used: ctx.models_used || ctx.models || [],
+          scoring_mode: ctx.scoring_mode || null,
         });
-        setError(''); // Clear any previous errors
+        setError('');
       } else {
-        // No meals found - show empty state
         setRecommendations([]);
-        setContext({ 
-          fallback: false, 
-          message: 'No meals found. Create some meals to see recommendations!',
-          models_used: ['empty']
-        });
+        setContext({ fallback: false, message: 'No recommendations available', models_used: [] });
       }
-      
     } catch (err) {
       console.error('❌ Error fetching meal recommendations:', err);
-      setError('Failed to fetch meals');
-      
-      // Show empty state instead of fallback recommendations
+      setError('Failed to load recommendations');
       setRecommendations([]);
-      setContext({ 
-        fallback: true, 
-        message: 'Unable to load recommendations. Please try again.',
-        models_used: ['error']
-      });
+      setContext({ fallback: true, message: 'Unable to load recommendations. Please try again.', models_used: ['error'] });
     } finally {
-      flushSync(() => {
-        setLoading(false);
-      });
+      flushSync(() => setLoading(false));
     }
   };
 
@@ -172,6 +201,47 @@ const MealRecommendations = ({
       default: return 'Recommended';
     }
   };
+  
+  // Close the model tooltip when clicking outside
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (modeInfoRef.current && !modeInfoRef.current.contains(e.target)) {
+        setShowModeInfo(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
+
+  const formatScoringMode = (mode) => {
+    const map = {
+      top_normalized: 'Top-normalized',
+      fixed_exponential: 'Fixed-scale',
+      percentile: 'Percentile',
+      zscore_sigmoid: 'Z-score',
+      log_count: 'Log-count',
+      bayesian: 'Bayesian',
+      decile: 'Decile',
+      wilson: 'Wilson',
+      multi_factor: 'Multi-factor'
+    };
+    return map[mode] || mode;
+  };
+
+  const getScoringModeDescription = (mode) => {
+    switch (mode) {
+      case 'top_normalized': return 'Scales each list so the top item is 100% (relative within the current results).';
+      case 'fixed_exponential': return 'Maps a recency-weighted rate using an exponential curve for stable cross-page comparison.';
+      case 'percentile': return 'Shows the percentile rank among similar meals (by type).';
+      case 'zscore_sigmoid': return 'Converts scores to z-scores and maps via a sigmoid to emphasize above-average meals.';
+      case 'log_count': return 'Uses log(1 + usage) against a fixed cap to dampen outliers.';
+      case 'bayesian': return 'Applies a prior to stabilize low-sample meals before scaling to percent.';
+      case 'decile': return 'Ranks by deciles (top 10% = 100%, next 10% = 90%, etc.).';
+      case 'wilson': return 'Shows a conservative confidence lower bound of popularity proportion.';
+      case 'multi_factor': return 'Combines recency, rating, and prep time into a single score with fixed weights.';
+      default: return 'Recommendation relevance based on the current scoring model.';
+    }
+  };
 
   // Handle opening meal plan modal
   const handleAddToMealPlan = (recommendation) => {
@@ -231,7 +301,7 @@ const MealRecommendations = ({
     if (user) {
       fetchRecommendations();
     }
-  }, [user?.id]); // Depend on stable user ID instead of entire user object
+  }, [user?.id, mealType, maxRecommendations]);
 
   if (!user) return null;
 
@@ -263,18 +333,36 @@ const MealRecommendations = ({
           </button>
         </div>
         
-        {context && (
+            {context && (
           <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            {context.fallback ? (
-              <span className="flex items-center text-yellow-600 dark:text-yellow-400">
-                ⚠️ <span className="ml-1 break-all">{context.message}</span>
-              </span>
-            ) : (
-              <span className="break-words">
-                Personalized for {mealType || 'any meal'} • 
-                Models used: {context.models_used?.join(', ') || 'AI'}
-              </span>
-            )}
+                {context.fallback ? (
+                  <span className="flex items-center text-yellow-600 dark:text-yellow-400">
+                    ⚠️ <span className="ml-1 break-all">{context.message}</span>
+                  </span>
+                ) : (
+                  <span className="break-words">
+                    Personalized for {mealType || 'any meal'} • Models used: {context.models_used?.join(', ') || 'AI'}
+                  </span>
+                )}
+                {context.scoring_mode && (
+                  <span ref={modeInfoRef} className="ml-2 relative inline-flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                    <span className="font-medium">{formatScoringMode(context.scoring_mode)}</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowModeInfo((v) => !v)}
+                      aria-expanded={showModeInfo}
+                      aria-label="Show recommendation model details"
+                      className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      <Info className="w-3.5 h-3.5 opacity-80 hover:opacity-100" />
+                    </button>
+                    {showModeInfo && (
+                      <div className="absolute z-10 left-full ml-2 top-1/2 -translate-y-1/2 w-72 p-3 rounded-md shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-300">
+                        {getScoringModeDescription(context.scoring_mode)}
+                      </div>
+                    )}
+                  </span>
+                )}
           </div>
         )}
       </div>
@@ -282,7 +370,7 @@ const MealRecommendations = ({
       <div className="flex-1 overflow-y-auto min-h-0 w-full" 
            style={{ 
              maxWidth: '100%', 
-             overflow: 'auto hidden',
+             overflow: 'hidden auto',
              boxSizing: 'border-box'
            }}>
         <div className="p-4 w-full" style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
@@ -421,18 +509,18 @@ const MealRecommendations = ({
                     )}
 
                     {/* Confidence score - compact version */}
-                    {(recommendation.similarity_score || recommendation.prediction_score || recommendation.popularity_score) && (
+                    {(typeof recommendation.display_score === 'number') && (
                       <div className="mt-2">
                         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1">
                           <div 
                             className="bg-blue-600 h-1 rounded-full" 
                             style={{ 
-                              width: `${Math.round((recommendation.similarity_score || recommendation.prediction_score || recommendation.popularity_score) * 100)}%` 
+                              width: `${Math.max(0, Math.min(100, Math.round((recommendation.display_score || 0) * 100)))}%` 
                             }}
                           ></div>
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {Math.round((recommendation.similarity_score || recommendation.prediction_score || recommendation.popularity_score) * 100)}% match
+                          {Math.max(0, Math.min(100, Math.round((recommendation.display_score || 0) * 100)))}% match
                         </div>
                       </div>
                     )}

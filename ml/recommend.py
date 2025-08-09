@@ -33,6 +33,9 @@ class MealRecommendationEngine:
         self.tfidf_vectorizer = None
         self.scaler = None
         self.available_meals_df = None
+        self.meal_usage_counts = {}
+        self.meal_usage_scores = {}
+        self.recency_half_life_days = 30
         
     def load_models(self):
         """Load all trained models and preprocessors"""
@@ -42,6 +45,32 @@ class MealRecommendationEngine:
             if os.path.exists(meals_path):
                 self.available_meals_df = pd.read_csv(meals_path)
                 logger.info(f"Loaded {len(self.available_meals_df)} available meals")
+
+            # Load meal usage history for popularity based on planner usage
+            history_path = os.path.join(self.data_dir, 'meal_history.csv')
+            if os.path.exists(history_path):
+                try:
+                    history_df = pd.read_csv(history_path, parse_dates=['date'], infer_datetime_format=True)
+                    if 'meal_id' in history_df.columns:
+                        self.meal_usage_counts = history_df['meal_id'].value_counts().to_dict()
+                        logger.info(f"Loaded usage counts for {len(self.meal_usage_counts)} meals")
+                        # Recency-weighted usage score with exponential decay
+                        now = datetime.now()
+                        if 'date' in history_df.columns:
+                            # Clean invalid dates
+                            history_df['date'] = pd.to_datetime(history_df['date'], errors='coerce')
+                            history_df = history_df.dropna(subset=['date'])
+                            # Limit to last 180 days to avoid ancient influence
+                            cutoff = now - pd.Timedelta(days=180)
+                            recent_df = history_df[history_df['date'] >= cutoff].copy()
+                            if not recent_df.empty:
+                                decay = np.log(2) / max(1, self.recency_half_life_days)
+                                recent_df['age_days'] = (now - recent_df['date']).dt.days.clip(lower=0)
+                                recent_df['weight'] = np.exp(-decay * recent_df['age_days'])
+                                self.meal_usage_scores = recent_df.groupby('meal_id')['weight'].sum().to_dict()
+                                logger.info(f"Computed recency-weighted usage scores for {len(self.meal_usage_scores)} meals")
+                except Exception as e:
+                    logger.warning(f"Failed to load meal history: {e}")
             
             # Load content-based model
             try:
@@ -279,27 +308,32 @@ class MealRecommendationEngine:
             return []
     
     def get_popular_recommendations(self, top_n=10, meal_type=None):
-        """Get popular meal recommendations as fallback"""
+        """Get popular meal recommendations based on recency-weighted planner usage"""
         try:
             if self.available_meals_df is None:
                 logger.error("Available meals data not loaded")
                 return []
             
-            # Filter by meal type if specified
             meals_df = self.available_meals_df.copy()
+            # Weighted recency score; fallback to raw count when score missing
+            meals_df['usage_score'] = meals_df['meal_id'].map(lambda m: float(self.meal_usage_scores.get(m, 0.0)))
+            meals_df['usage_count'] = meals_df['meal_id'].map(lambda m: int(self.meal_usage_counts.get(m, 0)))
+            if meals_df['usage_score'].sum() == 0 and meals_df['usage_count'].sum() > 0:
+                meals_df['usage_score'] = meals_df['usage_count'].astype(float)
+
+            # Filter by meal type if specified
             if meal_type:
                 meals_df = meals_df[meals_df['meal_type'] == meal_type]
-            
-            # Sort by rating and ingredient count (proxy for popularity)
-            meals_df['popularity_score'] = meals_df['rating'] * 0.7 + (meals_df['ingredient_count'] / 10) * 0.3
-            meals_df = meals_df.sort_values('popularity_score', ascending=False)
+
+            # Popularity by usage_score; tie-break by usage_count then rating
+            meals_df = meals_df.sort_values(['usage_score', 'usage_count', 'rating'], ascending=[False, False, False])
             
             recommendations = []
             for _, meal in meals_df.head(top_n).iterrows():
                 recommendations.append({
                     'meal_id': meal['meal_id'],
                     'meal_name': meal['meal_name'],
-                    'popularity_score': float(meal['popularity_score']),
+                    'popularity_score': float(meal['usage_score']),
                     'recommendation_type': 'popular',
                     'meal_type': meal['meal_type'],
                     'prep_time': meal['prep_time'],

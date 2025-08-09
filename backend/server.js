@@ -19,6 +19,7 @@ const releaseNotesRoutes = require('./routes/releaseNotes');
 const bugRoutes = require('./routes/bugs');
 const backupRoutes = require('./routes/backup');
 const recommendationsRoutes = require('./routes/recommendations');
+const configRoutes = require('./routes/config');
 
 const app = express();
 
@@ -108,6 +109,7 @@ app.use('/api/release-notes', releaseNotesRoutes);
 app.use('/api/bugs', bugRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/recommendations', recommendationsRoutes);
+app.use('/api/config', configRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

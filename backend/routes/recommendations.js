@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const axios = require('axios');
+const Config = require('../models/Config');
 
 // ML Service URL
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://ml-service:5003';
@@ -20,7 +21,7 @@ router.get('/', authenticateToken, async (req, res) => {
     const now = new Date();
     const context = {
       hour: now.getHours(),
-      day_of_week: now.toLocaleLowerCase(now.toLocaleDateString('en-US', { weekday: 'long' })),
+      day_of_week: now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase(),
       month: now.getMonth() + 1
     };
     
@@ -37,10 +38,30 @@ router.get('/', authenticateToken, async (req, res) => {
     });
     
     if (mlResponse.data.success) {
+      const scoringMode = await getScoringMode();
+      const recs = Array.isArray(mlResponse.data.data?.recommendations)
+        ? mlResponse.data.data.recommendations
+        : [];
+      if (recs.length === 0) {
+        // Fallback if ML returned no recs
+        const fallbackRecommendations = await getFallbackRecommendations(req);
+        return res.json({
+          success: true,
+          recommendations: await attachDisplayScores(fallbackRecommendations),
+          context: {
+            ...(mlResponse.data.data?.recommendation_context || {}),
+            fallback: true,
+            message: 'No ML recommendations, showing popular meals',
+            models_used: ['fallback_popular'],
+            scoring_mode: scoringMode
+          },
+          timestamp: new Date().toISOString()
+        });
+      }
       res.json({
         success: true,
-        recommendations: mlResponse.data.data.recommendations,
-        context: mlResponse.data.data.recommendation_context,
+        recommendations: await attachDisplayScores(recs),
+        context: { ...(mlResponse.data.data.recommendation_context || {}), scoring_mode: scoringMode },
         timestamp: new Date().toISOString()
       });
     } else {
@@ -56,15 +77,17 @@ router.get('/', authenticateToken, async (req, res) => {
     // If ML service is unavailable, provide fallback recommendations
     if (error.code === 'ECONNREFUSED' || error.response?.status >= 500) {
       try {
+        const scoringMode = await getScoringMode();
         const fallbackRecommendations = await getFallbackRecommendations(req);
         res.json({
           success: true,
-          recommendations: fallbackRecommendations,
+          recommendations: await attachDisplayScores(fallbackRecommendations),
           context: {
             user_id: req.user.id,
             meal_type: req.query.meal_type,
             fallback: true,
-            message: 'ML service unavailable, showing popular meals'
+            message: 'ML service unavailable, showing popular meals',
+            scoring_mode: scoringMode
           },
           timestamp: new Date().toISOString()
         });
@@ -98,7 +121,7 @@ router.post('/', authenticateToken, async (req, res) => {
     const now = new Date();
     const requestContext = {
       hour: now.getHours(),
-      day_of_week: now.toLocaleLowerCase(now.toLocaleDateString('en-US', { weekday: 'long' })),
+      day_of_week: now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase(),
       month: now.getMonth() + 1,
       ...context
     };
@@ -273,32 +296,186 @@ router.get('/status', authenticateToken, async (req, res) => {
  */
 async function getFallbackRecommendations(req) {
   const Meal = require('../models/Meal');
+  const MealPlan = require('../models/MealPlan');
   const { meal_type } = req.query;
-  
-  // Build query
-  const query = {};
-  if (meal_type) {
-    query.type = meal_type;
+  const topN = parseInt(req.query.top_n, 10) || 5;
+
+  // 30-day window
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  // Aggregate most used meals in the last month (optionally by meal_type)
+  const matchStage = { date: { $gte: since } };
+  if (meal_type) matchStage.mealType = meal_type;
+
+  const usage = await MealPlan.aggregate([
+    { $match: matchStage },
+    { $group: { _id: '$meal', count: { $sum: 1 }, sampleType: { $first: '$mealType' } } },
+    { $sort: { count: -1 } },
+    { $limit: topN }
+  ]);
+
+  // Fetch meal docs for these IDs in the same order
+  const popularIds = usage.map(u => u._id).filter(Boolean);
+  let popularMeals = [];
+  if (popularIds.length > 0) {
+    const docs = await Meal.find({ _id: { $in: popularIds }, active: true })
+      .populate('ingredients.ingredient', 'name')
+      .lean();
+    const idToMeal = new Map(docs.map(d => [d._id.toString(), d]));
+    popularMeals = usage
+      .map(u => ({ usage: u, meal: idToMeal.get(u._id?.toString()) }))
+      .filter(x => !!x.meal)
+      .map(({ usage: u, meal }) => ({
+        meal_id: meal._id.toString(),
+        meal_name: meal.name,
+        meal_type: meal_type || u.sampleType || 'dinner',
+        prep_time: meal.prepTime || 0,
+        difficulty: meal.difficulty || 'medium',
+        rating: meal.rating || 0,
+        recommendation_type: 'fallback_popular',
+        popularity_score: u.count,
+        ingredients: (meal.ingredients || [])
+          .map(ing => ing.ingredient?.name)
+          .filter(Boolean)
+      }));
   }
-  
-  // Get popular meals (by rating)
-  const meals = await Meal.find(query)
-    .populate('ingredients', 'name unit')
-    .sort({ rating: -1, createdAt: -1 })
-    .limit(5)
-    .lean();
-  
-  return meals.map(meal => ({
-    meal_id: meal._id.toString(),
-    meal_name: meal.name,
-    meal_type: meal.type,
-    prep_time: meal.prepTime,
-    difficulty: meal.difficulty,
-    rating: meal.rating,
-    recommendation_type: 'fallback_popular',
-    popularity_score: meal.rating || 0,
-    ingredients: meal.ingredients ? meal.ingredients.map(ing => ing.name) : []
-  }));
+
+  // If we still need more, fill with recent active meals not already included
+  if (popularMeals.length < topN) {
+    const excludeIds = new Set(popularMeals.map(r => r.meal_id));
+    const fillers = await Meal.find({ active: true, _id: { $nin: Array.from(excludeIds) } })
+      .sort({ createdAt: -1 })
+      .limit(topN - popularMeals.length)
+      .populate('ingredients.ingredient', 'name')
+      .lean();
+    const fillerRecs = fillers.map(meal => ({
+      meal_id: meal._id.toString(),
+      meal_name: meal.name,
+      meal_type: meal_type || 'dinner',
+      prep_time: meal.prepTime || 0,
+      difficulty: meal.difficulty || 'medium',
+      rating: meal.rating || 0,
+      recommendation_type: 'existing_meal',
+      popularity_score: 0,
+      ingredients: (meal.ingredients || [])
+        .map(ing => ing.ingredient?.name)
+        .filter(Boolean)
+    }));
+    popularMeals = popularMeals.concat(fillerRecs);
+  }
+
+  return popularMeals;
+}
+
+// Admin-configurable scoring model for display_score normalization
+// modes: 'top_normalized', 'fixed_exponential', 'percentile', 'zscore_sigmoid', 'log_count', 'bayesian', 'decile', 'wilson', 'multi_factor'
+async function getScoringMode() {
+  try {
+    const doc = await Config.findOne({ key: 'recommendation_scoring_mode' }).lean();
+    return doc?.value || 'top_normalized';
+  } catch (_) {
+    return 'top_normalized';
+  }
+}
+
+async function attachDisplayScores(recommendations) {
+  const mode = await getScoringMode();
+  if (!Array.isArray(recommendations) || recommendations.length === 0) return [];
+
+  const recs = recommendations.map(r => ({ ...r }));
+  const getNum = v => (typeof v === 'number' && isFinite(v) ? v : 0);
+
+  // Preferred score fields in order
+  const baseScores = recs.map(r => getNum(r.similarity_score) || getNum(r.prediction_score) || getNum(r.popularity_score));
+  const maxBase = Math.max(0, ...baseScores);
+  const mean = baseScores.reduce((a, b) => a + b, 0) / (baseScores.length || 1);
+  const variance = baseScores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (baseScores.length || 1);
+  const std = Math.sqrt(variance) || 1;
+
+  // Percentiles
+  const sorted = [...baseScores].sort((a, b) => a - b);
+  const pct = s => {
+    const idx = sorted.findIndex(v => v >= s);
+    const rank = idx === -1 ? sorted.length : idx + 1;
+    return rank / (sorted.length || 1);
+  };
+
+  const clamp01 = x => Math.max(0, Math.min(1, x));
+  const sigmoid = x => 1 / (1 + Math.exp(-x));
+
+  // Multi-factor components (if present)
+  const maxRating = Math.max(1, ...recs.map(r => getNum(r.rating)));
+  const maxPrep = Math.max(1, ...recs.map(r => getNum(r.prep_time)));
+
+  const scored = recs.map((r, i) => {
+    const raw = baseScores[i];
+    let ds = 0;
+    switch (mode) {
+      case 'fixed_exponential': {
+        const k = 2.0; // tune steepness
+        const r = raw; // interpret as rate/score already; scale by a softmax over list
+        const scaled = maxBase > 0 ? r / maxBase : 0;
+        ds = 1 - Math.exp(-k * scaled);
+        break;
+      }
+      case 'percentile': {
+        ds = pct(raw);
+        break;
+      }
+      case 'zscore_sigmoid': {
+        const z = (raw - mean) / std;
+        const k = 1.2;
+        ds = sigmoid(k * z);
+        break;
+      }
+      case 'log_count': {
+        ds = maxBase > 0 ? Math.log(1 + raw) / Math.log(1 + maxBase) : 0;
+        break;
+      }
+      case 'bayesian': {
+        // Prior on global mean with strength alpha
+        const alpha = 10;
+        const prior = mean;
+        ds = clamp01(((raw + alpha * prior) / (1 + alpha)) / (maxBase || 1));
+        break;
+      }
+      case 'decile': {
+        const p = pct(raw);
+        ds = Math.ceil(p * 10) / 10;
+        break;
+      }
+      case 'wilson': {
+        // Treat raw/maxBase as proportion
+        const p = clamp01(maxBase > 0 ? raw / maxBase : 0);
+        const n = Math.max(1, baseScores.length);
+        const z = 1.96; // 95%
+        const denominator = 1 + (z * z) / n;
+        const centre = p + (z * z) / (2 * n);
+        const margin = z * Math.sqrt((p * (1 - p) + (z * z) / (4 * n)) / n);
+        const lower = (centre - margin) / denominator;
+        ds = clamp01(lower);
+        break;
+      }
+      case 'multi_factor': {
+        const wRec = 0.5;
+        const wRating = 0.3;
+        const wFresh = 0.2;
+        const recNorm = maxBase > 0 ? raw / maxBase : 0;
+        const ratingNorm = maxRating > 0 ? getNum(r.rating) / maxRating : 0;
+        const prepNorm = maxPrep > 0 ? 1 - (getNum(r.prep_time) / maxPrep) : 0; // shorter prep preferred
+        ds = clamp01(wRec * recNorm + wRating * ratingNorm + wFresh * prepNorm);
+        break;
+      }
+      case 'top_normalized':
+      default: {
+        ds = maxBase > 0 ? raw / maxBase : 0;
+        break;
+      }
+    }
+    r.display_score = clamp01(ds);
+    return r;
+  });
+  return scored;
 }
 
 module.exports = router; 

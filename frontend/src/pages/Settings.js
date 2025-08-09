@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { User, Lock, Save, Shield, MapPin } from 'lucide-react';
+import { User, Lock, Save, Shield, MapPin, SlidersHorizontal } from 'lucide-react';
+import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import TwoFactorSetup from '../components/TwoFactorSetup';
+import RecommendationAdminPanel from '../components/RecommendationAdminPanel';
 import LocationInput from '../components/LocationInput';
 import LocationDisplay from '../components/LocationDisplay';
 import LocationPrompt from '../components/LocationPrompt';
@@ -205,7 +207,7 @@ const Settings = () => {
 
   // Add master password tab for admin users
   const tabs = user?.role === 'admin' 
-    ? [...baseTabs, { id: 'masterPassword', name: 'Master Password', icon: Shield }]
+    ? [...baseTabs, { id: 'masterPassword', name: 'Master Password', icon: Shield }, { id: 'recommendations', name: 'Recommendations', icon: SlidersHorizontal }]
     : baseTabs;
 
   return (
@@ -592,6 +594,22 @@ const Settings = () => {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'recommendations' && user?.role === 'admin' && (
+            <div className="card">
+              <div className="card-header">
+                <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
+                  Recommendations Settings
+                </h3>
+                <p className="text-sm text-secondary-600 dark:text-secondary-400">
+                  Choose how match percentages are calculated and how recommendations are ranked when ML is unavailable
+                </p>
+              </div>
+              <div className="card-body space-y-6">
+                <RecommendationAdminPanel />
               </div>
             </div>
           )}

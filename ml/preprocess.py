@@ -43,117 +43,128 @@ class MealDataPreprocessor:
             return False
     
     def extract_meal_history(self, days_back=90):
-        """Extract meal history from database"""
+        """Extract meal history from database aligned with current schemas"""
         if not self.connect_db():
             return pd.DataFrame()
         
         try:
-            # Get recent meal plans
             cutoff_date = datetime.now() - timedelta(days=days_back)
             
-            # Extract meal plans with populated meal data
             pipeline = [
                 {"$match": {"date": {"$gte": cutoff_date}}},
+                # Join single meal reference
                 {"$lookup": {
                     "from": "meals",
-                    "localField": "meals",
+                    "localField": "meal",
                     "foreignField": "_id",
-                    "as": "meal_details"
+                    "as": "meal_doc"
                 }},
-                {"$unwind": "$meal_details"},
-                {"$lookup": {
-                    "from": "ingredients",
-                    "localField": "meal_details.ingredients",
-                    "foreignField": "_id",
-                    "as": "ingredient_details"
-                }},
+                {"$unwind": "$meal_doc"},
+                # Join user
                 {"$lookup": {
                     "from": "users",
-                    "localField": "userId",
+                    "localField": "createdBy",
                     "foreignField": "_id",
-                    "as": "user_details"
+                    "as": "user_doc"
+                }},
+                {"$unwind": {"path": "$user_doc", "preserveNullAndEmptyArrays": True}},
+                # Pull ingredient ObjectIds from nested meal_doc.ingredients[].ingredient
+                {"$addFields": {
+                    "ingredient_ids": {
+                        "$map": {
+                            "input": {"$ifNull": ["$meal_doc.ingredients", []]},
+                            "as": "ing",
+                            "in": "$$ing.ingredient"
+                        }
+                    }
+                }},
+                # Lookup ingredient names
+                {"$lookup": {
+                    "from": "ingredients",
+                    "let": {"ids": "$ingredient_ids"},
+                    "pipeline": [
+                        {"$match": {"$expr": {"$in": ["$_id", "$$ids"]}}},
+                        {"$project": {"name": 1}}
+                    ],
+                    "as": "ingredient_docs"
                 }}
             ]
             
-            meal_data = list(self.db.mealplans.aggregate(pipeline))
-            
-            if not meal_data:
-                logger.warning("No meal history found")
+            records = list(self.db.mealplans.aggregate(pipeline))
+            if not records:
+                logger.warning("No meal history found in last period")
                 return pd.DataFrame()
             
-            # Convert to DataFrame
-            processed_meals = []
-            
-            for record in meal_data:
-                meal = record['meal_details']
-                ingredients = record.get('ingredient_details', [])
-                user = record.get('user_details', [{}])[0]
-                
-                processed_meals.append({
-                    'user_id': str(record['userId']),
-                    'meal_id': str(meal['_id']),
+            processed = []
+            for r in records:
+                meal = r.get('meal_doc', {})
+                user = r.get('user_doc', {})
+                ingredient_names = [ing.get('name', '') for ing in r.get('ingredient_docs', []) if ing.get('name')]
+                processed.append({
+                    'user_id': str(user.get('_id')) if user else None,
+                    'meal_id': str(meal.get('_id')) if meal else None,
                     'meal_name': meal.get('name', ''),
-                    'meal_type': meal.get('type', 'dinner'),
-                    'date': record['date'],
-                    'day_of_week': record['date'].strftime('%A').lower(),
-                    'hour': record['date'].hour if hasattr(record['date'], 'hour') else 18,
-                    'ingredients': [ing.get('name', '') for ing in ingredients],
-                    'ingredient_count': len(ingredients),
+                    'meal_type': r.get('mealType', 'dinner'),
+                    'date': r.get('date'),
+                    'day_of_week': r.get('date').strftime('%A').lower() if r.get('date') else 'monday',
+                    'hour': r.get('date').hour if r.get('date') else 18,
+                    'ingredients': ingredient_names,
+                    'ingredient_count': len(ingredient_names),
                     'cuisine_type': meal.get('cuisine', ''),
                     'prep_time': meal.get('prepTime', 0),
-                    'difficulty': meal.get('difficulty', 'medium'),
+                    'difficulty': (meal.get('recipe', {}) or {}).get('difficulty', 'medium'),
                     'rating': meal.get('rating', 0),
-                    'user_dietary_restrictions': user.get('dietaryRestrictions', [])
+                    'user_dietary_restrictions': user.get('dietaryRestrictions', []) if user else []
                 })
-            
-            df = pd.DataFrame(processed_meals)
+            df = pd.DataFrame(processed)
             logger.info(f"Extracted {len(df)} meal records")
             return df
-            
         except Exception as e:
             logger.error(f"Error extracting meal history: {e}")
             return pd.DataFrame()
     
     def extract_available_meals(self):
-        """Extract all available meals from database"""
+        """Extract all available meals from database aligned with current schemas"""
         if not self.connect_db():
             return pd.DataFrame()
         
         try:
-            # Get all meals with their ingredients
-            pipeline = [
-                {"$lookup": {
-                    "from": "ingredients",
-                    "localField": "ingredients",
-                    "foreignField": "_id",
-                    "as": "ingredient_details"
-                }}
-            ]
+            meals = list(self.db.meals.find({}))
+            if not meals:
+                logger.warning("No meals found in DB")
             
-            meals = list(self.db.meals.aggregate(pipeline))
-            
-            processed_meals = []
+            # Build ingredient cache to minimize queries
+            processed = []
             for meal in meals:
-                ingredients = meal.get('ingredient_details', [])
-                
-                processed_meals.append({
+                ing_refs = meal.get('ingredients', []) or []
+                ingredient_ids = [ref.get('ingredient') for ref in ing_refs if isinstance(ref, dict) and ref.get('ingredient') is not None]
+                ingredient_names = []
+                if ingredient_ids:
+                    cursor = self.db.ingredients.find({"_id": {"$in": ingredient_ids}}, {"name": 1})
+                    ingredient_names = [doc.get('name', '') for doc in cursor if doc.get('name')]
+                # Infer meal_type from tags if present
+                tags = [t.lower() for t in (meal.get('tags') or []) if isinstance(t, str)]
+                inferred_type = None
+                for t in ['breakfast', 'lunch', 'dinner', 'snack']:
+                    if t in tags:
+                        inferred_type = t
+                        break
+                processed.append({
                     'meal_id': str(meal['_id']),
                     'meal_name': meal.get('name', ''),
-                    'meal_type': meal.get('type', 'dinner'),
-                    'ingredients': [ing.get('name', '') for ing in ingredients],
-                    'ingredient_count': len(ingredients),
+                    'meal_type': inferred_type or 'dinner',
+                    'ingredients': ingredient_names,
+                    'ingredient_count': len(ingredient_names),
                     'cuisine_type': meal.get('cuisine', ''),
                     'prep_time': meal.get('prepTime', 0),
-                    'difficulty': meal.get('difficulty', 'medium'),
-                    'rating': meal.get('rating', 0),
-                    'instructions': meal.get('instructions', ''),
+                    'difficulty': (meal.get('recipe', {}) or {}).get('difficulty', 'medium'),
+                    'rating': meal.get('rating', 0) or 0,
+                    'instructions': (meal.get('recipe', {}) or {}).get('instructions', []),
                     'created_at': meal.get('createdAt', datetime.now())
                 })
-            
-            df = pd.DataFrame(processed_meals)
+            df = pd.DataFrame(processed)
             logger.info(f"Extracted {len(df)} available meals")
             return df
-            
         except Exception as e:
             logger.error(f"Error extracting available meals: {e}")
             return pd.DataFrame()
