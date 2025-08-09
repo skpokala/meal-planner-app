@@ -112,29 +112,26 @@ describe('Recommendations Routes', () => {
         .get('/api/recommendations')
         .set('Authorization', `Bearer ${testToken}`);
 
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
-      if (response.status === 404) {
-        expect(response.body.message).toBe('Route not found');
-      }
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.recommendations)).toBe(true);
     });
 
     test('should get recommendations with meal_id filter', async () => {
+      mockedAxios.get.mockResolvedValue(mockMLResponse);
       const response = await request(app)
         .get('/api/recommendations?meal_id=' + testMeal._id.toString())
         .set('Authorization', `Bearer ${testToken}`);
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
     });
 
     test('should handle default parameters', async () => {
+      mockedAxios.get.mockResolvedValue(mockMLResponse);
       const response = await request(app)
         .get('/api/recommendations')
         .set('Authorization', `Bearer ${testToken}`);
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      expect(response.status).toBe(200);
     });
 
     test('should require authentication', async () => {
@@ -146,44 +143,48 @@ describe('Recommendations Routes', () => {
     });
 
     test('should handle ML service failure', async () => {
+      mockedAxios.get.mockRejectedValue({ code: 'ECONNREFUSED' });
       const response = await request(app)
         .get('/api/recommendations')
         .set('Authorization', `Bearer ${testToken}`);
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
     });
 
     test('should handle ML service returning failure', async () => {
+      mockedAxios.get.mockResolvedValue({ data: { success: false } });
       const response = await request(app)
         .get('/api/recommendations')
         .set('Authorization', `Bearer ${testToken}`);
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      expect([500]).toContain(response.status);
     });
 
     test('should handle ML service timeout', async () => {
+      mockedAxios.get.mockRejectedValue({ code: 'ECONNABORTED' });
       const response = await request(app)
         .get('/api/recommendations')
         .set('Authorization', `Bearer ${testToken}`);
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
     });
 
     test('should include temporal context in ML request', async () => {
-      const response = await request(app)
+      mockedAxios.get.mockResolvedValue(mockMLResponse);
+      await request(app)
         .get('/api/recommendations')
         .set('Authorization', `Bearer ${testToken}`);
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      expect(mockedAxios.get).toHaveBeenCalled();
+      const call = mockedAxios.get.mock.calls[0];
+      const params = call[1]?.params || {};
+      expect(params).toHaveProperty('hour');
+      expect(params).toHaveProperty('day_of_week');
+      expect(params).toHaveProperty('month');
     });
   });
 
   describe('POST /api/recommendations', () => {
     test('should handle POST recommendations with custom context', async () => {
+      mockedAxios.post.mockResolvedValue({ data: { success: true, data: { recommendations: [], recommendation_context: {} } } });
       const response = await request(app)
         .post('/api/recommendations')
         .set('Authorization', `Bearer ${testToken}`)
@@ -192,19 +193,16 @@ describe('Recommendations Routes', () => {
           top_n: 3,
           context: { dietary_preferences: ['vegetarian'] }
         });
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      expect(response.status).toBe(200);
     });
 
     test('should handle POST with minimal data', async () => {
+      mockedAxios.post.mockResolvedValue({ data: { success: true, data: { recommendations: [], recommendation_context: {} } } });
       const response = await request(app)
         .post('/api/recommendations')
         .set('Authorization', `Bearer ${testToken}`)
         .send({});
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      expect(response.status).toBe(200);
     });
 
     test('should require authentication for POST', async () => {
@@ -216,28 +214,27 @@ describe('Recommendations Routes', () => {
     });
 
     test('should handle ML service failure in POST', async () => {
+      mockedAxios.post.mockRejectedValue({ code: 'ECONNREFUSED' });
       const response = await request(app)
         .post('/api/recommendations')
         .set('Authorization', `Bearer ${testToken}`)
         .send({ meal_type: 'breakfast' });
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      expect(response.status).toBe(500);
     });
 
     test('should handle ML service returning error in POST', async () => {
+      mockedAxios.post.mockResolvedValue({ data: { success: false } });
       const response = await request(app)
         .post('/api/recommendations')
         .set('Authorization', `Bearer ${testToken}`)
         .send({ meal_type: 'invalid' });
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      expect(response.status).toBe(500);
     });
   });
 
   describe('POST /api/recommendations/feedback', () => {
     test('should record user feedback successfully', async () => {
+      mockedAxios.post.mockResolvedValue({ data: { success: true } });
       const response = await request(app)
         .post('/api/recommendations/feedback')
         .set('Authorization', `Bearer ${testToken}`)
@@ -245,9 +242,8 @@ describe('Recommendations Routes', () => {
           meal_id: testMeal._id.toString(),
           feedback_type: 'like'
         });
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
     });
 
     test('should require authentication for feedback', async () => {
@@ -267,8 +263,7 @@ describe('Recommendations Routes', () => {
         .set('Authorization', `Bearer ${testToken}`)
         .send({});
 
-      // Routes not implemented yet - expect 404, 500, or 400 for validation
-      expect([400, 404, 500]).toContain(response.status);
+      expect(response.status).toBe(400);
     });
 
     test('should validate feedback type', async () => {
@@ -280,11 +275,11 @@ describe('Recommendations Routes', () => {
           feedback_type: 'invalid'
         });
 
-      // Routes not implemented yet - expect 404, 500, or 400 for validation
-      expect([400, 404, 500]).toContain(response.status);
+      expect(response.status).toBe(400);
     });
 
     test('should handle ML service failure for feedback', async () => {
+      mockedAxios.post.mockRejectedValue({ code: 'ECONNREFUSED' });
       const response = await request(app)
         .post('/api/recommendations/feedback')
         .set('Authorization', `Bearer ${testToken}`)
@@ -292,12 +287,11 @@ describe('Recommendations Routes', () => {
           meal_id: testMeal._id.toString(),
           feedback_type: 'dislike'
         });
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      expect(response.status).toBe(500);
     });
 
     test('should include timestamp in feedback', async () => {
+      mockedAxios.post.mockResolvedValue({ data: { success: true } });
       const response = await request(app)
         .post('/api/recommendations/feedback')
         .set('Authorization', `Bearer ${testToken}`)
@@ -305,9 +299,8 @@ describe('Recommendations Routes', () => {
           meal_id: testMeal._id.toString(),
           feedback_type: 'like'
         });
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('timestamp');
     });
   });
 
@@ -337,13 +330,13 @@ describe('Recommendations Routes', () => {
     });
 
     test('should trigger model training successfully', async () => {
+      mockedAxios.post.mockResolvedValue({ data: { success: true, message: 'Model training completed' } });
       const response = await request(app)
         .post('/api/recommendations/train')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ force_retrain: true });
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+        .send({ force: true });
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
     });
 
     test('should require authentication for training', async () => {
@@ -355,33 +348,31 @@ describe('Recommendations Routes', () => {
     });
 
     test('should handle training with default parameters', async () => {
+      mockedAxios.post.mockResolvedValue({ data: { success: true, message: 'ok' } });
       const response = await request(app)
         .post('/api/recommendations/train')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({});
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      expect(response.status).toBe(200);
     });
 
     test('should handle training service failure', async () => {
+      mockedAxios.post.mockRejectedValue({ code: 'ECONNREFUSED' });
       const response = await request(app)
         .post('/api/recommendations/train')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ force_retrain: true });
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+        .send({ force: true });
+      expect(response.status).toBe(500);
     });
 
     test('should use longer timeout for training requests', async () => {
-      const response = await request(app)
+      mockedAxios.post.mockResolvedValue({ data: { success: true, message: 'ok' } });
+      await request(app)
         .post('/api/recommendations/train')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({});
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      const cfg = mockedAxios.post.mock.calls[0][2] || {};
+      expect(cfg.timeout).toBeGreaterThanOrEqual(300000);
     });
   });
 
@@ -395,12 +386,14 @@ describe('Recommendations Routes', () => {
     });
 
     test('should handle missing ML service URL', async () => {
+      delete process.env.ML_SERVICE_URL;
+      mockedAxios.get.mockRejectedValue({ code: 'ECONNREFUSED' });
       const response = await request(app)
         .get('/api/recommendations')
         .set('Authorization', `Bearer ${testToken}`);
-
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      // Should fallback to DB popular recommendations
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
     });
 
     test('should handle invalid user ID in token', async () => {
@@ -409,17 +402,19 @@ describe('Recommendations Routes', () => {
         process.env.JWT_SECRET || 'test-secret'
       );
 
+      mockedAxios.get.mockResolvedValue(mockMLResponse);
       const response = await request(app)
         .get('/api/recommendations')
         .set('Authorization', `Bearer ${invalidToken}`);
 
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      // Should be 401 due to invalid user
+      expect(response.status).toBe(401);
     });
   });
 
   describe('Integration with ML Service', () => {
     test('should pass all required parameters to ML service', async () => {
+      mockedAxios.get.mockResolvedValue(mockMLResponse);
       const response = await request(app)
         .get('/api/recommendations')
         .set('Authorization', `Bearer ${testToken}`)
@@ -429,8 +424,13 @@ describe('Recommendations Routes', () => {
           include_context: true
         });
 
-      // Routes not implemented yet - expect 404 or 500
-      expect([404, 500]).toContain(response.status);
+      expect(response.status).toBe(200);
+      const params = mockedAxios.get.mock.calls[0][1]?.params || {};
+      expect(params.meal_type).toBe('lunch');
+      expect(params.top_n).toBe(10);
+      expect(params).toHaveProperty('hour');
+      expect(params).toHaveProperty('day_of_week');
+      expect(params).toHaveProperty('month');
     });
   });
 }); 

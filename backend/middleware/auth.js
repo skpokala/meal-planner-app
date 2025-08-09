@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const FamilyMember = require('../models/FamilyMember');
 
@@ -22,6 +23,13 @@ const authenticateToken = async (req, res, next) => {
     const userType = decoded.userType || 'User'; // Default to User for backward compatibility
     const userId = decoded.userId || decoded.id; // Support both userId and id for backward compatibility
     
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token'
+      });
+    }
+
     if (userType === 'FamilyMember') {
       user = await FamilyMember.findById(userId).select('-password -masterPassword');
     } else {
@@ -62,7 +70,7 @@ const authenticateToken = async (req, res, next) => {
       });
     }
     
-    if (error.name === 'JsonWebTokenError') {
+    if (error.name === 'JsonWebTokenError' || error.name === 'CastError') {
       return res.status(401).json({
         success: false,
         message: 'Invalid token'

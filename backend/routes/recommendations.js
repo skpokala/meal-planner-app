@@ -74,8 +74,8 @@ router.get('/', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error getting recommendations:', error.message);
     
-    // If ML service is unavailable, provide fallback recommendations
-    if (error.code === 'ECONNREFUSED' || error.response?.status >= 500) {
+    // If ML service is unavailable or timed out, provide fallback recommendations
+    if (error.code === 'ECONNREFUSED' || error.code === 'ECONNABORTED' || error.response?.status >= 500) {
       try {
         const scoringMode = await getScoringMode();
         const fallbackRecommendations = await getFallbackRecommendations(req);
