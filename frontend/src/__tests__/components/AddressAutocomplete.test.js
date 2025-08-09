@@ -66,22 +66,24 @@ describe('AddressAutocomplete', () => {
   });
 
   it('displays suggestions when API returns results', async () => {
-    const mockResponse = [
-      {
-        place_id: '1',
-        display_name: '123 Main St, Anytown, CA 12345, USA',
-        address: {
-          house_number: '123',
-          road: 'Main St',
-          city: 'Anytown',
-          state: 'CA',
-          postcode: '12345',
-          country: 'USA'
-        },
-        lat: '37.7749',
-        lon: '-122.4194'
-      }
-    ];
+    const mockResponse = {
+      success: true,
+      suggestions: [
+        {
+          id: '1',
+          displayName: '123 Main St, Anytown, CA 12345, USA',
+          address: {
+            street: '123 Main St',
+            city: 'Anytown',
+            state: 'CA',
+            zipCode: '12345',
+            country: 'USA'
+          },
+          lat: 37.7749,
+          lon: -122.4194
+        }
+      ]
+    };
 
     fetch.mockResolvedValueOnce({
       ok: true,
@@ -107,22 +109,24 @@ describe('AddressAutocomplete', () => {
 
   it('calls onAddressSelect when suggestion is clicked', async () => {
     const mockOnAddressSelect = jest.fn();
-    const mockResponse = [
-      {
-        place_id: '1',
-        display_name: '123 Main St, Anytown, CA 12345, USA',
-        address: {
-          house_number: '123',
-          road: 'Main St',
-          city: 'Anytown',
-          state: 'CA',
-          postcode: '12345',
-          country: 'USA'
-        },
-        lat: '37.7749',
-        lon: '-122.4194'
-      }
-    ];
+    const mockResponse = {
+      success: true,
+      suggestions: [
+        {
+          id: '1',
+          displayName: '123 Main St, Anytown, CA 12345, USA',
+          address: {
+            street: '123 Main St',
+            city: 'Anytown',
+            state: 'CA',
+            zipCode: '12345',
+            country: 'USA'
+          },
+          lat: 37.7749,
+          lon: -122.4194
+        }
+      ]
+    };
 
     fetch.mockResolvedValueOnce({
       ok: true,
