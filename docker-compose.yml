@@ -40,7 +40,7 @@ services:
       - FRONTEND_URL=http://localhost:3001
       - ML_SERVICE_URL=http://ml-service:5003
       # TODO: Set your Google Maps API key for geocoding (required for address search/reverse geocoding)
-      - GOOGLE_MAPS_API_KEY=REPLACE_WITH_YOUR_GOOGLE_MAPS_API_KEY
+      - GOOGLE_MAPS_API_KEY=AIzaSyDeWx2G1CxpcnCdsgVFU9KfJkidaxzOmys
     ports:
       - "5002:5000"
     volumes:
