@@ -52,6 +52,11 @@ Each successful build creates multiple tags:
 - `main-{sha}` - Branch with commit hash
 
 ### **Backend Image: `ghcr.io/skpokala/meal-planner-app-backend`**
+### **ML Service Image: `ghcr.io/skpokala/meal-planner-app-ml`**
+- `latest` - Latest main branch build
+- `1.1.5` - Specific version number
+- `v1.1.5` - Version with 'v' prefix
+- `main-{sha}` - Branch with commit hash
 - `latest` - Latest main branch build
 - `1.1.5` - Specific version number
 - `v1.1.5` - Version with 'v' prefix
@@ -153,7 +158,9 @@ You can monitor build status in several ways:
 
 ## 🔄 Workflow Configuration
 
-The publishing workflow (`.github/workflows/publish.yml`) includes:
+The publishing workflows include:
+- `.github/workflows/publish.yml` for frontend and backend
+- `.github/workflows/publish-ml.yml` for the ML service
 
 ### **Triggers**
 ```yaml
