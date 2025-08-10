@@ -33,8 +33,8 @@ services:
       - PORT=5000
       # Allow requests from any origin for containerized deployments
       - FRONTEND_URL=*
-      # Optional: ML service URL (if deploying ML separately). Leave empty to rely on backend fallbacks
-      - ML_SERVICE_URL=${ML_SERVICE_URL:-}
+      # ML service URL (defaults to internal service in this stack; override if deployed separately)
+      - ML_SERVICE_URL=${ML_SERVICE_URL:-http://ml-service:5003}
       # Required: Google Maps API key for geocoding (reverse + address search)
       - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:?set in Portainer environment}
     depends_on:
@@ -46,6 +46,25 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - meal-planner-network
+
+  ml-service:
+    image: ghcr.io/skpokala/meal-planner-app-ml:latest
+    restart: unless-stopped
+    depends_on:
+      - meal-planner-mongo
+    environment:
+      - MONGODB_URI=mongodb://meal-planner-mongo:27017/meal_planner
+      - ML_SERVICE_PORT=5003
+      - ML_SERVICE_HOST=0.0.0.0
+      - DEBUG=false
+    # Expose externally only if you need to access ML directly; otherwise it's internal
+    ports:
+      - "5003:5003"
+    volumes:
+      - ml_models:/app/models
+      - ml_data:/app/data
     networks:
       - meal-planner-network
 
@@ -69,6 +88,10 @@ services:
 
 volumes:
   mongo_data:
+    driver: local
+  ml_models:
+    driver: local
+  ml_data:
     driver: local
 
 networks:
