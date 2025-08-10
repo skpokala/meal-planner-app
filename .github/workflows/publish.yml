@@ -83,7 +83,7 @@ jobs:
     
     strategy:
       matrix:
-        service: [frontend, backend]
+        service: [frontend, backend, ml]
     
     steps:
     - name: Checkout code
@@ -123,7 +123,7 @@ jobs:
           type=raw,value=${{ steps.package-version.outputs.version }}
     
     - name: Build and push Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: ./${{ matrix.service }}
         file: ./${{ matrix.service }}/Dockerfile
@@ -133,9 +133,7 @@ jobs:
         platforms: linux/amd64,linux/arm64
         cache-from: type=gha
         cache-to: type=gha,mode=max
-        build-args: |
-          REACT_APP_VERSION=${{ steps.package-version.outputs.version }}
-          REACT_APP_BUILD_TIME=${{ github.event.head_commit.timestamp }}
+        build-args: ${{ matrix.service == 'frontend' && format('REACT_APP_VERSION={0}\nREACT_APP_BUILD_TIME={1}', steps.package-version.outputs.version, github.event.head_commit.timestamp) || '' }}
     
     - name: Image publication summary
       run: |
@@ -201,8 +199,23 @@ jobs:
               - "5000:5000"
             environment:
               - NODE_ENV=production
-              - MONGODB_URI=mongodb://mongo:27017/meal-planner
+              - MONGODB_URI=mongodb://mongo:27017/meal_planner
               - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-here}
+              - ML_SERVICE_URL=http://ml-service:5003
+            depends_on:
+              - mongo
+              - ml-service
+            restart: unless-stopped
+
+          ml-service:
+            image: ${{ env.IMAGE_PREFIX }}-ml:${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
+            ports:
+              - "5003:5003"
+            environment:
+              - MONGODB_URI=mongodb://mongo:27017/meal_planner
+              - ML_SERVICE_PORT=5003
+              - ML_SERVICE_HOST=0.0.0.0
+              - DEBUG=false
             depends_on:
               - mongo
             restart: unless-stopped
@@ -215,7 +228,7 @@ jobs:
               - mongo_data:/data/db
               - ./backend/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
             environment:
-              - MONGO_INITDB_DATABASE=meal-planner
+              - MONGO_INITDB_DATABASE=meal_planner
             restart: unless-stopped
         
         volumes:
@@ -404,6 +417,7 @@ jobs:
           
           - **Frontend**: `${{ env.IMAGE_PREFIX }}-frontend:${{ github.ref_name }}`
           - **Backend**: `${{ env.IMAGE_PREFIX }}-backend:${{ github.ref_name }}`
+          - **ML Service**: `${{ env.IMAGE_PREFIX }}-ml:${{ github.ref_name }}`
           
           ## Quick Deployment
           
