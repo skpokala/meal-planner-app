@@ -152,6 +152,15 @@ npm run test:security
 npm run docker:test
 ```
 
+### Test Geolocation API (production)
+```bash
+# Address search (uses Google Geocoding API) - ensure GOOGLE_MAPS_API_KEY is set on backend
+curl -L -H "Accept: application/json" "https://mealplan.sandeepkpokala.com/api/location/search?q=1600+Amphitheatre+Parkway"
+
+# Reverse geocoding example
+curl -L -H "Accept: application/json" "https://mealplan.sandeepkpokala.com/api/location/reverse-geocode?lat=37.4221&lng=-122.0841"
+```
+
 ## 📦 Building
 
 ### Production Build
