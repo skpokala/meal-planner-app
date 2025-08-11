@@ -5,7 +5,10 @@ const axios = require('axios');
 const Config = require('../models/Config');
 
 // ML Service URL
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://ml-service:5003';
+// Prefer explicit env; fallback tries host.docker.internal for local/Portainer, then internal service
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL
+  || (process.env.NODE_ENV === 'production' ? 'http://host.docker.internal:5003' : '')
+  || 'http://ml-service:5003';
 
 /**
  * @route GET /api/recommendations
