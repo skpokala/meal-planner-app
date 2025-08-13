@@ -27,7 +27,7 @@ import {
 
 const Layout = ({ children }) => {
   const { user, logout, isSystemAdmin, isAdmin } = useAuth();
-  const { isCaptured, capture, loading: locLoading } = useLocationContext();
+  const { isCaptured, location: clientLocation, capture, loading: locLoading } = useLocationContext();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -264,7 +264,16 @@ const Layout = ({ children }) => {
                     ? 'bg-success-50 dark:bg-success-900/20 border-success-200 dark:border-success-800 text-success-700 dark:text-success-300'
                     : 'bg-secondary-50 dark:bg-secondary-800 border-secondary-200 dark:border-secondary-700 text-secondary-600 dark:text-secondary-400'
                 }`}
-                title={isCaptured ? 'Location captured' : 'Location not captured'}
+                title={(() => {
+                  if (!isCaptured) return 'Location not captured';
+                  const addr = clientLocation?.address || {};
+                  const city = addr.city || '';
+                  const state = addr.state || '';
+                  if (city || state) return `${city}${city && state ? ', ' : ''}${state}`;
+                  const coords = clientLocation?.coordinates;
+                  if (coords?.latitude && coords?.longitude) return `${coords.latitude.toFixed?.(4) ?? coords.latitude}, ${coords.longitude.toFixed?.(4) ?? coords.longitude}`;
+                  return 'Location captured';
+                })()}
               >
                 <NavigationIcon className="w-4 h-4" />
               </div>
