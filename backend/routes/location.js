@@ -36,7 +36,13 @@ function normalizeGeocodeResult(result) {
   return {
     address: {
       street: [byType('street_number'), byType('route')].filter(Boolean).join(' ').trim(),
-      city: byType('locality') || byType('postal_town') || byType('sublocality') || '',
+      // Fallbacks to cover more global cases
+      city: byType('locality')
+        || byType('postal_town')
+        || byType('sublocality')
+        || byType('sublocality_level_1')
+        || byType('administrative_area_level_2')
+        || '',
       state: shortByType('administrative_area_level_1') || byType('administrative_area_level_1') || '',
       zipCode: byType('postal_code') || '',
       country: byType('country') || ''
@@ -60,7 +66,7 @@ router.get('/reverse-geocode', async (req, res) => {
     if (cached) return res.json({ success: true, location: cached });
 
     const url = 'https://maps.googleapis.com/maps/api/geocode/json';
-    const { data } = await axios.get(url, { params: { latlng: `${lat},${lng}`, key: GOOGLE_MAPS_API_KEY } });
+    const { data } = await axios.get(url, { params: { latlng: `${lat},${lng}`, key: GOOGLE_MAPS_API_KEY, region: 'us' } });
     const result = data.results?.[0];
     if (!result) return res.json({ success: true, location: null });
     const normalized = normalizeGeocodeResult(result);
