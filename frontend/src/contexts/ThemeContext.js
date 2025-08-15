@@ -17,7 +17,13 @@ export const ThemeProvider = ({ children }) => {
   const [resolvedTheme, setResolvedTheme] = useState('light');
   const [systemTheme, setSystemTheme] = useState('light');
   // Visual style preset for the design system: classic (existing) or modern (colorful)
-  const [themeStyle, setThemeStyle] = useState('classic');
+  const [themeStyle, setThemeStyle] = useState(() => {
+    try {
+      return localStorage.getItem('themeStyle') || 'classic';
+    } catch {
+      return 'classic';
+    }
+  });
   const { user } = useAuth?.() || {}; // ThemeProvider is above AuthProvider today; fallback if not available
 
   // Detect system theme preference
@@ -119,7 +125,7 @@ export const ThemeProvider = ({ children }) => {
   };
 
   const setThemeStylePreference = async (newStyle) => {
-    if (['classic', 'modern'].includes(newStyle)) {
+    if (['classic', 'modern', 'nord', 'sunset', 'forest'].includes(newStyle)) {
       setThemeStyle(newStyle);
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem('themeStyle', newStyle);
@@ -153,8 +159,11 @@ export const ThemeProvider = ({ children }) => {
       { value: 'system', label: 'System', icon: 'monitor' }
     ],
     styles: [
-      { value: 'classic', label: 'Classic' },
-      { value: 'modern', label: 'Modern' }
+      { value: 'classic', label: 'Classic', description: 'Traditional clean interface' },
+      { value: 'modern', label: 'Modern', description: 'Vibrant and colorful' },
+      { value: 'nord', label: 'Nord', description: 'Cool arctic colors' },
+      { value: 'sunset', label: 'Sunset', description: 'Warm gradient tones' },
+      { value: 'forest', label: 'Forest', description: 'Natural earth tones' }
     ]
   };
 

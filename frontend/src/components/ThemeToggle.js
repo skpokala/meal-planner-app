@@ -2,6 +2,21 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Sun, Moon, Monitor, ChevronDown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
+const getThemeColorClass = (style) => {
+  switch (style) {
+    case 'modern':
+      return 'bg-gradient-to-r from-emerald-500 to-blue-500';
+    case 'nord':
+      return 'bg-gradient-to-r from-blue-400 to-cyan-300';
+    case 'sunset':
+      return 'bg-gradient-to-r from-orange-400 to-pink-500';
+    case 'forest':
+      return 'bg-gradient-to-r from-green-600 to-emerald-500';
+    default:
+      return 'bg-primary-500';
+  }
+};
+
 const ThemeToggle = ({ variant = 'dropdown', className = '' }) => {
   const { theme, resolvedTheme, setTheme, toggleTheme, themes, themeStyle, setThemeStyle, styles } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
@@ -102,18 +117,21 @@ const ThemeToggle = ({ variant = 'dropdown', className = '' }) => {
               <button
                 key={style.value}
                 onClick={() => setThemeStyle(style.value)}
-                className={`w-full flex items-center gap-3 px-3 py-2 text-sm text-left hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors ${
+                className={`w-full flex flex-col gap-1 px-3 py-2 text-sm text-left hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors ${
                   themeStyle === style.value
                     ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
                     : 'text-secondary-700 dark:text-secondary-300'
                 }`}
-                title={style.value === 'modern' ? 'Colorful, modern UI' : 'Original classic UI'}
+                title={style.description}
               >
-                <span className="inline-block w-2 h-2 rounded-full bg-primary-500" />
-                <span className="flex-1">{style.label}</span>
-                {themeStyle === style.value && (
-                  <span className="text-xs text-secondary-500 dark:text-secondary-400">Selected</span>
-                )}
+                <div className="flex items-center gap-3 w-full">
+                  <span className={`inline-block w-2 h-2 rounded-full ${getThemeColorClass(style.value)}`} />
+                  <span className="flex-1">{style.label}</span>
+                  {themeStyle === style.value && (
+                    <span className="text-xs text-secondary-500 dark:text-secondary-400">Selected</span>
+                  )}
+                </div>
+                <span className="text-xs text-secondary-500 dark:text-secondary-400 ml-5">{style.description}</span>
               </button>
             ))}
 
