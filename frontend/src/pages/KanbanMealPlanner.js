@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Calendar, List } from 'lucide-react';
+import { Calendar, List, Plus } from 'lucide-react';
 import KanbanMealPlanner from '../components/KanbanMealPlanner';
 import api from '../services/api';
 import toast from 'react-hot-toast';
@@ -10,7 +9,6 @@ const KanbanMealPlannerPage = () => {
   const [existingMealPlans, setExistingMealPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     loadMeals();
@@ -163,23 +161,24 @@ const KanbanMealPlannerPage = () => {
 
   return (
     <div className="h-full flex flex-col">
-      {/* View Toggle */}
-      <div className="flex items-center justify-end mb-4 gap-2">
-        <button
-          onClick={() => navigate('/meal-planner')}
-          className="btn btn-ghost btn-sm"
-          title="Switch to Calendar View"
-        >
-          <Calendar className="w-4 h-4 mr-2" />
-          Calendar View
-        </button>
-        <button
-          className="btn btn-primary btn-sm"
-          title="Current View: Kanban"
-        >
-          <List className="w-4 h-4 mr-2" />
-          Kanban View
-        </button>
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-secondary-900 dark:text-secondary-100">Meal Planner</h1>
+          <p className="text-secondary-600 dark:text-secondary-400 mt-1">
+            Plan your weekly meals with our intuitive Kanban board
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => window.open('/meals', '_blank')}
+            className="btn btn-primary btn-sm"
+            title="Create New Meal"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Meal
+          </button>
+        </div>
       </div>
 
       {/* Kanban Board */}

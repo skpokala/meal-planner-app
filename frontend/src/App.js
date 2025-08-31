@@ -10,7 +10,6 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import FamilyMembers from './pages/FamilyMembers';
 import Meals from './pages/Meals';
-import MealPlanner from './pages/MealPlanner';
 import KanbanMealPlanner from './pages/KanbanMealPlanner';
 import MasterData from './pages/MasterData';
 import Settings from './pages/Settings';
@@ -38,8 +37,7 @@ function App() {
                 <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
                 <Route path="/family-members" element={<ProtectedRoute requireAdmin={true}><Layout><FamilyMembers /></Layout></ProtectedRoute>} />
                 <Route path="/meals" element={<ProtectedRoute><Layout><Meals /></Layout></ProtectedRoute>} />
-                <Route path="/meal-planner" element={<ProtectedRoute><Layout><MealPlanner /></Layout></ProtectedRoute>} />
-                <Route path="/meal-planner/kanban" element={<ProtectedRoute><Layout><KanbanMealPlanner /></Layout></ProtectedRoute>} />
+                <Route path="/meal-planner" element={<ProtectedRoute><Layout><KanbanMealPlanner /></Layout></ProtectedRoute>} />
                 <Route path="/master-data" element={<ProtectedRoute><Layout><MasterData /></Layout></ProtectedRoute>} />
                 <Route path="/audit" element={<ProtectedRoute requireAdmin={true}><Layout><Audit /></Layout></ProtectedRoute>} />
                 <Route path="/release-notes" element={<ProtectedRoute requireAdmin={true}><Layout><ReleaseNotesHistory /></Layout></ProtectedRoute>} />

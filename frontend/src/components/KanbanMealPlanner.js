@@ -9,12 +9,6 @@ const MEAL_TYPES = {
 };
 
 const KanbanMealPlanner = ({ meals, existingMealPlans, onSaveMeal }) => {
-  console.log('KanbanMealPlanner render:', { 
-    mealsCount: meals?.length, 
-    existingMealPlansCount: existingMealPlans?.length, 
-    hasOnSaveMeal: !!onSaveMeal 
-  });
-  
   const [currentWeek, setCurrentWeek] = useState(() => {
     const today = new Date();
     const startOfWeek = new Date(today);
@@ -24,15 +18,9 @@ const KanbanMealPlanner = ({ meals, existingMealPlans, onSaveMeal }) => {
   const [columns, setColumns] = useState({});
   const [draggedMeal, setDraggedMeal] = useState(null);
   
-  // Debug columns state changes
-  useEffect(() => {
-    console.log('Columns state updated:', columns);
-  }, [columns]);
-
   // Initialize columns for each day of the week
   useEffect(() => {
     try {
-      console.log('Initializing columns with currentWeek:', currentWeek);
       const newColumns = {};
       
       for (let i = 0; i < 7; i++) {
@@ -42,12 +30,6 @@ const KanbanMealPlanner = ({ meals, existingMealPlans, onSaveMeal }) => {
         
         const dayKey = day.toISOString().split('T')[0];
         const dayName = day.toLocaleDateString('en-US', { weekday: 'long' });
-        
-        console.log(`Creating column for day ${i}:`, {
-          dayKey,
-          dayName,
-          date: day.toISOString()
-        });
         
         newColumns[dayKey] = {
           id: dayKey,
@@ -62,7 +44,6 @@ const KanbanMealPlanner = ({ meals, existingMealPlans, onSaveMeal }) => {
       }
       
       setColumns(newColumns);
-      console.log('Columns initialized:', newColumns);
     } catch (error) {
       console.error('Error initializing columns:', error);
       toast.error('Error setting up calendar view');
@@ -71,25 +52,12 @@ const KanbanMealPlanner = ({ meals, existingMealPlans, onSaveMeal }) => {
 
   // Populate columns with existing meal plans
   useEffect(() => {
-    console.log('=== POPULATE COLUMNS EFFECT TRIGGERED ===');
-    console.log('existingMealPlans:', existingMealPlans);
-    console.log('existingMealPlans.length:', existingMealPlans?.length);
-    console.log('columns keys:', Object.keys(columns));
-    console.log('meals.length:', meals?.length);
-    
     if (existingMealPlans && existingMealPlans.length > 0 && Object.keys(columns).length > 0) {
-      console.log('✅ All conditions met, starting population...');
-      
       setColumns(prevColumns => {
         const updatedColumns = { ...prevColumns };
-        console.log('Starting with columns:', updatedColumns);
         
-        existingMealPlans.forEach((mealPlan, index) => {
+        existingMealPlans.forEach((mealPlan) => {
           try {
-            console.log(`\n--- Processing meal plan ${index + 1}/${existingMealPlans.length} ---`);
-            console.log('Meal plan object:', mealPlan);
-            console.log('Meal plan keys:', Object.keys(mealPlan));
-            
             // Handle different date formats
             let dateKey;
             if (typeof mealPlan.date === 'string') {
@@ -102,54 +70,27 @@ const KanbanMealPlanner = ({ meals, existingMealPlans, onSaveMeal }) => {
             }
             
             const mealType = mealPlan.mealType?.toLowerCase();
-            console.log('Date key:', dateKey, 'Meal type:', mealType);
-            console.log('Column exists?', !!updatedColumns[dateKey]);
-            console.log('Meal type valid?', mealType && ['breakfast', 'lunch', 'dinner'].includes(mealType));
             
             if (updatedColumns[dateKey] && mealType && updatedColumns[dateKey].meals[mealType]) {
-              console.log('✅ Column and meal type found, looking for meal details...');
-              
               // Find the meal details - handle both string ID and object with _id
               const mealId = typeof mealPlan.meal === 'string' ? mealPlan.meal : mealPlan.meal._id;
               const mealDetails = meals.find(m => m._id === mealId);
-              console.log('Meal ID to find:', mealId, 'from mealPlan.meal:', mealPlan.meal);
-              console.log('Available meal IDs:', meals.map(m => m._id));
-              console.log('Found meal details:', mealDetails);
               
               if (mealDetails) {
                 // Check if meal already exists to avoid duplicates
                 const exists = updatedColumns[dateKey].meals[mealType].some(m => m._id === mealDetails._id);
                 if (!exists) {
                   updatedColumns[dateKey].meals[mealType].push(mealDetails);
-                  console.log(`✅ Added ${mealDetails.name} to ${dateKey} ${mealType}`);
-                } else {
-                  console.log(`⚠️ Meal ${mealDetails.name} already exists in ${dateKey} ${mealType}`);
                 }
-              } else {
-                console.warn('❌ Meal details not found for ID:', mealId, 'from mealPlan.meal:', mealPlan.meal);
               }
-            } else {
-              console.warn('❌ Column or meal type not found:', { 
-                dateKey, 
-                mealType, 
-                hasColumn: !!updatedColumns[dateKey],
-                columnKeys: Object.keys(updatedColumns),
-                mealTypeKeys: updatedColumns[dateKey]?.meals ? Object.keys(updatedColumns[dateKey].meals) : 'no meals object'
-              });
             }
           } catch (error) {
-            console.error('❌ Error processing meal plan:', mealPlan, error);
+            console.error('Error processing meal plan:', mealPlan, error);
           }
         });
         
-        console.log('Final updated columns:', updatedColumns);
         return updatedColumns;
       });
-    } else {
-      console.log('❌ Conditions not met for population:');
-      console.log('- existingMealPlans:', !!existingMealPlans);
-      console.log('- existingMealPlans.length > 0:', existingMealPlans?.length > 0);
-      console.log('- Object.keys(columns).length > 0:', Object.keys(columns).length > 0);
     }
   }, [existingMealPlans, columns, meals]);
 
@@ -212,8 +153,6 @@ const KanbanMealPlanner = ({ meals, existingMealPlans, onSaveMeal }) => {
             ...updatedColumns[dayId].meals[mealType],
             draggedMeal
           ];
-          console.log(`Added ${draggedMeal.name} to ${dayId} ${mealType} visually`);
-          console.log('Updated columns:', updatedColumns);
         }
         return updatedColumns;
       });
