@@ -630,7 +630,7 @@ const MealPlanner = () => {
       case VIEW_MODES.DAILY:
         return formatDayDate(currentDate);
       case VIEW_MODES.WEEKLY:
-        return formatWeekRange(currentDate);
+        return 'Weekly View (Kanban)';
       case VIEW_MODES.LIST:
         return 'Meal Plan List';
       case VIEW_MODES.MONTHLY:
@@ -897,15 +897,11 @@ const MealPlanner = () => {
                 <Calendar className="w-4 h-4" />
               </button>
               <button
-                onClick={() => setViewMode(VIEW_MODES.WEEKLY)}
-                aria-label="Weekly view"
-                className={`px-3 py-2 text-sm font-medium border-t border-b ${
-                  viewMode === VIEW_MODES.WEEKLY
-                    ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
-                    : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700'
-                }`}
+                onClick={() => window.location.href = '/meal-planner/kanban'}
+                aria-label="Weekly view (Kanban)"
+                className="px-3 py-2 text-sm font-medium border-t border-b bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700"
               >
-                <CalendarDays className="w-4 h-4" />
+                <Kanban className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode(VIEW_MODES.DAILY)}
@@ -952,7 +948,7 @@ const MealPlanner = () => {
                 navigateCalendar(-1);
               }}
               className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:text-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
-              aria-label={viewMode === VIEW_MODES.MONTHLY ? "Previous month" : viewMode === VIEW_MODES.WEEKLY ? "Previous week" : "Previous day"}
+              aria-label={viewMode === VIEW_MODES.MONTHLY ? "Previous month" : "Previous day"}
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -967,7 +963,7 @@ const MealPlanner = () => {
                 navigateCalendar(1);
               }}
               className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 dark:text-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
-              aria-label={viewMode === VIEW_MODES.MONTHLY ? "Next month" : viewMode === VIEW_MODES.WEEKLY ? "Next week" : "Next day"}
+              aria-label={viewMode === VIEW_MODES.MONTHLY ? "Next month" : "Next day"}
             >
               <ChevronRight className="w-5 h-5" />
             </button>
