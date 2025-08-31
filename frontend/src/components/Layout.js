@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Version from './Version';
 import ThemeToggle from './ThemeToggle';
 import { useLocationContext } from '../contexts/LocationContext';
-import { Navigation as NavigationIcon, MapPin } from 'lucide-react';
+import { Navigation as NavigationIcon } from 'lucide-react';
 import {
   Home,
   Users,
@@ -258,28 +258,40 @@ const Layout = ({ children }) => {
 
             {/* Location capture, Theme dropdown and User menu */}
             <div className="flex items-center space-x-2">
-              <div
-                className={`flex items-center gap-2 px-3 py-2 rounded-card border ${
-                  isCaptured
-                    ? 'bg-success-50 dark:bg-success-900/20 border-success-200 dark:border-success-800 text-success-700 dark:text-success-300'
-                    : 'bg-secondary-50 dark:bg-secondary-800 border-secondary-200 dark:border-secondary-700 text-secondary-600 dark:text-secondary-400'
-                }`}
-                title={(() => {
-                  if (!isCaptured) return 'Location not captured';
-                  const addr = clientLocation?.address || {};
-                  const city = addr.city || '';
-                  const state = addr.state || '';
-                  if (city || state) return `${city}${city && state ? ', ' : ''}${state}`;
-                  const coords = clientLocation?.coordinates;
-                  if (coords?.latitude && coords?.longitude) return `${coords.latitude.toFixed?.(4) ?? coords.latitude}, ${coords.longitude.toFixed?.(4) ?? coords.longitude}`;
-                  return 'Location captured';
-                })()}
-              >
-                <NavigationIcon className="w-4 h-4" />
+              <div className="flex items-center gap-2">
+                {/* Debug info panel */}
+                <div className="text-xs bg-secondary-50 dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded px-2 py-1">
+                  <div className="font-mono">
+                    {(() => {
+                      if (!isCaptured) return 'No location';
+                      const addr = clientLocation?.address || {};
+                      const coords = clientLocation?.coordinates || {};
+                      return (
+                        <>
+                          <div>{`${addr.city || '(no city)'}${addr.state ? `, ${addr.state}` : ''}`}</div>
+                          <div className="text-secondary-500">{`${coords.latitude?.toFixed(4) || '?'}, ${coords.longitude?.toFixed(4) || '?'}`}</div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+                {/* Location icon */}
+                <div
+                  className={`flex items-center gap-2 px-3 py-2 rounded-card border ${
+                    isCaptured
+                      ? 'bg-success-50 dark:bg-success-900/20 border-success-200 dark:border-success-800 text-success-700 dark:text-success-300'
+                      : 'bg-secondary-50 dark:bg-secondary-800 border-secondary-200 dark:border-secondary-700 text-secondary-600 dark:text-secondary-400'
+                  }`}
+                  onClick={() => !isCaptured && capture()}
+                  style={{ cursor: !isCaptured ? 'pointer' : 'default' }}
+                  title={!isCaptured ? 'Click to capture location' : 'Location captured'}
+                >
+                  <NavigationIcon className="w-4 h-4" />
+                </div>
               </div>
               <ThemeToggle variant="dropdown" />
               <div className="relative flex-shrink-0">
-                                <button
+                <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center p-2 text-sm text-secondary-700 dark:text-secondary-300 hover:text-secondary-900 dark:hover:text-secondary-100 hover:bg-secondary-50 dark:hover:bg-secondary-700 rounded-card transition-colors"
                 >
@@ -292,29 +304,29 @@ const Layout = ({ children }) => {
                   <ChevronDown className="w-4 h-4 ml-1 text-secondary-400 dark:text-secondary-500" />
                 </button>
 
-              {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-secondary-800 rounded-card shadow-card-lg border border-secondary-200 dark:border-secondary-700 z-50">
-                  <div className="py-1">
-                    <button
-                      onClick={() => {
-                        navigate('/settings');
-                        setUserMenuOpen(false);
-                      }}
-                      className="w-full flex items-center px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors"
-                    >
-                      <Settings className="w-4 h-4 mr-3" />
-                      Settings
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4 mr-3" />
-                      Sign Out
-                    </button>
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-secondary-800 rounded-card shadow-card-lg border border-secondary-200 dark:border-secondary-700 z-50">
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          navigate('/settings');
+                          setUserMenuOpen(false);
+                        }}
+                        className="w-full flex items-center px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors"
+                      >
+                        <Settings className="w-4 h-4 mr-3" />
+                        Settings
+                      </button>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4 mr-3" />
+                        Sign Out
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
               </div>
             </div>
           </div>
@@ -331,4 +343,4 @@ const Layout = ({ children }) => {
   );
 };
 
-export default Layout; 
+export default Layout;

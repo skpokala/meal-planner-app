@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import api from '../services/api';
 
 export const useCurrentLocation = (autoDetect = false) => {
   const [location, setLocation] = useState(null);
@@ -38,16 +39,18 @@ export const useCurrentLocation = (autoDetect = false) => {
 
           // Try to get address from coordinates (reverse geocoding via backend -> Google)
           try {
-            const response = await fetch(`/api/location/reverse-geocode?lat=${latitude}&lng=${longitude}`);
+            const { data } = await api.get(`/location/reverse-geocode`, {
+              params: { lat: latitude, lng: longitude }
+            });
             
-            if (response.ok) {
-              const data = await response.json();
-              if (data.success && data.location) {
-                locationData.address = data.location.address;
-              }
+            if (data.success && data.location) {
+              locationData.address = data.location.address;
+              console.log('Reverse geocoding successful:', data.location);
+            } else {
+              console.log('Reverse geocoding returned no location data');
             }
           } catch (error) {
-            console.log('Reverse geocoding failed, using coordinates only:', error);
+            console.error('Reverse geocoding failed:', error.response?.data || error);
             // Don't set error state, coordinates are still useful
           }
 

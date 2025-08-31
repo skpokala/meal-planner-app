@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Clock, Trash2, CalendarDays, CalendarCheck, List, Loader2, Plus } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Calendar, ChevronLeft, ChevronRight, Clock, Trash2, CalendarDays, CalendarCheck, List, Loader2, Plus, Kanban } from 'lucide-react';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MealModal from '../components/MealModal';
@@ -135,7 +136,25 @@ const ListView = ({
 const MealPlanner = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(() => {
+    try {
+      const now = new Date();
+      console.log('Initializing currentDate:', now, 'isValid:', !isNaN(now.getTime()));
+      
+      if (isNaN(now.getTime())) {
+        console.error('Error creating current date, using fallback');
+        const fallback = new Date('2024-01-01');
+        console.log('Using fallback date:', fallback);
+        return fallback;
+      }
+      return now;
+    } catch (error) {
+      console.error('Error in currentDate initialization:', error);
+      const fallback = new Date('2024-01-01');
+      console.log('Using fallback date after error:', fallback);
+      return fallback;
+    }
+  });
   const [viewMode, setViewMode] = useState(VIEW_MODES.MONTHLY);
   const [meals, setMeals] = useState([]);
   const [plannedMeals, setPlannedMeals] = useState({});
@@ -179,10 +198,21 @@ const MealPlanner = () => {
   // Helper functions - all wrapped in useCallback with proper error handling
   const getStartOfWeek = useCallback((date) => {
     try {
+      if (!date || isNaN(date.getTime())) {
+        console.error('Invalid date passed to getStartOfWeek:', date);
+        return new Date();
+      }
+
       const startOfWeek = new Date(date);
       const day = startOfWeek.getDay();
       const diff = startOfWeek.getDate() - day;
       startOfWeek.setDate(diff);
+      
+      if (isNaN(startOfWeek.getTime())) {
+        console.error('Error calculating start of week:', startOfWeek);
+        return new Date();
+      }
+      
       return startOfWeek;
     } catch (error) {
       console.error('Error in getStartOfWeek:', error);
@@ -192,10 +222,21 @@ const MealPlanner = () => {
 
   const getEndOfWeek = useCallback((date) => {
     try {
+      if (!date || isNaN(date.getTime())) {
+        console.error('Invalid date passed to getEndOfWeek:', date);
+        return new Date();
+      }
+
       const endOfWeek = new Date(date);
       const day = endOfWeek.getDay();
       const diff = endOfWeek.getDate() + (6 - day);
       endOfWeek.setDate(diff);
+      
+      if (isNaN(endOfWeek.getTime())) {
+        console.error('Error calculating end of week:', endOfWeek);
+        return new Date();
+      }
+      
       return endOfWeek;
     } catch (error) {
       console.error('Error in getEndOfWeek:', error);
@@ -205,10 +246,29 @@ const MealPlanner = () => {
 
   const getDaysInMonth = useCallback((date) => {
     try {
+      if (!date || isNaN(date.getTime())) {
+        console.error('Invalid date passed to getDaysInMonth:', date);
+        return [];
+      }
+
       const year = date.getFullYear();
       const month = date.getMonth();
+      
+      // Validate month and year
+      if (month < 0 || month > 11 || year < 1900 || year > 2100) {
+        console.error('Invalid month or year:', { month, year });
+        return [];
+      }
+
       const firstDay = new Date(year, month, 1);
       const lastDay = new Date(year, month + 1, 0);
+      
+      // Validate the created dates
+      if (isNaN(firstDay.getTime()) || isNaN(lastDay.getTime())) {
+        console.error('Error creating date objects:', { firstDay, lastDay });
+        return [];
+      }
+
       const daysInMonth = lastDay.getDate();
       const startingDayOfWeek = firstDay.getDay();
 
@@ -221,7 +281,12 @@ const MealPlanner = () => {
       
       // Add days of the month
       for (let day = 1; day <= daysInMonth; day++) {
-        days.push(new Date(year, month, day));
+        const dayDate = new Date(year, month, day);
+        if (!isNaN(dayDate.getTime())) {
+          days.push(dayDate);
+        } else {
+          console.error('Error creating day date:', { year, month, day });
+        }
       }
       
       return days;
@@ -376,10 +441,23 @@ const MealPlanner = () => {
           break;
       }
       
+      // Format dates for API request
+      const formatApiDate = (date) => {
+        try {
+          if (!date || isNaN(date.getTime())) {
+            throw new Error('Invalid date');
+          }
+          return date.toISOString().split('T')[0];
+        } catch (error) {
+          console.error('Error formatting date:', error);
+          throw new Error('Invalid date format');
+        }
+      };
+
       const calendarResponse = await api.get('/meal-plans/calendar', {
         params: {
-          startDate: startDate.toISOString().split('T')[0],
-          endDate: endDate.toISOString().split('T')[0]
+          startDate: formatApiDate(startDate),
+          endDate: formatApiDate(endDate)
         }
       });
       
@@ -394,6 +472,17 @@ const MealPlanner = () => {
     }
   }, [currentDate, viewMode, getStartOfWeek, getEndOfWeek]);
 
+  // Monitor currentDate changes
+  useEffect(() => {
+    console.log('currentDate changed:', currentDate, 'isValid:', !isNaN(currentDate.getTime()));
+  }, [currentDate]);
+
+  // Debug: Check if we're getting unexpected navigation calls
+  useEffect(() => {
+    console.log('MealPlanner component mounted with viewMode:', viewMode);
+    console.log('Current location pathname:', window.location.pathname);
+  }, [viewMode]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchData();
@@ -405,41 +494,134 @@ const MealPlanner = () => {
   // Navigation functions
   const navigateMonth = useCallback((direction) => {
     setCurrentDate(prev => {
-      const newDate = new Date(prev);
-      newDate.setMonth(prev.getMonth() + direction);
-      return newDate;
+      try {
+        if (!prev || isNaN(prev.getTime())) {
+          console.error('Invalid previous date in navigateMonth:', prev);
+          const fallback = new Date();
+          console.log('Using fallback date in navigateMonth:', fallback);
+          return fallback;
+        }
+
+        // Use a safer date manipulation approach
+        const year = prev.getFullYear();
+        const month = prev.getMonth() + direction;
+        
+        // Handle month overflow/underflow
+        let newYear = year;
+        let newMonth = month;
+        
+        if (month < 0) {
+          newYear = year - 1;
+          newMonth = 12 + month;
+        } else if (month > 11) {
+          newYear = year + 1;
+          newMonth = month - 12;
+        }
+        
+        const newDate = new Date(newYear, newMonth, prev.getDate());
+        
+        if (isNaN(newDate.getTime())) {
+          console.error('Error creating new date in navigateMonth:', newDate, { year: newYear, month: newMonth, day: prev.getDate() });
+          const fallback = new Date();
+          console.log('Using fallback date after error in navigateMonth:', fallback);
+          return fallback;
+        }
+        
+        console.log('Navigating month:', { from: prev, to: newDate, direction });
+        return newDate;
+      } catch (error) {
+        console.error('Error in navigateMonth:', error);
+        const fallback = new Date();
+        console.log('Using fallback date after exception in navigateMonth:', fallback);
+        return fallback;
+      }
     });
   }, []);
 
   const navigateWeek = useCallback((direction) => {
     setCurrentDate(prev => {
-      const newDate = new Date(prev);
-      newDate.setDate(prev.getDate() + (direction * 7));
-      return newDate;
+      try {
+        if (!prev || isNaN(prev.getTime())) {
+          console.error('Invalid previous date in navigateWeek:', prev);
+          const fallback = new Date();
+          console.log('Using fallback date in navigateWeek:', fallback);
+          return fallback;
+        }
+
+        const newDate = new Date(prev);
+        newDate.setDate(prev.getDate() + (direction * 7));
+        
+        if (isNaN(newDate.getTime())) {
+          console.error('Error creating new date in navigateWeek:', newDate);
+          const fallback = new Date();
+          console.log('Using fallback date after error in navigateWeek:', fallback);
+          return fallback;
+        }
+        
+        console.log('Navigating week:', { from: prev, to: newDate, direction });
+        return newDate;
+      } catch (error) {
+        console.error('Error in navigateWeek:', error);
+        const fallback = new Date();
+        console.log('Using fallback date after exception in navigateWeek:', fallback);
+        return fallback;
+      }
     });
   }, []);
 
   const navigateDay = useCallback((direction) => {
     setCurrentDate(prev => {
-      const newDate = new Date(prev);
-      newDate.setDate(prev.getDate() + direction);
-      return newDate;
+      try {
+        if (!prev || isNaN(prev.getTime())) {
+          console.error('Invalid previous date in navigateDay:', prev);
+          const fallback = new Date();
+          console.log('Using fallback date in navigateDay:', fallback);
+          return fallback;
+        }
+
+        const newDate = new Date(prev);
+        newDate.setDate(prev.getDate() + direction);
+        
+        if (isNaN(newDate.getTime())) {
+          console.error('Error creating new date in navigateDay:', newDate);
+          const fallback = new Date();
+          console.log('Using fallback date after error in navigateDay:', fallback);
+          return fallback;
+        }
+        
+        console.log('Navigating day:', { from: prev, to: newDate, direction });
+        return newDate;
+      } catch (error) {
+        console.error('Error in navigateDay:', error);
+        const fallback = new Date();
+        console.log('Using fallback date after exception in navigateDay:', fallback);
+        return fallback;
+      }
     });
   }, []);
 
-  const navigate = useCallback((direction) => {
+  const navigateCalendar = useCallback((direction) => {
+    // Ensure direction is a number
+    const numericDirection = parseInt(direction, 10);
+    if (isNaN(numericDirection)) {
+      console.error('Invalid direction passed to navigateCalendar:', direction);
+      return;
+    }
+
+    console.log('Navigating calendar with direction:', numericDirection, 'viewMode:', viewMode);
+    
     switch (viewMode) {
       case VIEW_MODES.DAILY:
-        navigateDay(direction);
+        navigateDay(numericDirection);
         break;
       case VIEW_MODES.WEEKLY:
-        navigateWeek(direction);
+        navigateWeek(numericDirection);
         break;
       case VIEW_MODES.MONTHLY:
-        navigateMonth(direction);
+        navigateMonth(numericDirection);
         break;
       default:
-        navigateMonth(direction);
+        navigateMonth(numericDirection);
     }
   }, [viewMode, navigateDay, navigateWeek, navigateMonth]);
 
@@ -739,13 +921,23 @@ const MealPlanner = () => {
               <button
                 onClick={() => setViewMode(VIEW_MODES.LIST)}
                 aria-label="List view"
-                className={`px-3 py-2 text-sm font-medium rounded-r-md border ${
+                className={`px-3 py-2 text-sm font-medium border-t border-b ${
                   viewMode === VIEW_MODES.LIST
                     ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
                     : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700'
                 }`}
               >
                 <List className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => {
+                  console.log('Kanban button clicked, navigating to /meal-planner/kanban');
+                  window.location.href = '/meal-planner/kanban';
+                }}
+                aria-label="Kanban view"
+                className="px-3 py-2 text-sm font-medium rounded-r-md border border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700"
+              >
+                <Kanban className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -755,7 +947,10 @@ const MealPlanner = () => {
         {viewMode !== VIEW_MODES.LIST && (
           <div className="flex items-center justify-between">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => {
+                console.log('Previous button clicked, calling navigateCalendar(-1)');
+                navigateCalendar(-1);
+              }}
               className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:text-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
               aria-label={viewMode === VIEW_MODES.MONTHLY ? "Previous month" : viewMode === VIEW_MODES.WEEKLY ? "Previous week" : "Previous day"}
             >
@@ -767,8 +962,11 @@ const MealPlanner = () => {
             </h2>
             
             <button
-              onClick={() => navigate(1)}
-              className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:text-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
+              onClick={() => {
+                console.log('Next button clicked, calling navigateCalendar(1)');
+                navigateCalendar(1);
+              }}
+              className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 dark:text-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
               aria-label={viewMode === VIEW_MODES.MONTHLY ? "Next month" : viewMode === VIEW_MODES.WEEKLY ? "Next week" : "Next day"}
             >
               <ChevronRight className="w-5 h-5" />

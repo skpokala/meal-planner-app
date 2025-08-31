@@ -1,0 +1,381 @@
+import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
+import { ChevronLeft, ChevronRight, Coffee, Sun, Moon } from 'lucide-react';
+
+const MEAL_TYPES = {
+  BREAKFAST: { id: 'breakfast', label: 'Breakfast', icon: Coffee, color: 'bg-orange-100 dark:bg-orange-900/20' },
+  LUNCH: { id: 'lunch', label: 'Lunch', icon: Sun, color: 'bg-yellow-100 dark:bg-yellow-900/20' },
+  DINNER: { id: 'dinner', label: 'Dinner', icon: Moon, color: 'bg-blue-100 dark:bg-blue-900/20' }
+};
+
+const KanbanMealPlanner = ({ meals, existingMealPlans, onSaveMeal }) => {
+  console.log('KanbanMealPlanner render:', { 
+    mealsCount: meals?.length, 
+    existingMealPlansCount: existingMealPlans?.length, 
+    hasOnSaveMeal: !!onSaveMeal 
+  });
+  
+  const [currentWeek, setCurrentWeek] = useState(() => {
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    return startOfWeek;
+  });
+  const [columns, setColumns] = useState({});
+  const [draggedMeal, setDraggedMeal] = useState(null);
+  
+  // Debug columns state changes
+  useEffect(() => {
+    console.log('Columns state updated:', columns);
+  }, [columns]);
+
+  // Initialize columns for each day of the week
+  useEffect(() => {
+    try {
+      console.log('Initializing columns with currentWeek:', currentWeek);
+      const newColumns = {};
+      
+      for (let i = 0; i < 7; i++) {
+        const day = new Date(currentWeek);
+        day.setDate(currentWeek.getDate() + i);
+        day.setHours(0, 0, 0, 0);
+        
+        const dayKey = day.toISOString().split('T')[0];
+        const dayName = day.toLocaleDateString('en-US', { weekday: 'long' });
+        
+        console.log(`Creating column for day ${i}:`, {
+          dayKey,
+          dayName,
+          date: day.toISOString()
+        });
+        
+        newColumns[dayKey] = {
+          id: dayKey,
+          title: dayName,
+          date: day,
+          meals: {
+            breakfast: [],
+            lunch: [],
+            dinner: []
+          }
+        };
+      }
+      
+      setColumns(newColumns);
+      console.log('Columns initialized:', newColumns);
+    } catch (error) {
+      console.error('Error initializing columns:', error);
+      toast.error('Error setting up calendar view');
+    }
+  }, [currentWeek]);
+
+  // Populate columns with existing meal plans
+  useEffect(() => {
+    console.log('=== POPULATE COLUMNS EFFECT TRIGGERED ===');
+    console.log('existingMealPlans:', existingMealPlans);
+    console.log('existingMealPlans.length:', existingMealPlans?.length);
+    console.log('columns keys:', Object.keys(columns));
+    console.log('meals.length:', meals?.length);
+    
+    if (existingMealPlans && existingMealPlans.length > 0 && Object.keys(columns).length > 0) {
+      console.log('✅ All conditions met, starting population...');
+      
+      setColumns(prevColumns => {
+        const updatedColumns = { ...prevColumns };
+        console.log('Starting with columns:', updatedColumns);
+        
+        existingMealPlans.forEach((mealPlan, index) => {
+          try {
+            console.log(`\n--- Processing meal plan ${index + 1}/${existingMealPlans.length} ---`);
+            console.log('Meal plan object:', mealPlan);
+            console.log('Meal plan keys:', Object.keys(mealPlan));
+            
+            // Handle different date formats
+            let dateKey;
+            if (typeof mealPlan.date === 'string') {
+              dateKey = mealPlan.date.split('T')[0];
+            } else if (mealPlan.date instanceof Date) {
+              dateKey = mealPlan.date.toISOString().split('T')[0];
+            } else {
+              console.warn('Unknown date format:', mealPlan.date);
+              return;
+            }
+            
+            const mealType = mealPlan.mealType?.toLowerCase();
+            console.log('Date key:', dateKey, 'Meal type:', mealType);
+            console.log('Column exists?', !!updatedColumns[dateKey]);
+            console.log('Meal type valid?', mealType && ['breakfast', 'lunch', 'dinner'].includes(mealType));
+            
+            if (updatedColumns[dateKey] && mealType && updatedColumns[dateKey].meals[mealType]) {
+              console.log('✅ Column and meal type found, looking for meal details...');
+              
+              // Find the meal details - handle both string ID and object with _id
+              const mealId = typeof mealPlan.meal === 'string' ? mealPlan.meal : mealPlan.meal._id;
+              const mealDetails = meals.find(m => m._id === mealId);
+              console.log('Meal ID to find:', mealId, 'from mealPlan.meal:', mealPlan.meal);
+              console.log('Available meal IDs:', meals.map(m => m._id));
+              console.log('Found meal details:', mealDetails);
+              
+              if (mealDetails) {
+                // Check if meal already exists to avoid duplicates
+                const exists = updatedColumns[dateKey].meals[mealType].some(m => m._id === mealDetails._id);
+                if (!exists) {
+                  updatedColumns[dateKey].meals[mealType].push(mealDetails);
+                  console.log(`✅ Added ${mealDetails.name} to ${dateKey} ${mealType}`);
+                } else {
+                  console.log(`⚠️ Meal ${mealDetails.name} already exists in ${dateKey} ${mealType}`);
+                }
+              } else {
+                console.warn('❌ Meal details not found for ID:', mealId, 'from mealPlan.meal:', mealPlan.meal);
+              }
+            } else {
+              console.warn('❌ Column or meal type not found:', { 
+                dateKey, 
+                mealType, 
+                hasColumn: !!updatedColumns[dateKey],
+                columnKeys: Object.keys(updatedColumns),
+                mealTypeKeys: updatedColumns[dateKey]?.meals ? Object.keys(updatedColumns[dateKey].meals) : 'no meals object'
+              });
+            }
+          } catch (error) {
+            console.error('❌ Error processing meal plan:', mealPlan, error);
+          }
+        });
+        
+        console.log('Final updated columns:', updatedColumns);
+        return updatedColumns;
+      });
+    } else {
+      console.log('❌ Conditions not met for population:');
+      console.log('- existingMealPlans:', !!existingMealPlans);
+      console.log('- existingMealPlans.length > 0:', existingMealPlans?.length > 0);
+      console.log('- Object.keys(columns).length > 0:', Object.keys(columns).length > 0);
+    }
+  }, [existingMealPlans, columns, meals]);
+
+  const navigateWeek = (direction) => {
+    setCurrentWeek(current => {
+      const newDate = new Date(current);
+      newDate.setDate(current.getDate() + (direction === 'next' ? 7 : -7));
+      return newDate;
+    });
+  };
+
+  // HTML5 Drag and Drop handlers
+  const handleDragStart = (e, meal) => {
+    setDraggedMeal(meal);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', meal._id);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, dayId, mealType) => {
+    e.preventDefault();
+    
+    if (!draggedMeal) {
+      toast.error('No meal selected for dragging');
+      return;
+    }
+
+    try {
+      const dateObj = new Date(dayId + 'T00:00:00.000Z');
+      if (isNaN(dateObj.getTime())) {
+        throw new Error('Invalid date');
+      }
+
+      // Check if meal already exists in this section
+      const existingMeals = columns[dayId]?.meals[mealType] || [];
+      const mealExists = existingMeals.some(m => m._id === draggedMeal._id);
+      
+      if (mealExists) {
+        toast.error(`${draggedMeal.name} is already planned for ${dayId} ${mealType}`);
+        return;
+      }
+
+      onSaveMeal({
+        mealId: draggedMeal._id,
+        date: dateObj.toISOString(),
+        mealType: mealType
+      });
+
+      toast.success(`${draggedMeal.name} added to ${dayId} for ${MEAL_TYPES[mealType.toUpperCase()].label}`);
+      
+      // Immediately add the meal to the column visually for instant feedback
+      setColumns(prev => {
+        const updatedColumns = { ...prev };
+        if (updatedColumns[dayId] && updatedColumns[dayId].meals[mealType]) {
+          updatedColumns[dayId].meals[mealType] = [
+            ...updatedColumns[dayId].meals[mealType],
+            draggedMeal
+          ];
+          console.log(`Added ${draggedMeal.name} to ${dayId} ${mealType} visually`);
+          console.log('Updated columns:', updatedColumns);
+        }
+        return updatedColumns;
+      });
+      
+      setDraggedMeal(null);
+    } catch (error) {
+      console.error('Error saving meal:', error);
+      toast.error('Failed to save meal');
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedMeal(null);
+  };
+
+  try {
+    return (
+      <div className="flex flex-col h-full">
+        {/* Week Navigation */}
+        <div className="flex items-center justify-between mb-6 px-4">
+          <button
+            onClick={() => navigateWeek('prev')}
+            className="btn btn-ghost btn-sm"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            Previous Week
+          </button>
+          <h2 className="text-xl font-semibold">
+            Week of {currentWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </h2>
+          <button
+            onClick={() => navigateWeek('next')}
+            className="btn btn-ghost btn-sm"
+          >
+            Next Week
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Available Meals Palette */}
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-3 px-4">Available Meals</h3>
+          <div className="px-4">
+            {meals && meals.length > 0 ? (
+              <div className="flex flex-wrap gap-3 pb-4">
+                {meals.map((meal, index) => (
+                  <div
+                    key={meal._id || `meal-${index}`}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, meal)}
+                    onDragEnd={handleDragEnd}
+                    className="p-3 rounded-lg bg-white dark:bg-secondary-800 shadow-sm border-2 border-dashed border-secondary-300 dark:border-secondary-600 cursor-grab hover:shadow-md transition-all hover:border-primary-400 dark:hover:border-primary-500 active:cursor-grabbing"
+                    title={`Drag ${meal.name} to a meal type section`}
+                  >
+                    <div className="font-medium text-secondary-900 dark:text-secondary-100">
+                      {meal.name}
+                    </div>
+                    {meal.description && (
+                      <div className="text-sm text-secondary-600 dark:text-secondary-400 mt-1 max-w-[200px]">
+                        {meal.description}
+                      </div>
+                    )}
+                    {meal.prepTime && meal.prepTime > 0 && (
+                      <div className="text-xs text-secondary-500 dark:text-secondary-400 mt-2">
+                        ⏱️ {meal.prepTime} min
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-secondary-500 dark:text-secondary-400 text-center py-4">
+                No meals available
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Kanban Board */}
+        {Object.keys(columns).length === 0 ? (
+          <div className="text-center py-8 text-secondary-500 dark:text-secondary-400">
+            Loading calendar...
+          </div>
+        ) : meals && meals.length > 0 ? (
+          <div className="grid grid-cols-7 gap-4 h-full">
+            {Object.values(columns).map(column => (
+              <div
+                key={column.id}
+                className="flex flex-col h-full"
+              >
+                <div className="text-center p-2 bg-secondary-100 dark:bg-secondary-800 rounded-t-lg font-medium">
+                  {column.title}
+                  <div className="text-sm text-secondary-600 dark:text-secondary-400">
+                    {column.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                </div>
+                
+                {/* Meal Type Sections */}
+                <div className="flex-1 flex flex-col gap-2 p-2 bg-secondary-50 dark:bg-secondary-900/50 rounded-b-lg">
+                  {Object.entries(MEAL_TYPES).map(([key, mealType]) => {
+                    const Icon = mealType.icon;
+                    const mealsInSection = column.meals[mealType.id] || [];
+                    
+                    return (
+                      <div
+                        key={mealType.id}
+                        className={`flex-1 p-2 rounded-lg transition-all min-h-[80px] ${mealType.color} hover:bg-opacity-80`}
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => handleDrop(e, column.id, mealType.id)}
+                      >
+                        {/* Section Header */}
+                        <div className="flex items-center gap-2 mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+                          <Icon className="w-4 h-4" />
+                          {mealType.label}
+                        </div>
+                        
+                        {/* Meals in this section */}
+                        {mealsInSection.length === 0 ? (
+                          <div className="text-center text-secondary-500 dark:text-secondary-400 text-xs py-2">
+                            Drop here
+                          </div>
+                        ) : (
+                          mealsInSection.map((meal, index) => (
+                            <div
+                              key={meal._id || `meal-${index}`}
+                              className="p-2 mb-1 rounded bg-white dark:bg-secondary-800 shadow-sm border border-secondary-200 dark:border-secondary-700 text-xs"
+                            >
+                              <div className="font-medium truncate">{meal.name}</div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-secondary-500 dark:text-secondary-400">
+            No meals available to plan
+          </div>
+        )}
+      </div>
+    );
+  } catch (error) {
+    console.error('Error rendering KanbanMealPlanner:', error);
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="text-red-500 text-lg mb-2">Error rendering Kanban view</div>
+          <div className="text-sm text-secondary-500">{error.message}</div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="btn btn-primary btn-sm mt-4"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
+};
+
+export default KanbanMealPlanner;
