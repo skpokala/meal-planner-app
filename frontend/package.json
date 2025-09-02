@@ -1,6 +1,6 @@
 {
   "name": "meal-planner-frontend",
-  "version": "1.2.27",
+  "version": "1.2.28",
   "private": true,
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
