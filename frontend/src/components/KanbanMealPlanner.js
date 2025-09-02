@@ -175,20 +175,22 @@ const KanbanMealPlanner = ({ meals, existingMealPlans, onSaveMeal }) => {
         <div className="flex items-center justify-between mb-6 px-4">
           <button
             onClick={() => navigateWeek('prev')}
-            className="btn btn-ghost btn-sm"
+            className="btn btn-ghost btn-sm flex items-center gap-1 sm:gap-2"
           >
-            <ChevronLeft className="w-5 h-5" />
-            Previous Week
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">Previous Week</span>
+            <span className="sm:hidden">Prev</span>
           </button>
-          <h2 className="text-xl font-semibold">
+          <h2 className="text-lg sm:text-xl font-semibold text-center px-2">
             Week of {currentWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
           </h2>
           <button
             onClick={() => navigateWeek('next')}
-            className="btn btn-ghost btn-sm"
+            className="btn btn-ghost btn-sm flex items-center gap-1 sm:gap-2"
           >
-            Next Week
-            <ChevronRight className="w-5 h-5" />
+            <span className="hidden sm:inline">Next Week</span>
+            <span className="sm:hidden">Next</span>
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
@@ -197,26 +199,26 @@ const KanbanMealPlanner = ({ meals, existingMealPlans, onSaveMeal }) => {
           <h3 className="text-lg font-semibold mb-3 px-4">Available Meals</h3>
           <div className="px-4">
             {meals && meals.length > 0 ? (
-              <div className="flex flex-wrap gap-3 pb-4">
+              <div className="flex flex-wrap gap-2 sm:gap-3 pb-4">
                 {meals.map((meal, index) => (
                   <div
                     key={meal._id || `meal-${index}`}
                     draggable
                     onDragStart={(e) => handleDragStart(e, meal)}
                     onDragEnd={handleDragEnd}
-                    className="p-3 rounded-lg bg-white dark:bg-secondary-800 shadow-sm border-2 border-dashed border-secondary-300 dark:border-secondary-600 cursor-grab hover:shadow-md transition-all hover:border-primary-400 dark:hover:border-primary-500 active:cursor-grabbing"
+                    className="p-2 sm:p-3 rounded-lg bg-white dark:bg-secondary-800 shadow-sm border-2 border-dashed border-secondary-300 dark:border-secondary-600 cursor-grab hover:shadow-md transition-all hover:border-primary-400 dark:hover:border-primary-500 active:cursor-grabbing min-w-[120px] sm:min-w-[150px]"
                     title={`Drag ${meal.name} to a meal type section`}
                   >
-                    <div className="font-medium text-secondary-900 dark:text-secondary-100">
+                    <div className="font-medium text-secondary-900 dark:text-secondary-100 text-sm sm:text-base">
                       {meal.name}
                     </div>
                     {meal.description && (
-                      <div className="text-sm text-secondary-600 dark:text-secondary-400 mt-1 max-w-[200px]">
+                      <div className="text-xs sm:text-sm text-secondary-600 dark:text-secondary-400 mt-1 max-w-[100px] sm:max-w-[200px] truncate">
                         {meal.description}
                       </div>
                     )}
                     {meal.prepTime && meal.prepTime > 0 && (
-                      <div className="text-xs text-secondary-500 dark:text-secondary-400 mt-2">
+                      <div className="text-xs text-secondary-500 dark:text-secondary-400 mt-1 sm:mt-2">
                         ⏱️ {meal.prepTime} min
                       </div>
                     )}
@@ -237,59 +239,120 @@ const KanbanMealPlanner = ({ meals, existingMealPlans, onSaveMeal }) => {
             Loading calendar...
           </div>
         ) : meals && meals.length > 0 ? (
-          <div className="grid grid-cols-7 gap-4 h-full">
-            {Object.values(columns).map(column => (
-              <div
-                key={column.id}
-                className="flex flex-col h-full"
-              >
-                <div className="text-center p-2 bg-secondary-100 dark:bg-secondary-800 rounded-t-lg font-medium">
-                  {column.title}
-                  <div className="text-sm text-secondary-600 dark:text-secondary-400">
-                    {column.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          <div className="w-full">
+            {/* Mobile: Horizontal scroll */}
+            <div className="block lg:hidden">
+              <div className="flex gap-3 overflow-x-auto pb-4" style={{ scrollbarWidth: 'thin' }}>
+                {Object.values(columns).map(column => (
+                  <div
+                    key={column.id}
+                    className="flex flex-col min-w-[280px] h-[500px]"
+                  >
+                    <div className="text-center p-3 bg-secondary-100 dark:bg-secondary-800 rounded-t-lg font-medium">
+                      <div className="text-sm font-semibold">{column.title}</div>
+                      <div className="text-xs text-secondary-600 dark:text-secondary-400">
+                        {column.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </div>
+                    </div>
+                    
+                    {/* Meal Type Sections */}
+                    <div className="flex-1 flex flex-col gap-2 p-3 bg-secondary-50 dark:bg-secondary-900/50 rounded-b-lg">
+                      {Object.entries(MEAL_TYPES).map(([key, mealType]) => {
+                        const Icon = mealType.icon;
+                        const mealsInSection = column.meals[mealType.id] || [];
+                        
+                        return (
+                          <div
+                            key={mealType.id}
+                            className={`flex-1 p-3 rounded-lg transition-all min-h-[100px] ${mealType.color} hover:bg-opacity-80`}
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, column.id, mealType.id)}
+                          >
+                            {/* Section Header */}
+                            <div className="flex items-center gap-2 mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+                              <Icon className="w-4 h-4" />
+                              {mealType.label}
+                            </div>
+                            
+                            {/* Meals in this section */}
+                            {mealsInSection.length === 0 ? (
+                              <div className="text-center text-secondary-500 dark:text-secondary-400 text-xs py-4">
+                                Drop here
+                              </div>
+                            ) : (
+                              mealsInSection.map((meal, index) => (
+                                <div
+                                  key={meal._id || `meal-${index}`}
+                                  className="p-2 mb-2 rounded bg-white dark:bg-secondary-800 shadow-sm border border-secondary-200 dark:border-secondary-700 text-xs"
+                                >
+                                  <div className="font-medium truncate">{meal.name}</div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Desktop: Grid layout */}
+            <div className="hidden lg:grid lg:grid-cols-7 gap-4 h-full">
+              {Object.values(columns).map(column => (
+                <div
+                  key={column.id}
+                  className="flex flex-col h-full"
+                >
+                  <div className="text-center p-2 bg-secondary-100 dark:bg-secondary-800 rounded-t-lg font-medium">
+                    {column.title}
+                    <div className="text-sm text-secondary-600 dark:text-secondary-400">
+                      {column.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </div>
+                  </div>
+                  
+                  {/* Meal Type Sections */}
+                  <div className="flex-1 flex flex-col gap-2 p-2 bg-secondary-50 dark:bg-secondary-900/50 rounded-b-lg">
+                    {Object.entries(MEAL_TYPES).map(([key, mealType]) => {
+                      const Icon = mealType.icon;
+                      const mealsInSection = column.meals[mealType.id] || [];
+                      
+                      return (
+                        <div
+                          key={mealType.id}
+                          className={`flex-1 p-2 rounded-lg transition-all min-h-[80px] ${mealType.color} hover:bg-opacity-80`}
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, column.id, mealType.id)}
+                        >
+                          {/* Section Header */}
+                          <div className="flex items-center gap-2 mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+                            <Icon className="w-4 h-4" />
+                            {mealType.label}
+                          </div>
+                          
+                          {/* Meals in this section */}
+                          {mealsInSection.length === 0 ? (
+                            <div className="text-center text-secondary-500 dark:text-secondary-400 text-xs py-2">
+                              Drop here
+                            </div>
+                          ) : (
+                            mealsInSection.map((meal, index) => (
+                              <div
+                                key={meal._id || `meal-${index}`}
+                                className="p-2 mb-1 rounded bg-white dark:bg-secondary-800 shadow-sm border border-secondary-200 dark:border-secondary-700 text-xs"
+                              >
+                                <div className="font-medium truncate">{meal.name}</div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-                
-                {/* Meal Type Sections */}
-                <div className="flex-1 flex flex-col gap-2 p-2 bg-secondary-50 dark:bg-secondary-900/50 rounded-b-lg">
-                  {Object.entries(MEAL_TYPES).map(([key, mealType]) => {
-                    const Icon = mealType.icon;
-                    const mealsInSection = column.meals[mealType.id] || [];
-                    
-                    return (
-                      <div
-                        key={mealType.id}
-                        className={`flex-1 p-2 rounded-lg transition-all min-h-[80px] ${mealType.color} hover:bg-opacity-80`}
-                        onDragOver={handleDragOver}
-                        onDrop={(e) => handleDrop(e, column.id, mealType.id)}
-                      >
-                        {/* Section Header */}
-                        <div className="flex items-center gap-2 mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
-                          <Icon className="w-4 h-4" />
-                          {mealType.label}
-                        </div>
-                        
-                        {/* Meals in this section */}
-                        {mealsInSection.length === 0 ? (
-                          <div className="text-center text-secondary-500 dark:text-secondary-400 text-xs py-2">
-                            Drop here
-                          </div>
-                        ) : (
-                          mealsInSection.map((meal, index) => (
-                            <div
-                              key={meal._id || `meal-${index}`}
-                              className="p-2 mb-1 rounded bg-white dark:bg-secondary-800 shadow-sm border border-secondary-200 dark:border-secondary-700 text-xs"
-                            >
-                              <div className="font-medium truncate">{meal.name}</div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         ) : (
           <div className="text-center py-8 text-secondary-500 dark:text-secondary-400">
