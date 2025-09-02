@@ -146,7 +146,7 @@ describe('MealPlanner', () => {
       
       // Check view mode controls using aria-labels
       expect(screen.getByLabelText('Monthly view')).toBeInTheDocument();
-      expect(screen.getByLabelText('Weekly view')).toBeInTheDocument();
+      expect(screen.getByLabelText('Weekly view (Kanban)')).toBeInTheDocument();
       expect(screen.getByLabelText('Daily view')).toBeInTheDocument();
       expect(screen.getByLabelText('List view')).toBeInTheDocument();
     });
@@ -195,11 +195,12 @@ describe('MealPlanner', () => {
       const user = userEvent.setup();
 
       // Test switching to Weekly view
-      const weeklyButton = screen.getByLabelText('Weekly view');
+      const weeklyButton = screen.getByLabelText('Weekly view (Kanban)');
       await user.click(weeklyButton);
       
-      // Weekly should be active
-      expect(weeklyButton).toHaveClass('bg-primary-50');
+      // Weekly button should not have active state since it redirects to kanban page
+      // The button should have the default styling
+      expect(weeklyButton).toHaveClass('bg-white');
 
       // Test switching to Daily view
       const dailyButton = screen.getByLabelText('Daily view');
@@ -232,7 +233,7 @@ describe('MealPlanner', () => {
       expect(recommendationsPanel).toHaveClass('h-full');
 
       // Switch to Weekly view
-      await user.click(screen.getByLabelText('Weekly view'));
+      await user.click(screen.getByLabelText('Weekly view (Kanban)'));
       
       // The height should be managed by the parent container
       // In monthly view, the parent should have specific height constraints
