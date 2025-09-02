@@ -162,82 +162,86 @@ const KanbanMealPlannerPage = () => {
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Page Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <Calendar className="w-8 h-8 text-primary-600" />
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Meal Planner</h1>
-            <p className="text-gray-600 dark:text-gray-300">Plan your weekly meals</p>
+    <div className="py-6 min-h-screen overflow-hidden">
+      <div className="container mx-auto px-4 py-8">
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <Calendar className="w-8 h-8 text-primary-600" />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Meal Planner</h1>
+                <p className="text-gray-600 dark:text-gray-300">Plan your weekly meals</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setMealModalOpen(true)}
+                className="btn-primary"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Meal
+              </button>
+            </div>
+          </div>
+
+          {/* View Mode Toggles */}
+          <div className="flex items-center space-x-2">
+            <div className="flex rounded-md shadow-sm">
+              <button
+                onClick={() => window.location.href = '/meal-planner'}
+                aria-label="Monthly view"
+                className="px-3 py-2 text-sm font-medium rounded-l-md border border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700"
+              >
+                <Calendar className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => window.location.href = '/meal-planner/kanban'}
+                aria-label="Weekly view (Kanban)"
+                className="px-3 py-2 text-sm font-medium border-t border-b bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300"
+              >
+                <Kanban className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => window.location.href = '/meal-planner'}
+                aria-label="Daily view"
+                className="px-3 py-2 text-sm font-medium border-t border-b border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700"
+              >
+                <CalendarCheck className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => window.location.href = '/meal-planner'}
+                aria-label="List view"
+                className="px-3 py-2 text-sm font-medium rounded-r-md border-t border-b border-r border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700"
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
-        
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setMealModalOpen(true)}
-            className="btn-primary"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Meal
-          </button>
-        </div>
-      </div>
 
-      {/* View Mode Toggles */}
-      <div className="flex items-center space-x-2">
-        <div className="flex rounded-md shadow-sm">
-          <button
-            onClick={() => window.location.href = '/meal-planner'}
-            aria-label="Monthly view"
-            className="px-3 py-2 text-sm font-medium rounded-l-md border border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700"
-          >
-            <Calendar className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => window.location.href = '/meal-planner/kanban'}
-            aria-label="Weekly view (Kanban)"
-            className="px-3 py-2 text-sm font-medium border-t border-b bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300"
-          >
-            <Kanban className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => window.location.href = '/meal-planner'}
-            aria-label="Daily view"
-            className="px-3 py-2 text-sm font-medium border-t border-b border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700"
-          >
-            <CalendarCheck className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => window.location.href = '/meal-planner'}
-            aria-label="List view"
-            className="px-3 py-2 text-sm font-medium rounded-r-md border-t border-b border-r border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700"
-          >
-            <List className="w-4 h-4" />
-          </button>
+        {/* Kanban Board */}
+        <div className="flex-1">
+          <KanbanMealPlanner
+            meals={meals}
+            existingMealPlans={existingMealPlans}
+            onSaveMeal={handleSaveMeal}
+          />
         </div>
-      </div>
 
-      {/* Kanban Board */}
-      <div className="flex-1">
-        <KanbanMealPlanner
-          meals={meals}
-          existingMealPlans={existingMealPlans}
-          onSaveMeal={handleSaveMeal}
+        {/* Meal Modal */}
+        <MealModal
+          isOpen={mealModalOpen}
+          onClose={() => setMealModalOpen(false)}
+          onMealCreated={(newMeal) => {
+            setMeals(prev => [newMeal, ...prev]);
+            setMealModalOpen(false);
+            toast.success(`${newMeal.name} created successfully`);
+          }}
+          mode="add"
         />
       </div>
-
-      {/* Meal Modal */}
-      <MealModal
-        isOpen={mealModalOpen}
-        onClose={() => setMealModalOpen(false)}
-        onMealCreated={(newMeal) => {
-          setMeals(prev => [newMeal, ...prev]);
-          setMealModalOpen(false);
-          toast.success(`${newMeal.name} created successfully`);
-        }}
-        mode="add"
-      />
     </div>
   );
 };
