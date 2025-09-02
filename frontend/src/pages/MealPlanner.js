@@ -917,23 +917,13 @@ const MealPlanner = () => {
               <button
                 onClick={() => setViewMode(VIEW_MODES.LIST)}
                 aria-label="List view"
-                className={`px-3 py-2 text-sm font-medium border-t border-b ${
+                className={`px-3 py-2 text-sm font-medium rounded-r-md border-t border-b border-r ${
                   viewMode === VIEW_MODES.LIST
                     ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900 dark:border-primary-800 dark:text-primary-300'
                     : 'bg-white border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700'
                 }`}
               >
                 <List className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => {
-                  console.log('Kanban button clicked, navigating to /meal-planner/kanban');
-                  window.location.href = '/meal-planner/kanban';
-                }}
-                aria-label="Kanban view"
-                className="px-3 py-2 text-sm font-medium rounded-r-md border border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700"
-              >
-                <Kanban className="w-4 h-4" />
               </button>
             </div>
           </div>
