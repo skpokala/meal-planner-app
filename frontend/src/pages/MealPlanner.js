@@ -495,13 +495,27 @@ const MealPlanner = () => {
     console.log('Days for current view:', getCurrentViewDays());
   }, [viewMode, currentDate, getCurrentViewDays]);
 
+  // Force data refetch when view mode changes to ensure correct data is loaded
   useEffect(() => {
+    if (viewMode && !loading) {
+      console.log('View mode changed, forcing data refetch for:', viewMode);
+      // Use a small timeout to avoid race conditions
+      const timer = setTimeout(() => {
+        fetchData();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [viewMode, loading]);
+
+  useEffect(() => {
+    // Only fetch data on initial mount, not on every fetchData change
     const timer = setTimeout(() => {
+      console.log('Initial data fetch for viewMode:', viewMode);
       fetchData();
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [fetchData]);
+  }, []); // Empty dependency array for initial mount only
 
   // Navigation functions
   const navigateMonth = useCallback((direction) => {
@@ -898,7 +912,15 @@ const MealPlanner = () => {
           <div className="flex items-center space-x-2">
             <div className="flex rounded-md shadow-sm">
               <button
-                onClick={() => setViewMode(VIEW_MODES.MONTHLY)}
+                onClick={() => {
+                  console.log('Monthly view button clicked, switching to monthly view');
+                  setViewMode(VIEW_MODES.MONTHLY);
+                  // Force immediate data refetch for monthly view
+                  setTimeout(() => {
+                    console.log('Refetching data for monthly view');
+                    fetchData();
+                  }, 50);
+                }}
                 aria-label="Monthly view"
                 className={`px-3 py-2 text-sm font-medium rounded-l-md border ${
                   viewMode === VIEW_MODES.MONTHLY
@@ -916,7 +938,15 @@ const MealPlanner = () => {
                 <Kanban className="w-4 h-4" />
               </button>
               <button
-                onClick={() => setViewMode(VIEW_MODES.DAILY)}
+                onClick={() => {
+                  console.log('Daily view button clicked, switching to daily view');
+                  setViewMode(VIEW_MODES.DAILY);
+                  // Force immediate data refetch for daily view
+                  setTimeout(() => {
+                    console.log('Refetching data for daily view');
+                    fetchData();
+                  }, 50);
+                }}
                 aria-label="Daily view"
                 className={`px-3 py-2 text-sm font-medium border-t border-b ${
                   viewMode === VIEW_MODES.DAILY
@@ -927,7 +957,15 @@ const MealPlanner = () => {
                 <CalendarCheck className="w-4 h-4" />
               </button>
               <button
-                onClick={() => setViewMode(VIEW_MODES.LIST)}
+                onClick={() => {
+                  console.log('List view button clicked, switching to list view');
+                  setViewMode(VIEW_MODES.LIST);
+                  // Force immediate data refetch for list view
+                  setTimeout(() => {
+                    console.log('Refetching data for list view');
+                    fetchData();
+                  }, 50);
+                }}
                 aria-label="List view"
                 className={`px-3 py-2 text-sm font-medium rounded-r-md border-t border-b border-r ${
                   viewMode === VIEW_MODES.LIST
