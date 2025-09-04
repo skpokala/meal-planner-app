@@ -422,6 +422,9 @@ const MealPlanner = () => {
         case VIEW_MODES.DAILY:
           startDate = new Date(currentDate);
           endDate = new Date(currentDate);
+          // Ensure we're only getting data for the specific day
+          startDate.setHours(0, 0, 0, 0);
+          endDate.setHours(23, 59, 59, 999);
           break;
         case VIEW_MODES.WEEKLY:
           startDate = getStartOfWeek(currentDate);
@@ -454,6 +457,8 @@ const MealPlanner = () => {
         }
       };
 
+      console.log('Fetching data for viewMode:', viewMode, 'date range:', { startDate, endDate });
+
       const calendarResponse = await api.get('/meal-plans/calendar', {
         params: {
           startDate: formatApiDate(startDate),
@@ -482,6 +487,13 @@ const MealPlanner = () => {
     console.log('MealPlanner component mounted with viewMode:', viewMode);
     console.log('Current location pathname:', window.location.pathname);
   }, [viewMode]);
+
+  // Debug: Track view mode changes
+  useEffect(() => {
+    console.log('View mode changed to:', viewMode);
+    console.log('Current date:', currentDate);
+    console.log('Days for current view:', getCurrentViewDays());
+  }, [viewMode, currentDate, getCurrentViewDays]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
