@@ -492,8 +492,14 @@ const MealPlanner = () => {
   useEffect(() => {
     console.log('View mode changed to:', viewMode);
     console.log('Current date:', currentDate);
-    console.log('Days for current view:', getCurrentViewDays());
-  }, [viewMode, currentDate, getCurrentViewDays]);
+    // Note: getCurrentViewDays() is called here for debugging but not in dependency array
+    // to avoid temporal dead zone issues
+    try {
+      console.log('Days for current view:', getCurrentViewDays());
+    } catch (error) {
+      console.log('getCurrentViewDays not yet available:', error.message);
+    }
+  }, [viewMode, currentDate]);
 
   // Force data refetch when view mode changes to ensure correct data is loaded
   useEffect(() => {
