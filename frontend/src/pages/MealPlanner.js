@@ -501,17 +501,8 @@ const MealPlanner = () => {
     }
   }, [viewMode, currentDate]);
 
-  // Force data refetch when view mode changes to ensure correct data is loaded
-  useEffect(() => {
-    if (viewMode && !loading) {
-      console.log('View mode changed, forcing data refetch for:', viewMode);
-      // Use a small timeout to avoid race conditions
-      const timer = setTimeout(() => {
-        fetchData();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [viewMode, loading]);
+  // Note: Removed the force data refetch useEffect as it was causing infinite loops
+  // The initial data fetch and view mode changes are handled by the fetchData function's dependencies
 
   useEffect(() => {
     // Only fetch data on initial mount, not on every fetchData change
