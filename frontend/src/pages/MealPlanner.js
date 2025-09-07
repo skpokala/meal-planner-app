@@ -155,7 +155,25 @@ const MealPlanner = () => {
       return fallback;
     }
   });
-  const [viewMode, setViewMode] = useState(VIEW_MODES.MONTHLY);
+  // Initialize view mode from URL parameter or default to monthly
+  const getInitialViewMode = useCallback(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewParam = urlParams.get('view');
+    
+    switch (viewParam) {
+      case 'daily':
+        return VIEW_MODES.DAILY;
+      case 'weekly':
+        return VIEW_MODES.WEEKLY;
+      case 'list':
+        return VIEW_MODES.LIST;
+      case 'monthly':
+      default:
+        return VIEW_MODES.MONTHLY;
+    }
+  }, []);
+
+  const [viewMode, setViewMode] = useState(getInitialViewMode());
   const [meals, setMeals] = useState([]);
   const [plannedMeals, setPlannedMeals] = useState({});
   
@@ -513,6 +531,9 @@ const MealPlanner = () => {
 
     return () => clearTimeout(timer);
   }, []); // Empty dependency array for initial mount only
+
+  // Note: URL parameter detection is handled at component initialization
+  // For navigation between views, users should use the view toggle buttons
 
   // Navigation functions
   const navigateMonth = useCallback((direction) => {

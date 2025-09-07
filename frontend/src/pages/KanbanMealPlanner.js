@@ -204,14 +204,14 @@ const KanbanMealPlannerPage = () => {
                 <Kanban className="w-4 h-4" />
               </button>
               <button
-                onClick={() => window.location.href = '/meal-planner'}
+                onClick={() => window.location.href = '/meal-planner?view=daily'}
                 aria-label="Daily view"
                 className="px-3 py-2 text-sm font-medium border-t border-b border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700"
               >
                 <CalendarCheck className="w-4 h-4" />
               </button>
               <button
-                onClick={() => window.location.href = '/meal-planner'}
+                onClick={() => window.location.href = '/meal-planner?view=list'}
                 aria-label="List view"
                 className="px-3 py-2 text-sm font-medium rounded-r-md border-t border-b border-r border-secondary-300 text-secondary-700 hover:bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-700"
               >
