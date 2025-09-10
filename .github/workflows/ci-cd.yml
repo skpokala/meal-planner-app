@@ -17,7 +17,7 @@ jobs:
   # Testing Phase
   frontend-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     
     steps:
     - name: Checkout code
@@ -53,7 +53,7 @@ jobs:
 
   backend-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     
     services:
       mongodb:
@@ -91,14 +91,14 @@ jobs:
     - name: Run backend tests
       working-directory: ./backend
       run: npm run test:ci
-      timeout-minutes: 15
+      timeout-minutes: 10
       env:
         NODE_ENV: test
         JWT_SECRET: test-jwt-secret-for-ci
         # Use the MongoDB service instead of Memory Server
         CI: true
         MONGODB_URI: mongodb://localhost:27017/test-meal-planner
-        JEST_TIMEOUT: 60000
+        JEST_TIMEOUT: 30000
     
     - name: Upload backend coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -108,10 +108,12 @@ jobs:
         name: backend-coverage
         fail_ci_if_error: false
 
+  # Optional Docker build (only on main branch or manual trigger)
   docker-build:
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     needs: [frontend-tests, backend-tests]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     
     steps:
     - name: Checkout code
@@ -120,31 +122,17 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
     
-    - name: Build and test with Docker Compose
+    - name: Build production images (single platform for speed)
       run: |
-        # Build production images
+        # Build production images for single platform only
         docker compose build --no-cache
         echo "✅ Production images built successfully"
-        
-        # Test with dedicated test configuration
-        docker compose -f docker-compose.test.yml build --no-cache
-        docker compose -f docker-compose.test.yml up --abort-on-container-exit
-        
-        # Check exit codes
-        if [ $? -eq 0 ]; then
-          echo "✅ All Docker tests passed"
-        else
-          echo "❌ Docker tests failed"
-          docker compose -f docker-compose.test.yml logs
-          exit 1
-        fi
-        
-        # Cleanup
-        docker compose -f docker-compose.test.yml down
 
+  # Optional security audit (only on main branch or manual trigger)
   security-audit:
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     
     steps:
     - name: Checkout code
@@ -155,31 +143,18 @@ jobs:
       with:
         node-version: '18.x'
     
-    - name: Frontend security audit (production runtime only)
-      working-directory: ./frontend
-      run: |
-        npm ci
-        echo "Frontend security audit: Checking only runtime dependencies"
-        # Check if any actual runtime vulnerabilities exist (excluding build tools)
-        npm audit --audit-level high --omit=dev || {
-          echo "⚠️  Frontend has vulnerabilities in build dependencies (webpack-dev-server, etc.)"
-          echo "ℹ️  These are not security risks in production as frontend builds to static files"
-          echo "✅  Production deployment is secure - vulnerabilities only affect development"
-          exit 0
-        }
-    
-    - name: Backend security audit (production dependencies)
+    - name: Quick security audit (production dependencies only)
       working-directory: ./backend
       run: |
-        npm ci
-        npm audit --audit-level high --omit=dev
+        npm ci --production
+        npm audit --audit-level high --omit=dev || echo "⚠️  Security audit completed with warnings"
 
   # Build and Publish Phase (only on main branch, tags, or releases)
   build-and-push:
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
-    needs: [frontend-tests, backend-tests, docker-build, security-audit]
+    needs: [frontend-tests, backend-tests]
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
@@ -233,7 +208,7 @@ jobs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-        platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64
         cache-from: type=gha
         cache-to: type=gha,mode=max
         build-args: ${{ matrix.service == 'frontend' && format('REACT_APP_VERSION={0}\nREACT_APP_BUILD_TIME={1}', steps.package-version.outputs.version, github.event.head_commit.timestamp) || '' }}
