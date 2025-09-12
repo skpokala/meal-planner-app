@@ -32,6 +32,8 @@ const TwoFactorVerification = ({ temporaryToken, onSuccess, onCancel }) => {
       toast.success('Login successful!');
       onSuccess(response.data);
     } catch (error) {
+      console.error('2FA verification error:', error);
+      console.error('Error response:', error.response?.data);
       const errorMessage = error.response?.data?.message || 'Verification failed';
       toast.error(errorMessage);
       

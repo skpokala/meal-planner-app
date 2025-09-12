@@ -348,8 +348,15 @@ router.post('/verify', [
   body('temporaryToken').notEmpty().withMessage('Temporary token is required')
 ], async (req, res) => {
   try {
+    console.log('2FA verify request:', { 
+      hasToken: !!req.body.token, 
+      hasBackupCode: !!req.body.backupCode, 
+      hasTemporaryToken: !!req.body.temporaryToken 
+    });
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('2FA validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
@@ -389,14 +396,25 @@ router.post('/verify', [
 
     // Verify TOTP or backup code
     let verified = false;
+    console.log('Verifying 2FA:', { 
+      hasToken: !!token, 
+      hasBackupCode: !!backupCode, 
+      userTwoFactorEnabled: user.twoFactorEnabled,
+      userHasSecret: !!user.twoFactorSecret,
+      userHasBackupCodes: user.twoFactorBackupCodes?.length || 0
+    });
+    
     if (token) {
       verified = user.verifyTOTP(token);
+      console.log('TOTP verification result:', verified);
     } else if (backupCode) {
       verified = user.verifyBackupCode(backupCode);
+      console.log('Backup code verification result:', verified);
       if (verified) {
         await user.save(); // Save to remove used backup code
       }
     } else {
+      console.log('No token or backup code provided');
       return res.status(400).json({
         success: false,
         message: 'TOTP code or backup code is required'
@@ -404,6 +422,7 @@ router.post('/verify', [
     }
 
     if (!verified) {
+      console.log('2FA verification failed');
       return res.status(400).json({
         success: false,
         message: 'Invalid TOTP code or backup code'
