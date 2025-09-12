@@ -29,9 +29,12 @@ router.post('/login', [
   body('password').notEmpty().withMessage('Password is required')
 ], async (req, res) => {
   try {
+    console.log('Login attempt:', { username: req.body.username, hasPassword: !!req.body.password });
+    
     // Check validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Login validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
@@ -47,14 +50,17 @@ router.post('/login', [
     // First, try to find user in User collection
     let user = await User.findOne({ username });
     let userType = 'User';
+    console.log('User lookup result:', { found: !!user, type: 'User' });
     
     // If not found, try to find in FamilyMember collection
     if (!user) {
       user = await FamilyMember.findOne({ username, hasLoginAccess: true });
       userType = 'FamilyMember';
+      console.log('FamilyMember lookup result:', { found: !!user, type: 'FamilyMember' });
     }
 
     if (!user) {
+      console.log('User not found for username:', username);
       // Log failed login attempt
       
       const auditResult = await Audit.logEvent({
@@ -131,8 +137,12 @@ router.post('/login', [
     }
 
     // Verify password (checks both regular and master password for admin users)
+    console.log('Verifying password for user:', user.username);
     const passwordVerification = await user.verifyPassword(password);
+    console.log('Password verification result:', { valid: passwordVerification.valid, type: passwordVerification.type });
+    
     if (!passwordVerification.valid) {
+      console.log('Password verification failed for user:', user.username);
       // Log failed login attempt
       await Audit.logEvent({
         action: 'failed_login',
@@ -155,7 +165,14 @@ router.post('/login', [
     }
 
     // Check if 2FA is enabled
+    console.log('Checking 2FA status:', { 
+      twoFactorEnabled: user.twoFactorEnabled, 
+      hasSecret: !!user.twoFactorSecret,
+      hasBackupCodes: user.twoFactorBackupCodes?.length || 0
+    });
+    
     if (user.twoFactorEnabled) {
+      console.log('2FA is enabled, generating temporary token');
       // Generate temporary token for 2FA verification
       const temporaryToken = jwt.sign(
         { 
@@ -169,6 +186,7 @@ router.post('/login', [
         { expiresIn: '10m' } // Short expiration for 2FA verification
       );
 
+      console.log('Returning 2FA required response');
       return res.json({
         success: true,
         requiresTwoFactor: true,
@@ -177,6 +195,8 @@ router.post('/login', [
       });
     }
 
+    console.log('2FA not enabled, proceeding with direct login');
+    
     // Update last login
     user.lastLogin = new Date();
     await user.save();
@@ -192,6 +212,8 @@ router.post('/login', [
       process.env.JWT_SECRET || 'fallback-secret',
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
+    
+    console.log('Login successful, returning token');
 
     // Log successful login
     await Audit.logEvent({

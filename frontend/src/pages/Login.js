@@ -22,15 +22,19 @@ const Login = () => {
     setLoading(true);
 
     try {
+      console.log('Attempting login for user:', username);
       const response = await api.post('/auth/login', { username, password });
+      console.log('Login response:', response.data);
       
       if (response.data.requiresTwoFactor) {
         // 2FA is required, show verification screen
+        console.log('2FA required, showing verification screen');
         setTemporaryToken(response.data.temporaryToken);
         setShowTwoFactor(true);
         toast.info(response.data.message);
       } else {
         // No 2FA required, proceed with login
+        console.log('No 2FA required, proceeding with login');
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
@@ -38,6 +42,9 @@ const Login = () => {
         window.location.href = '/dashboard';
       }
     } catch (error) {
+      console.error('Login error:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
       const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
       toast.error(errorMessage);
     } finally {
