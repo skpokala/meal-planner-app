@@ -59,8 +59,17 @@ export const setClientLocation = (location) => {
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
+    console.log('API request interceptor:', { 
+      url: config.url, 
+      hasToken: !!token, 
+      tokenLength: token?.length || 0,
+      existingAuth: config.headers.Authorization 
+    });
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      console.warn('No token found in localStorage for request:', config.url);
     }
     
     // Add cache busting for GET requests

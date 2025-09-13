@@ -41,15 +41,24 @@ const Login = () => {
       } else {
         // No 2FA required, proceed with login
         console.log('No 2FA required, proceeding with login');
+        console.log('Storing token:', { 
+          hasToken: !!response.data.token, 
+          tokenLength: response.data.token?.length || 0,
+          hasUser: !!response.data.user 
+        });
+        
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        
         try {
           toast.success('Welcome back!');
         } catch (toastError) {
           console.error('Toast error:', toastError);
           console.log('Login successful!');
         }
+        
+        console.log('Token stored, redirecting to dashboard');
         window.location.href = '/dashboard';
       }
     } catch (error) {
@@ -74,10 +83,18 @@ const Login = () => {
   };
 
   const handleTwoFactorSuccess = (data) => {
+    console.log('2FA success, storing token:', { 
+      hasToken: !!data.token, 
+      tokenLength: data.token?.length || 0,
+      hasUser: !!data.user 
+    });
+    
     // 2FA verification successful, complete login
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
     api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+    
+    console.log('Token stored, redirecting to dashboard');
     // Reload the page to trigger the AuthContext to load the user
     window.location.href = '/dashboard';
   };
