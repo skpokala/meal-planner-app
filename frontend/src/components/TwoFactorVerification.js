@@ -10,6 +10,13 @@ const TwoFactorVerification = ({ temporaryToken, onSuccess, onCancel }) => {
   const [loading, setLoading] = useState(false);
 
   const handleVerify = async () => {
+    console.log('2FA verification started:', { 
+      useBackupCode, 
+      hasTotpToken: !!totpToken, 
+      hasBackupCode: !!backupCode,
+      hasTemporaryToken: !!temporaryToken 
+    });
+    
     if (useBackupCode) {
       if (!backupCode || backupCode.length !== 8) {
         toast.error('Please enter a valid 8-character backup code');
@@ -24,17 +31,21 @@ const TwoFactorVerification = ({ temporaryToken, onSuccess, onCancel }) => {
 
     setLoading(true);
     try {
+      console.log('Making 2FA verification API call...');
       const response = await api.post('/2fa/verify', {
         temporaryToken,
         ...(useBackupCode ? { backupCode } : { token: totpToken })
       });
+      console.log('2FA verification successful:', response.data);
 
       toast.success('Login successful!');
       onSuccess(response.data);
     } catch (error) {
       console.error('2FA verification error:', error);
       console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
       const errorMessage = error.response?.data?.message || 'Verification failed';
+      console.log('Displaying error message:', errorMessage);
       toast.error(errorMessage);
       
       // Clear the input on error

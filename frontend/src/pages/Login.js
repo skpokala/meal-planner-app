@@ -46,7 +46,12 @@ const Login = () => {
       console.error('Error response:', error.response?.data);
       console.error('Error status:', error.response?.status);
       const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
+      console.log('Displaying login error message:', errorMessage);
       toast.error(errorMessage);
+      
+      // Reset 2FA state on error
+      setShowTwoFactor(false);
+      setTemporaryToken('');
     } finally {
       setLoading(false);
     }
