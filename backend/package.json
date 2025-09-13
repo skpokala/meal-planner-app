@@ -1,6 +1,6 @@
 {
   "name": "meal-planner-backend",
-  "version": "1.2.45",
+  "version": "1.2.46",
   "description": "Backend API for Family Meal Planner",
   "main": "server.js",
   "scripts": {
