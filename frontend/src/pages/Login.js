@@ -32,7 +32,8 @@ const Login = () => {
         setTemporaryToken(response.data.temporaryToken);
         setShowTwoFactor(true);
         try {
-          toast(response.data.message, { icon: '🔐' });
+          // Use toast.success instead of toast.info to avoid the qt.info error
+          toast.success(response.data.message);
         } catch (toastError) {
           console.error('Toast error:', toastError);
           // Fallback to console log if toast fails
@@ -65,6 +66,20 @@ const Login = () => {
       console.error('Login error:', error);
       console.error('Error response:', error.response?.data);
       console.error('Error status:', error.response?.status);
+      
+      // Check if this is a toast-related error and handle 2FA flow
+      if (error.message && error.message.includes('qt.info is not a function')) {
+        console.warn('Toast library error detected, handling 2FA flow manually');
+        // This means the 2FA flow was triggered but toast failed
+        // Check if we have a response with 2FA data
+        if (error.response?.data?.requiresTwoFactor) {
+          setTemporaryToken(error.response.data.temporaryToken);
+          setShowTwoFactor(true);
+          setLoading(false);
+          return;
+        }
+      }
+      
       const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
       console.log('Displaying login error message:', errorMessage);
       try {
