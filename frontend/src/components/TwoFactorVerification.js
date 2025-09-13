@@ -38,7 +38,12 @@ const TwoFactorVerification = ({ temporaryToken, onSuccess, onCancel }) => {
       });
       console.log('2FA verification successful:', response.data);
 
-      toast.success('Login successful!');
+      try {
+        toast.success('Login successful!');
+      } catch (toastError) {
+        console.error('Toast error:', toastError);
+        console.log('Login successful!');
+      }
       onSuccess(response.data);
     } catch (error) {
       console.error('2FA verification error:', error);
@@ -46,7 +51,12 @@ const TwoFactorVerification = ({ temporaryToken, onSuccess, onCancel }) => {
       console.error('Error status:', error.response?.status);
       const errorMessage = error.response?.data?.message || 'Verification failed';
       console.log('Displaying error message:', errorMessage);
-      toast.error(errorMessage);
+      try {
+        toast.error(errorMessage);
+      } catch (toastError) {
+        console.error('Toast error:', toastError);
+        console.log('2FA error:', errorMessage);
+      }
       
       // Clear the input on error
       if (useBackupCode) {

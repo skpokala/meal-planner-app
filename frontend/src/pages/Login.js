@@ -31,14 +31,25 @@ const Login = () => {
         console.log('2FA required, showing verification screen');
         setTemporaryToken(response.data.temporaryToken);
         setShowTwoFactor(true);
-        toast.info(response.data.message);
+        try {
+          toast(response.data.message, { icon: '🔐' });
+        } catch (toastError) {
+          console.error('Toast error:', toastError);
+          // Fallback to console log if toast fails
+          console.log('2FA required:', response.data.message);
+        }
       } else {
         // No 2FA required, proceed with login
         console.log('No 2FA required, proceeding with login');
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-        toast.success('Welcome back!');
+        try {
+          toast.success('Welcome back!');
+        } catch (toastError) {
+          console.error('Toast error:', toastError);
+          console.log('Login successful!');
+        }
         window.location.href = '/dashboard';
       }
     } catch (error) {
@@ -47,7 +58,12 @@ const Login = () => {
       console.error('Error status:', error.response?.status);
       const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
       console.log('Displaying login error message:', errorMessage);
-      toast.error(errorMessage);
+      try {
+        toast.error(errorMessage);
+      } catch (toastError) {
+        console.error('Toast error:', toastError);
+        console.log('Login error:', errorMessage);
+      }
       
       // Reset 2FA state on error
       setShowTwoFactor(false);
