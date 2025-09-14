@@ -80,7 +80,7 @@ services:
       dockerfile: Dockerfile
       args:
         REACT_APP_API_URL: http://localhost:5002/api
-        REACT_APP_VERSION: "1.2.46"
+        REACT_APP_VERSION: "1.2.47"
         REACT_APP_BUILD_TIME: "${BUILD_TIME:-$(date -Iseconds)}"
     container_name: meal-planner-frontend
     restart: unless-stopped
