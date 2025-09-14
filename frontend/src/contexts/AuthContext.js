@@ -20,29 +20,16 @@ export const AuthProvider = ({ children }) => {
     const loadUser = async () => {
       try {
         const token = localStorage.getItem('token');
-        console.log('AuthContext loading user:', { 
-          hasToken: !!token, 
-          tokenLength: token?.length || 0 
-        });
-        
         if (token) {
           // Set the token in the API headers
           api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           
           // Verify token and get user info
-          console.log('Making profile request...');
           const response = await api.get('/auth/profile');
-          console.log('Profile response:', response.data);
           setUser(response.data.user);
-        } else {
-          console.log('No token found, user not authenticated');
         }
       } catch (error) {
         console.error('Error loading user:', error);
-        console.error('Error details:', { 
-          status: error.response?.status, 
-          message: error.response?.data?.message 
-        });
         // Clear invalid token
         localStorage.removeItem('token');
         delete api.defaults.headers.common['Authorization'];

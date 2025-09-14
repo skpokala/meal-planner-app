@@ -22,32 +22,20 @@ const Login = () => {
     setLoading(true);
 
     try {
-      console.log('Attempting login for user:', username);
       const response = await api.post('/auth/login', { username, password });
-      console.log('Login response:', response.data);
       
       if (response.data.requiresTwoFactor) {
         // 2FA is required, show verification screen
-        console.log('2FA required, showing verification screen');
         setTemporaryToken(response.data.temporaryToken);
         setShowTwoFactor(true);
         try {
-          // Use toast.success instead of toast.info to avoid the qt.info error
           toast.success(response.data.message);
         } catch (toastError) {
-          console.error('Toast error:', toastError);
           // Fallback to console log if toast fails
           console.log('2FA required:', response.data.message);
         }
       } else {
         // No 2FA required, proceed with login
-        console.log('No 2FA required, proceeding with login');
-        console.log('Storing token:', { 
-          hasToken: !!response.data.token, 
-          tokenLength: response.data.token?.length || 0,
-          hasUser: !!response.data.user 
-        });
-        
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
@@ -55,21 +43,14 @@ const Login = () => {
         try {
           toast.success('Welcome back!');
         } catch (toastError) {
-          console.error('Toast error:', toastError);
           console.log('Login successful!');
         }
         
-        console.log('Token stored, redirecting to dashboard');
         window.location.href = '/dashboard';
       }
     } catch (error) {
-      console.error('Login error:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      
       // Check if this is a toast-related error and handle 2FA flow
       if (error.message && error.message.includes('qt.info is not a function')) {
-        console.warn('Toast library error detected, handling 2FA flow manually');
         // This means the 2FA flow was triggered but toast failed
         // Check if we have a response with 2FA data
         if (error.response?.data?.requiresTwoFactor) {
@@ -81,11 +62,9 @@ const Login = () => {
       }
       
       const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
-      console.log('Displaying login error message:', errorMessage);
       try {
         toast.error(errorMessage);
       } catch (toastError) {
-        console.error('Toast error:', toastError);
         console.log('Login error:', errorMessage);
       }
       
@@ -98,18 +77,11 @@ const Login = () => {
   };
 
   const handleTwoFactorSuccess = (data) => {
-    console.log('2FA success, storing token:', { 
-      hasToken: !!data.token, 
-      tokenLength: data.token?.length || 0,
-      hasUser: !!data.user 
-    });
-    
     // 2FA verification successful, complete login
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
     api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
     
-    console.log('Token stored, redirecting to dashboard');
     // Reload the page to trigger the AuthContext to load the user
     window.location.href = '/dashboard';
   };
