@@ -59,7 +59,7 @@ export const ThemeProvider = ({ children }) => {
       if (user.theme && ['light', 'dark', 'system'].includes(user.theme)) {
         setTheme(user.theme);
       }
-      if (user.themeStyle && ['classic', 'modern'].includes(user.themeStyle)) {
+      if (user.themeStyle && ['classic', 'modern', 'nord', 'sunset', 'forest', 'glass'].includes(user.themeStyle)) {
         setThemeStyle(user.themeStyle);
       }
     } else {
@@ -69,7 +69,7 @@ export const ThemeProvider = ({ children }) => {
       }
 
       const savedThemeStyle = localStorage.getItem('themeStyle');
-      if (savedThemeStyle && ['classic', 'modern'].includes(savedThemeStyle)) {
+      if (savedThemeStyle && ['classic', 'modern', 'nord', 'sunset', 'forest', 'glass'].includes(savedThemeStyle)) {
         setThemeStyle(savedThemeStyle);
       }
     }
@@ -87,7 +87,7 @@ export const ThemeProvider = ({ children }) => {
       // Remove existing theme classes
       root.classList.remove('light', 'dark');
       // Remove existing style classes
-      root.classList.remove('classic', 'modern');
+      root.classList.remove('classic', 'modern', 'nord', 'sunset', 'forest', 'glass');
 
       // Add new theme class and style class
       root.classList.add(newResolvedTheme);
@@ -125,7 +125,7 @@ export const ThemeProvider = ({ children }) => {
   };
 
   const setThemeStylePreference = async (newStyle) => {
-    if (['classic', 'modern', 'nord', 'sunset', 'forest'].includes(newStyle)) {
+    if (['classic', 'modern', 'nord', 'sunset', 'forest', 'glass'].includes(newStyle)) {
       setThemeStyle(newStyle);
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem('themeStyle', newStyle);
@@ -163,7 +163,8 @@ export const ThemeProvider = ({ children }) => {
       { value: 'modern', label: 'Modern', description: 'Vibrant and colorful' },
       { value: 'nord', label: 'Nord', description: 'Cool arctic colors' },
       { value: 'sunset', label: 'Sunset', description: 'Warm gradient tones' },
-      { value: 'forest', label: 'Forest', description: 'Natural earth tones' }
+      { value: 'forest', label: 'Forest', description: 'Natural earth tones' },
+      { value: 'glass', label: 'Glass', description: 'iOS 26/Tahoe 26 futuristic glassmorphism' }
     ]
   };
 

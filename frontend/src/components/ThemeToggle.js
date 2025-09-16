@@ -12,6 +12,8 @@ const getThemeColorClass = (style) => {
       return 'bg-gradient-to-r from-orange-400 to-pink-500';
     case 'forest':
       return 'bg-gradient-to-r from-green-600 to-emerald-500';
+    case 'glass':
+      return 'bg-gradient-to-r from-blue-400/30 via-purple-400/20 to-cyan-400/30 backdrop-blur-sm border border-white/30 shadow-lg shadow-blue-500/20';
     default:
       return 'bg-primary-500';
   }

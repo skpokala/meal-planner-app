@@ -144,3 +144,84 @@
   --color-secondary-800: 30 41 59;
   --color-secondary-900: 15 23 42;
 }
+
+/* Glass Theme - iOS 26/Tahoe 26 futuristic glassmorphism */
+.glass:root {
+  /* Improved color palette with better contrast */
+  --color-primary-50: 240 248 255;
+  --color-primary-100: 219 234 254;
+  --color-primary-200: 191 219 254;
+  --color-primary-300: 147 197 253;
+  --color-primary-400: 96 165 250;
+  --color-primary-500: 59 130 246;
+  --color-primary-600: 37 99 235;
+  --color-primary-700: 29 78 216;
+  --color-primary-800: 30 64 175;
+  --color-primary-900: 30 58 138;
+
+  /* Improved secondary colors with better readability */
+  --color-secondary-50: 248 250 252;
+  --color-secondary-100: 241 245 249;
+  --color-secondary-200: 226 232 240;
+  --color-secondary-300: 203 213 225;
+  --color-secondary-400: 148 163 184;
+  --color-secondary-500: 100 116 139;
+  --color-secondary-600: 71 85 105;
+  --color-secondary-700: 51 65 85;
+  --color-secondary-800: 30 41 59;
+  --color-secondary-900: 15 23 42;
+
+  /* Improved glass-specific CSS variables for better readability */
+  --glass-bg: rgba(255, 255, 255, 0.15);
+  --glass-bg-strong: rgba(255, 255, 255, 0.25);
+  --glass-bg-hover: rgba(255, 255, 255, 0.35);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-border-strong: rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  --glass-shadow-strong: 0 12px 40px 0 rgba(31, 38, 135, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2);
+  --glass-backdrop: blur(12px);
+  --glass-backdrop-strong: blur(20px);
+  --glass-backdrop-ultra: blur(30px);
+  --glass-glow: 0 0 15px rgba(59, 130, 246, 0.2);
+  --glass-glow-strong: 0 0 25px rgba(59, 130, 246, 0.3);
+}
+
+.dark.glass {
+  /* Improved dark glass theme with better readability */
+  --color-primary-50: 30 58 138;
+  --color-primary-100: 30 64 175;
+  --color-primary-200: 29 78 216;
+  --color-primary-300: 37 99 235;
+  --color-primary-400: 59 130 246;
+  --color-primary-500: 96 165 250;
+  --color-primary-600: 147 197 253;
+  --color-primary-700: 191 219 254;
+  --color-primary-800: 219 234 254;
+  --color-primary-900: 240 249 255;
+
+  /* Improved dark secondary colors for better contrast */
+  --color-secondary-50: 248 250 252;
+  --color-secondary-100: 241 245 249;
+  --color-secondary-200: 226 232 240;
+  --color-secondary-300: 203 213 225;
+  --color-secondary-400: 148 163 184;
+  --color-secondary-500: 100 116 139;
+  --color-secondary-600: 71 85 105;
+  --color-secondary-700: 51 65 85;
+  --color-secondary-800: 30 41 59;
+  --color-secondary-900: 15 23 42;
+
+  /* Improved dark glass-specific CSS variables */
+  --glass-bg: rgba(0, 0, 0, 0.2);
+  --glass-bg-strong: rgba(0, 0, 0, 0.3);
+  --glass-bg-hover: rgba(0, 0, 0, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-border-strong: rgba(255, 255, 255, 0.25);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --glass-shadow-strong: 0 12px 40px 0 rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  --glass-backdrop: blur(12px);
+  --glass-backdrop-strong: blur(20px);
+  --glass-backdrop-ultra: blur(30px);
+  --glass-glow: 0 0 15px rgba(59, 130, 246, 0.3);
+  --glass-glow-strong: 0 0 25px rgba(59, 130, 246, 0.5);
+}
