@@ -13,16 +13,28 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState('system');
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        return localStorage.getItem('theme') || 'system';
+      } catch {
+        return 'system';
+      }
+    }
+    return 'system';
+  });
   const [resolvedTheme, setResolvedTheme] = useState('light');
   const [systemTheme, setSystemTheme] = useState('light');
   // Visual style preset for the design system: classic (existing) or modern (colorful)
   const [themeStyle, setThemeStyle] = useState(() => {
-    try {
-      return localStorage.getItem('themeStyle') || 'classic';
-    } catch {
-      return 'classic';
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        return localStorage.getItem('themeStyle') || 'classic';
+      } catch {
+        return 'classic';
+      }
     }
+    return 'classic';
   });
   const { user } = useAuth?.() || {}; // ThemeProvider is above AuthProvider today; fallback if not available
 
@@ -64,11 +76,12 @@ export const ThemeProvider = ({ children }) => {
       }
     } else {
       const savedTheme = localStorage.getItem('theme');
+      const savedThemeStyle = localStorage.getItem('themeStyle');
+      
       if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
         setTheme(savedTheme);
       }
 
-      const savedThemeStyle = localStorage.getItem('themeStyle');
       if (savedThemeStyle && ['classic', 'modern', 'nord', 'sunset', 'forest', 'glass'].includes(savedThemeStyle)) {
         setThemeStyle(savedThemeStyle);
       }
@@ -168,7 +181,6 @@ export const ThemeProvider = ({ children }) => {
     ]
   };
 
-  console.log('ThemeContext - providing value:', { themeStyle, toggleThemeStyle: typeof toggleThemeStyle });
 
   return (
     <ThemeContext.Provider value={value}>
