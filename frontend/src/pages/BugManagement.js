@@ -205,7 +205,7 @@ const BugManagement = () => {
   const isAdmin = user?.role === 'admin' || user?.role === 'system_admin';
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 lg:p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
@@ -290,7 +290,7 @@ const BugManagement = () => {
 
         {showFilters && (
           <div className="border-t border-secondary-200 dark:border-secondary-700 p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Search */}
               <div>
                 <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
@@ -383,8 +383,8 @@ const BugManagement = () => {
           </div>
         ) : (
           <>
-            {/* Table Header */}
-            <div className="px-6 py-4 border-b border-secondary-200 dark:border-secondary-700">
+            {/* Desktop Table Header - Hidden on mobile */}
+            <div className="hidden lg:block px-6 py-4 border-b border-secondary-200 dark:border-secondary-700">
               <div className="grid grid-cols-12 gap-4 text-sm font-medium text-secondary-700 dark:text-secondary-300">
                 <div 
                   className="col-span-4 cursor-pointer hover:text-primary-600 flex items-center"
@@ -428,8 +428,8 @@ const BugManagement = () => {
               </div>
             </div>
 
-            {/* Table Body */}
-            <div className="divide-y divide-secondary-200 dark:divide-secondary-700">
+            {/* Desktop Table Body - Hidden on mobile */}
+            <div className="hidden lg:block divide-y divide-secondary-200 dark:divide-secondary-700">
               {bugs.map((bug) => (
                 <div key={bug._id} className="px-6 py-4 hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
                   <div className="grid grid-cols-12 gap-4 items-center">
@@ -554,11 +554,140 @@ const BugManagement = () => {
               ))}
             </div>
 
+            {/* Mobile Card Layout - Visible on mobile and tablet */}
+            <div className="lg:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
+              {bugs.map((bug) => (
+                <div key={bug._id} className="p-4 hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
+                  {/* Mobile Card Header */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-start flex-1 min-w-0">
+                      <Bug className="w-5 h-5 text-secondary-400 mt-1 mr-3 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-secondary-900 dark:text-secondary-100 text-base leading-tight mb-1">
+                          {bug.title}
+                        </h3>
+                        <p className="text-sm text-secondary-600 dark:text-secondary-400 line-clamp-2 mb-2">
+                          {bug.description}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2 ml-2">
+                      <button
+                        onClick={() => setSelectedBug(bug)}
+                        className="text-secondary-400 hover:text-primary-600 transition-colors p-1"
+                        title="View Details"
+                      >
+                        <Eye className="w-5 h-5" />
+                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => updateBugStatus(bug._id, 
+                            bug.status === 'open' ? 'in-progress' : 
+                            bug.status === 'in-progress' ? 'resolved' : 'open'
+                          )}
+                          className="text-secondary-400 hover:text-green-600 transition-colors p-1"
+                          title="Update Status"
+                        >
+                          <Edit className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Mobile Card Content */}
+                  <div className="space-y-3">
+                    {/* Priority and Status Row */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-medium text-secondary-600 dark:text-secondary-400">Priority:</span>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(bug.priority)}`}>
+                          {bug.priority}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-medium text-secondary-600 dark:text-secondary-400">Status:</span>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(bug.status)}`}>
+                          {bug.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Reporter and Assigned Row */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center min-w-0 flex-1">
+                        <User className="w-4 h-4 text-secondary-400 mr-2 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-secondary-900 dark:text-secondary-100 truncate">
+                            {bug.reportedBy.username}
+                          </p>
+                          <p className="text-xs text-secondary-500 truncate">{bug.reportedBy.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center ml-4 min-w-0 flex-1">
+                        <User className="w-4 h-4 text-secondary-400 mr-2 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          {bug.assignedTo ? (
+                            <p className="text-sm font-medium text-secondary-900 dark:text-secondary-100 truncate">
+                              {bug.assignedTo.username}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-secondary-500">Unassigned</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Created Date Row */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <Clock className="w-4 h-4 text-secondary-400 mr-2" />
+                        <span className="text-xs text-secondary-500">{formatDate(bug.createdAt)}</span>
+                      </div>
+                      {bug.ageInDays > 0 && (
+                        <span className="text-xs text-secondary-400">{bug.ageInDays} days old</span>
+                      )}
+                    </div>
+
+                    {/* Tags Row */}
+                    {bug.tags && bug.tags.length > 0 && (
+                      <div className="flex items-center space-x-1 flex-wrap">
+                        <Tag className="w-4 h-4 text-secondary-400 mr-1 flex-shrink-0" />
+                        {bug.tags.slice(0, 4).map((tag, index) => (
+                          <span 
+                            key={index}
+                            className="inline-flex items-center px-2 py-1 bg-secondary-100 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-400 rounded text-xs"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                        {bug.tags.length > 4 && (
+                          <span className="text-xs text-secondary-500">+{bug.tags.length - 4} more</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Admin Actions Row */}
+                    {isAdmin && (
+                      <div className="flex items-center justify-end pt-2 border-t border-secondary-200 dark:border-secondary-700">
+                        <button
+                          onClick={() => deleteBug(bug._id)}
+                          className="text-red-400 hover:text-red-600 transition-colors p-2"
+                          title="Delete Bug"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {/* Pagination */}
             {pagination.total > 1 && (
-              <div className="px-6 py-4 border-t border-secondary-200 dark:border-secondary-700">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-secondary-600 dark:text-secondary-400">
+              <div className="px-4 lg:px-6 py-4 border-t border-secondary-200 dark:border-secondary-700">
+                <div className="flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0">
+                  <div className="text-sm text-secondary-600 dark:text-secondary-400 text-center sm:text-left">
                     Showing {Math.min((pagination.current - 1) * 20 + 1, pagination.totalRecords)} to{' '}
                     {Math.min(pagination.current * 20, pagination.totalRecords)} of {pagination.totalRecords} bugs
                   </div>
@@ -566,17 +695,17 @@ const BugManagement = () => {
                     <button
                       onClick={() => fetchBugs(pagination.current - 1)}
                       disabled={!pagination.hasPrev}
-                      className="px-3 py-1 text-sm bg-secondary-100 hover:bg-secondary-200 disabled:bg-secondary-50 disabled:text-secondary-400 text-secondary-700 rounded transition-colors"
+                      className="px-3 py-2 text-sm bg-secondary-100 hover:bg-secondary-200 disabled:bg-secondary-50 disabled:text-secondary-400 text-secondary-700 rounded transition-colors"
                     >
                       Previous
                     </button>
-                    <span className="text-sm text-secondary-600 dark:text-secondary-400">
+                    <span className="text-sm text-secondary-600 dark:text-secondary-400 px-2">
                       Page {pagination.current} of {pagination.total}
                     </span>
                     <button
                       onClick={() => fetchBugs(pagination.current + 1)}
                       disabled={!pagination.hasNext}
-                      className="px-3 py-1 text-sm bg-secondary-100 hover:bg-secondary-200 disabled:bg-secondary-50 disabled:text-secondary-400 text-secondary-700 rounded transition-colors"
+                      className="px-3 py-2 text-sm bg-secondary-100 hover:bg-secondary-200 disabled:bg-secondary-50 disabled:text-secondary-400 text-secondary-700 rounded transition-colors"
                     >
                       Next
                     </button>
