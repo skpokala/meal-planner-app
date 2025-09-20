@@ -137,7 +137,25 @@ const BugReportForm = ({ isOpen, onClose, onSuccess }) => {
     setLoading(true);
 
     try {
-      const response = await api.post('/bugs', formData);
+      // Clean up the form data - convert empty strings to null for optional fields
+      const cleanedFormData = {
+        ...formData,
+        stepsToReproduce: formData.stepsToReproduce.trim() || null,
+        expectedBehavior: formData.expectedBehavior.trim() || null,
+        actualBehavior: formData.actualBehavior.trim() || null,
+        environment: {
+          ...formData.environment,
+          browser: formData.environment.browser.trim() || null,
+          browserVersion: formData.environment.browserVersion.trim() || null,
+          operatingSystem: formData.environment.operatingSystem.trim() || null,
+          screenResolution: formData.environment.screenResolution.trim() || null,
+          appVersion: formData.environment.appVersion.trim() || null
+        },
+        tags: formData.tags.length > 0 ? formData.tags : []
+      };
+
+      console.log('Submitting bug report with data:', cleanedFormData);
+      const response = await api.post('/bugs', cleanedFormData);
       
       if (response.data.success) {
         toast.success('Bug report submitted successfully!');
@@ -168,8 +186,21 @@ const BugReportForm = ({ isOpen, onClose, onSuccess }) => {
       }
     } catch (error) {
       console.error('Error submitting bug report:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to submit bug report';
-      toast.error(errorMessage);
+      
+      // Handle validation errors with specific field messages
+      if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        const validationErrors = error.response.data.errors;
+        const fieldErrors = validationErrors.map(err => {
+          const field = err.path || err.param || 'field';
+          const message = err.msg || err.message || 'Invalid value';
+          return `${field}: ${message}`;
+        }).join(', ');
+        
+        toast.error(`Validation failed: ${fieldErrors}`);
+      } else {
+        const errorMessage = error.response?.data?.message || 'Failed to submit bug report';
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

@@ -438,7 +438,10 @@ const BugManagement = () => {
                       <div className="flex items-start">
                         <Bug className="w-4 h-4 text-secondary-400 mt-1 mr-2 flex-shrink-0" />
                         <div>
-                          <h3 className="font-medium text-secondary-900 dark:text-secondary-100 hover:text-primary-600 cursor-pointer">
+                          <h3 
+                            className="font-medium text-secondary-900 dark:text-secondary-100 hover:text-primary-600 cursor-pointer"
+                            onClick={() => setSelectedBug(bug)}
+                          >
                             {bug.title}
                           </h3>
                           <p className="text-sm text-secondary-600 dark:text-secondary-400 mt-1 line-clamp-2">
@@ -563,7 +566,10 @@ const BugManagement = () => {
                     <div className="flex items-start flex-1 min-w-0">
                       <Bug className="w-5 h-5 text-secondary-400 mt-1 mr-3 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-secondary-900 dark:text-secondary-100 text-base leading-tight mb-1">
+                        <h3 
+                          className="font-semibold text-secondary-900 dark:text-secondary-100 text-base leading-tight mb-1 hover:text-primary-600 cursor-pointer"
+                          onClick={() => setSelectedBug(bug)}
+                        >
                           {bug.title}
                         </h3>
                         <p className="text-sm text-secondary-600 dark:text-secondary-400 line-clamp-2 mb-2">
